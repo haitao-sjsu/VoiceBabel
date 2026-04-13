@@ -1,0 +1,54 @@
+# ============================================================
+# macOS
+# ============================================================
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# ============================================================
+# Xcode - build artifacts
+# ============================================================
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# ============================================================
+# Swift Package Manager
+# ============================================================
+.build/
+.swiftpm/
+Package.resolved
+
+# ============================================================
+# Makefile local build output
+# ============================================================
+.local-build/
+
+# ============================================================
+# Sensitive files - API keys
+# ============================================================
+Config/EngineeringOptions.swift
+
+# ============================================================
+# Logs
+# ============================================================
+*.log
+
+# ============================================================
+# Claude Code local settings
+# ============================================================
+.claude/settings.local.json
+.claude/.DS_Store
