@@ -49,7 +49,7 @@ struct Config {
 
         let config = Config(
             // 工程选项
-            openaiApiKey: EngineeringOptions.apiKey,
+            openaiApiKey: KeychainHelper.load() ?? "",
             whisperModel: EngineeringOptions.whisperModel,
             maxRecordingDuration: EngineeringOptions.maxRecordingDuration,
             translationMethod: EngineeringOptions.translationMethod,

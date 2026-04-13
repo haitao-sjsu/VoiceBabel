@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D6F1A0012FA300010000F001 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6F1A0002FA300010000F001 /* KeychainHelper.swift */; };
+		D6F1A0032FA300010000F003 /* ApiKeyValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6F1A0022FA300010000F003 /* ApiKeyValidator.swift */; };
 		D646E6782F3E4D6100376E45 /* ServiceLocalWhisper.swift in Sources */ = {isa = PBXBuildFile; fileRef = D646E6772F3E4D6100376E45 /* ServiceLocalWhisper.swift */; };
 		D64B58322F327E55003BEA1A /* ServiceRealtimeOpenAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B58312F327E55003BEA1A /* ServiceRealtimeOpenAI.swift */; };
 		D64B58382F333841003BEA1A /* UserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B58372F333841003BEA1A /* UserSettings.swift */; };
@@ -30,6 +32,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		D6F1A0002FA300010000F001 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		D6F1A0022FA300010000F003 /* ApiKeyValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiKeyValidator.swift; sourceTree = "<group>"; };
 		D646E6772F3E4D6100376E45 /* ServiceLocalWhisper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLocalWhisper.swift; sourceTree = "<group>"; };
 		D64B58312F327E55003BEA1A /* ServiceRealtimeOpenAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceRealtimeOpenAI.swift; sourceTree = "<group>"; };
 		D64B58372F333841003BEA1A /* UserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettings.swift; sourceTree = "<group>"; };
@@ -144,6 +148,8 @@
 				D64B58372F333841003BEA1A /* UserSettings.swift */,
 				D6E0A0002F8400010000E001 /* EngineeringOptions.swift */,
 				D6D1A0002F8A000100000001 /* SettingsStore.swift */,
+				D6F1A0002FA300010000F001 /* KeychainHelper.swift */,
+				D6F1A0022FA300010000F003 /* ApiKeyValidator.swift */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -246,6 +252,8 @@
 				D6D1A0012F8A000100000001 /* SettingsStore.swift in Sources */,
 				D6D1A0032F8A000100000003 /* SettingsView.swift in Sources */,
 				D6D1A0052F8A000100000005 /* SettingsWindowController.swift in Sources */,
+				D6F1A0012FA300010000F001 /* KeychainHelper.swift in Sources */,
+				D6F1A0032FA300010000F003 /* ApiKeyValidator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

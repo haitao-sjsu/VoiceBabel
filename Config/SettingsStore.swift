@@ -36,6 +36,12 @@ import Combine
 final class SettingsStore: ObservableObject {
     static let shared = SettingsStore()
 
+    enum ApiKeyStatus {
+        case unchecked
+        case valid
+        case invalid(String)
+    }
+
     private let defaults = UserDefaults.standard
 
     // Keys
@@ -71,6 +77,13 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(translationTargetLanguage, forKey: Keys.translationTargetLanguage) }
     }
 
+    @Published var apiKeyInput: String = ""
+    @Published var hasApiKey: Bool = false
+    @Published var maskedApiKey: String = ""
+    @Published var apiKeyStatus: ApiKeyStatus = .unchecked
+    @Published var isValidatingKey: Bool = false
+    @Published var apiKeyVersion: Int = 0
+
     private init() {
         // Load from UserDefaults, fall back to UserSettings defaults
         self.defaultApiMode = defaults.object(forKey: Keys.defaultApiMode) as? String ?? UserSettings.defaultApiMode
@@ -80,5 +93,70 @@ final class SettingsStore: ObservableObject {
         self.smartModeWaitDuration = defaults.object(forKey: Keys.smartModeWaitDuration) as? TimeInterval ?? UserSettings.smartModeWaitDuration
         self.textCleanupMode = defaults.object(forKey: Keys.textCleanupMode) as? String ?? UserSettings.textCleanupMode
         self.translationTargetLanguage = defaults.object(forKey: Keys.translationTargetLanguage) as? String ?? "en"
+
+        // 初始化 API Key 状态
+        self.hasApiKey = KeychainHelper.exists()
+        if let key = KeychainHelper.load() {
+            self.maskedApiKey = Self.maskApiKey(key)
+        }
+    }
+
+    // MARK: - API Key 管理
+
+    /// 保存 API Key 到 Keychain
+    func saveApiKey() {
+        let key = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { return }
+        if KeychainHelper.save(apiKey: key) {
+            hasApiKey = true
+            maskedApiKey = Self.maskApiKey(key)
+            apiKeyInput = ""
+            apiKeyStatus = .unchecked
+            apiKeyVersion += 1
+            Log.i("API Key 已保存到 Keychain")
+        } else {
+            apiKeyStatus = .invalid("保存失败，请重试")
+            Log.e("API Key 保存到 Keychain 失败")
+        }
+    }
+
+    /// 保存并立即验证 API Key
+    func saveAndValidateApiKey() {
+        saveApiKey()
+        if hasApiKey { validateApiKey() }
+    }
+
+    /// 清除 API Key
+    func clearApiKey() {
+        KeychainHelper.delete()
+        hasApiKey = false
+        maskedApiKey = ""
+        apiKeyStatus = .unchecked
+        apiKeyVersion += 1
+        Log.i("API Key 已从 Keychain 清除")
+    }
+
+    /// 验证 API Key（异步调用 /v1/models）
+    func validateApiKey() {
+        guard let key = KeychainHelper.load(), !key.isEmpty else {
+            apiKeyStatus = .invalid("未设置 API Key")
+            return
+        }
+        isValidatingKey = true
+        apiKeyStatus = .unchecked
+        Task {
+            let result = await ApiKeyValidator.validate(apiKey: key)
+            await MainActor.run {
+                self.isValidatingKey = false
+                self.apiKeyStatus = result
+            }
+        }
+    }
+
+    /// 遮盖 API Key，仅显示最后 4 位
+    private static func maskApiKey(_ key: String) -> String {
+        guard key.count > 4 else { return "****" }
+        let suffix = String(key.suffix(4))
+        return "*****\(suffix)"
     }
 }

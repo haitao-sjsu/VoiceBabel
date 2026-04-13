@@ -79,11 +79,11 @@ class RecordingController {
     // MARK: - 依赖组件
 
     private let audioRecorder: AudioRecorder
-    private let whisperService: ServiceCloudOpenAI
-    private let realtimeService: ServiceRealtimeOpenAI
+    private var whisperService: ServiceCloudOpenAI
+    private var realtimeService: ServiceRealtimeOpenAI
     private let localWhisperService: ServiceLocalWhisper
     private let textInputter: TextInputter
-    private let textCleanupService: ServiceTextCleanup
+    private var textCleanupService: ServiceTextCleanup
     private let config: Config
 
     // MARK: - 状态
@@ -146,6 +146,22 @@ class RecordingController {
         setupCallbacks()
     }
 
+    /// 动态更新服务实例（API Key 变更时调用）
+    func updateServices(
+        whisperService: ServiceCloudOpenAI,
+        realtimeService: ServiceRealtimeOpenAI,
+        textCleanupService: ServiceTextCleanup
+    ) {
+        guard currentState == .idle || currentState == .error else {
+            Log.w("RecordingController: 当前状态 \(currentState) 不允许更新服务")
+            return
+        }
+        self.whisperService = whisperService
+        self.realtimeService = realtimeService
+        self.textCleanupService = textCleanupService
+        setupCallbacks()
+    }
+
     // MARK: - 设置
 
     private func setupCallbacks() {
@@ -188,6 +204,11 @@ class RecordingController {
     func beginRecording(mode: RecordingMode) {
         guard currentState == .idle || currentState == .error || currentState == .waitingToSend else {
             Log.i("无法开始录音，当前状态: \(currentState)")
+            return
+        }
+        // 非本地模式需要 API Key
+        if currentApiMode != .local && (KeychainHelper.load() ?? "").isEmpty {
+            onError?("请先在设置中配置 OpenAI API Key")
             return
         }
         if currentState == .error {
@@ -248,6 +269,13 @@ class RecordingController {
 
     /// 开始录音
     private func startRecording() {
+        // 非本地模式需要 API Key（翻译模式也需要，因为翻译始终使用网络 API）
+        let needsApiKey = currentApiMode != .local || currentMode == .translate
+        if needsApiKey && (KeychainHelper.load() ?? "").isEmpty {
+            onError?("请先在设置中配置 OpenAI API Key")
+            return
+        }
+
         // 如果在智能模式等待发送中，取消倒计时
         cancelSmartModeForNewRecording()
 

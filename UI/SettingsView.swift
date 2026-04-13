@@ -28,6 +28,59 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            // MARK: - API 密钥
+            Section {
+                HStack {
+                    Text("OpenAI API Key")
+                    Spacer()
+                    if store.hasApiKey {
+                        Text(store.maskedApiKey)
+                            .foregroundColor(.secondary)
+                            .font(.system(.body, design: .monospaced))
+                    } else {
+                        TextField("", text: $store.apiKeyInput, prompt: Text("sk-proj-...").foregroundColor(.gray.opacity(0.5)))
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 220)
+                            .onSubmit { store.saveAndValidateApiKey() }
+                    }
+                }
+
+                // 状态行：验证结果 / 未设置提示 + 操作按钮
+                HStack(spacing: 6) {
+                    if store.hasApiKey {
+                        switch store.apiKeyStatus {
+                        case .valid:
+                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+                            Text("密钥有效").foregroundColor(.green).font(.caption)
+                        case .invalid(let message):
+                            Image(systemName: "xmark.circle.fill").foregroundColor(.red)
+                            Text(message).foregroundColor(.red).font(.caption)
+                        case .unchecked:
+                            EmptyView()
+                        }
+                    } else {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
+                        Text("需要 API Key 才能使用网络转写和翻译功能")
+                            .foregroundColor(.secondary).font(.caption)
+                    }
+
+                    Spacer()
+
+                    if store.hasApiKey {
+                        Button("验证") { store.validateApiKey() }
+                            .disabled(store.isValidatingKey)
+                        Button("清除") { store.clearApiKey() }
+                    } else {
+                        Link("获取 API Key",
+                             destination: URL(string: "https://platform.openai.com/api-keys")!)
+                        Button("验证") { store.saveAndValidateApiKey() }
+                            .disabled(store.apiKeyInput.isEmpty)
+                    }
+                }
+            } header: {
+                Text("API 密钥")
+            }
+
             // MARK: - 语言
             Section("语言") {
                 Picker("识别语言", selection: $store.whisperLanguage) {

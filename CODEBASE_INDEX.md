@@ -56,7 +56,9 @@ WhisperUtil/    — 资源 (Assets, Storyboard)
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Config/Config.swift**             | 配置结构体。`Config.load()` 从 `UserSettings`（用户偏好默认值）和 `EngineeringOptions`（工程选项）两个来源组装运行时配置，作为抽象层供其他组件初始化使用                                                                                                                                                   |
 | **Config/UserSettings.swift**       | 用户可配置偏好的硬编码默认值（语言、API 模式、发送模式、文本优化模式、提示音等）。作为 SettingsStore 的 fallback 默认值。工程级选项已迁移到 EngineeringOptions                                                                                                                                                  |
-| **Config/EngineeringOptions.swift** | 工程级配置与技术常量——控制音频处理管线各阶段的开关、参数和固定常量。包括：API 密钥与端点 URL、音频参数（采样率 16kHz/24kHz、RMS 阈值）、AAC 编码参数、模型选择、网络超时与回退策略、静音检测/音频压缩/繁简转换/标签过滤开关、Realtime delta 模式、翻译方法、文本输入方式、手势检测参数、自动发送/错误恢复延迟等。**包含 API 密钥，不可提交 git** |
+| **Config/EngineeringOptions.swift** | 工程级配置与技术常量——控制音频处理管线各阶段的开关、参数和固定常量。包括：端点 URL、音频参数（采样率 16kHz/24kHz、RMS 阈值）、AAC 编码参数、模型选择、网络超时与回退策略、静音检测/音频压缩/繁简转换/标签过滤开关、Realtime delta 模式、翻译方法、文本输入方式、手势检测参数、自动发送/错误恢复延迟等。API 密钥已迁移到 Keychain，不再包含在此文件中 |
+| **Config/KeychainHelper.swift** | Keychain 操作封装。提供 `save()`/`load()`/`delete()`/`exists()` 四个静态方法，使用 `kSecClassGenericPassword` 安全存储 OpenAI API Key。被 Config、SettingsStore、AppDelegate、RecordingController 引用 |
+| **Config/ApiKeyValidator.swift** | API Key 验证器。通过 `GET /v1/models` 端点验证密钥有效性，返回 `SettingsStore.ApiKeyStatus` 结果。被 SettingsStore.validateApiKey() 调用 |
 | **Config/SettingsStore.swift**      | UserDefaults 持久化层 + ObservableObject 发布者。管理用户可调设置（API 模式、语言、提示音、发送模式、延迟时间、文本优化模式、翻译目标语言）。通过 `@Published` 属性自动写入 UserDefaults，初始化时从 UserDefaults 读取并 fallback 到 UserSettings 默认值。SwiftUI SettingsView 通过 `@ObservedObject` 绑定，AppDelegate 通过 Combine 监听变更 |
 
 ### UI/

@@ -260,6 +260,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Log.i("设置: 提示音 \(value ? "开启" : "关闭")")
         }.store(in: &cancellables)
 
+        settingsStore.$apiKeyVersion.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
+            self?.rebuildServicesWithNewApiKey()
+        }.store(in: &cancellables)
+
         // 设置录音控制器回调
         recordingController.onStateChange = { [weak self] state in
             self?.statusBarController.updateState(state)
@@ -285,6 +289,63 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         statusBarController.updateState(.idle)
+    }
+
+    // MARK: - API Key 变更
+
+    /// 当 API Key 变更时重建所有依赖 API Key 的服务
+    private func rebuildServicesWithNewApiKey() {
+        let newKey = KeychainHelper.load() ?? ""
+
+        if newKey.isEmpty {
+            Log.w("API Key 已清除，网络功能将不可用")
+            // 如果当前是网络模式，自动切换到本地模式
+            if recordingController.currentApiMode != .local {
+                recordingController.userDidChangeApiMode(.local)
+                statusBarController.setApiMode(.local)
+                statusBarController.showNotification(
+                    title: "WhisperUtil",
+                    message: "API Key 已清除，已切换到本地识别模式"
+                )
+            }
+            return
+        }
+
+        // 重建服务
+        whisperService = ServiceCloudOpenAI(
+            apiKey: newKey,
+            model: config.whisperModel,
+            language: settingsStore.whisperLanguage
+        )
+        realtimeService = ServiceRealtimeOpenAI(
+            apiKey: newKey,
+            language: settingsStore.whisperLanguage
+        )
+        textCleanupService = ServiceTextCleanup(apiKey: newKey)
+        networkHealthMonitor = NetworkHealthMonitor(apiKey: newKey)
+
+        // 重新注入到 RecordingController
+        recordingController.updateServices(
+            whisperService: whisperService,
+            realtimeService: realtimeService,
+            textCleanupService: textCleanupService
+        )
+
+        // 恢复用户偏好的 API 模式
+        let preferredMode: StatusBarController.ApiMode
+        switch settingsStore.defaultApiMode {
+        case "realtime": preferredMode = .realtime
+        case "cloud":    preferredMode = .cloud
+        default:         preferredMode = .local
+        }
+        recordingController.userDidChangeApiMode(preferredMode)
+        statusBarController.setApiMode(preferredMode)
+
+        Log.i("API Key 已更新，服务已重建，模式恢复为 \(settingsStore.defaultApiMode)")
+        statusBarController.showNotification(
+            title: "WhisperUtil",
+            message: "API Key 已更新"
+        )
     }
 
 }
