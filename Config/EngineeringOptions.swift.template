@@ -1,0 +1,75 @@
+// EngineeringOptions.swift.template
+// Copy this file to EngineeringOptions.swift and fill in your API key:
+//   cp Config/EngineeringOptions.swift.template Config/EngineeringOptions.swift
+//
+// EngineeringOptions.swift is in .gitignore and will NOT be committed.
+
+import Foundation
+
+enum EngineeringOptions {
+
+    // ============================================================
+    // MARK: - API & Auth
+    // ============================================================
+
+    /// OpenAI API Key
+    static let apiKey = "YOUR_OPENAI_API_KEY_HERE"
+
+    // ============================================================
+    // MARK: - Pre-processing
+    // ============================================================
+
+    static let enableSilenceDetection = true
+
+    // ============================================================
+    // MARK: - Audio encoding
+    // ============================================================
+
+    static let enableAudioCompression = true
+
+    // ============================================================
+    // MARK: - Transcription models
+    // ============================================================
+
+    static let whisperModel = "gpt-4o-transcribe"
+    static let localWhisperModel = "openai_whisper-large-v3-v20240930_626MB"
+
+    // ============================================================
+    // MARK: - Network fallback
+    // ============================================================
+
+    static let enableCloudFallback = true
+
+    // ============================================================
+    // MARK: - Realtime mode
+    // ============================================================
+
+    static let realtimeDeltaMode = true
+
+    // ============================================================
+    // MARK: - Post-processing
+    // ============================================================
+
+    static let enableTraditionalToSimplified = true
+    static let enableTagFiltering = true
+
+    // ============================================================
+    // MARK: - Translation
+    // ============================================================
+
+    static let translationMethod = "two-step"
+    static let translationSourceLanguageFallback = "zh"
+
+    // ============================================================
+    // MARK: - Text output
+    // ============================================================
+
+    static let inputMethod = "clipboard"
+    static let typingDelay: TimeInterval = 0
+
+    // ============================================================
+    // MARK: - Recording
+    // ============================================================
+
+    static let maxRecordingDuration: TimeInterval = 600
+}
