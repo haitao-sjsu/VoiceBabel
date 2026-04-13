@@ -51,9 +51,10 @@ Config/EngineeringOptions.swift
 # Claude Code working files
 # ============================================================
 .claude/
-.claude-tech-research/
-.claude-commercial-research/
+.claude-research-tech/
+.claude-research-commercial/
 .claude-plan/
+.claude-code-review/
 
 # ============================================================
 # Learning notes
