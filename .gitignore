@@ -48,7 +48,14 @@ Config/EngineeringOptions.swift
 *.log
 
 # ============================================================
-# Claude Code local settings
+# Claude Code working files
 # ============================================================
-.claude/settings.local.json
-.claude/.DS_Store
+.claude/
+.claude-tech-research/
+.claude-commercial-research/
+.claude-plan/
+
+# ============================================================
+# Learning notes
+# ============================================================
+.learn/
