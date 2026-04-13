@@ -18,7 +18,7 @@
 //   - 错误分类（WhisperError：网络错误可触发本地回退，API 错误不回退）
 //
 // 依赖：
-//   - Constants：API 端点 URL（whisperTranscribeURL, whisperTranslateURL, chatCompletionsURL）、超时参数
+//   - EngineeringOptions：API 端点 URL（whisperTranscribeURL, whisperTranslateURL, chatCompletionsURL）、超时参数
 //   - AudioRecorder.AudioFormat：音频格式信息（文件名、Content-Type）
 //
 // 架构角色：
@@ -41,10 +41,10 @@ class ServiceCloudOpenAI {
     private let language: String
 
     /// 转录 API 端点
-    private let transcribeURL = URL(string: Constants.whisperTranscribeURL)!
+    private let transcribeURL = URL(string: EngineeringOptions.whisperTranscribeURL)!
 
     /// 翻译 API 端点（翻译成英文）
-    private let translateURL = URL(string: Constants.whisperTranslateURL)!
+    private let translateURL = URL(string: EngineeringOptions.whisperTranslateURL)!
 
     // MARK: - 初始化
 
@@ -121,7 +121,7 @@ class ServiceCloudOpenAI {
 
     /// 调用 Chat Completions API 将文本翻译为英文
     private func chatTranslate(text: String, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let url = URL(string: Constants.chatCompletionsURL) else {
+        guard let url = URL(string: EngineeringOptions.chatCompletionsURL) else {
             completion(.failure(WhisperError.invalidResponse))
             return
         }
@@ -130,7 +130,7 @@ class ServiceCloudOpenAI {
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = Constants.apiProcessingTimeoutMin
+        request.timeoutInterval = EngineeringOptions.apiProcessingTimeoutMin
 
         let payload: [String: Any] = [
             "model": "gpt-4o-mini",
@@ -212,7 +212,7 @@ class ServiceCloudOpenAI {
     private func calculateProcessingTimeout(audioDuration: TimeInterval) -> TimeInterval {
         let minutes = audioDuration / 60.0
         let timeout = minutes * 10
-        return min(max(timeout, Constants.apiProcessingTimeoutMin), Constants.apiProcessingTimeoutMax)
+        return min(max(timeout, EngineeringOptions.apiProcessingTimeoutMin), EngineeringOptions.apiProcessingTimeoutMax)
     }
 
     private func sendRequest(

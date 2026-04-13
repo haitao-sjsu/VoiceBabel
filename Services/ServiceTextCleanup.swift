@@ -15,7 +15,7 @@
 // 被 RecordingController 和 SettingsView 共同使用。
 //
 // 依赖：
-//   - Constants：chatCompletionsURL（API 端点）、apiProcessingTimeoutMin/Max（超时参数）
+//   - EngineeringOptions：chatCompletionsURL（API 端点）、apiProcessingTimeoutMin/Max（超时参数）
 //
 // 架构角色：
 //   由 AppDelegate 创建，由 RecordingController.outputText() 在转录完成后调用。
@@ -104,7 +104,7 @@ class ServiceTextCleanup {
             return
         }
 
-        guard let url = URL(string: Constants.chatCompletionsURL) else {
+        guard let url = URL(string: EngineeringOptions.chatCompletionsURL) else {
             Log.e("文本优化: URL 无效")
             completion(.success(text))  // 失败时返回原始文本
             return
@@ -118,7 +118,7 @@ class ServiceTextCleanup {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let minutes = audioDuration / 60.0
-        let timeout = min(max(minutes * 10, Constants.apiProcessingTimeoutMin), Constants.apiProcessingTimeoutMax)
+        let timeout = min(max(minutes * 10, EngineeringOptions.apiProcessingTimeoutMin), EngineeringOptions.apiProcessingTimeoutMax)
         request.timeoutInterval = timeout
 
         let payload: [String: Any] = [

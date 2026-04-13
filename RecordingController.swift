@@ -36,8 +36,7 @@
 //   - ServiceTextCleanup：GPT-4o-mini 文本优化
 //   - TextInputter：文字输入到活动窗口
 //   - Config：运行时配置
-//   - Constants：超时、阈值等常量
-//   - EngineeringOptions：工程级开关
+//   - EngineeringOptions：工程级开关与技术常量（超时、阈值等）
 //
 // 架构角色：
 //   由 AppDelegate 创建，通过回调连接到 StatusBarController（UI 更新）和 HotkeyManager（用户输入）。
@@ -340,7 +339,7 @@ class RecordingController {
                         try self.audioRecorder.startRecording(
                             maxDuration: self.config.maxRecordingDuration,
                             streamingMode: true,
-                            sampleRate: Constants.realtimeSampleRate
+                            sampleRate: EngineeringOptions.realtimeSampleRate
                         )
                         Log.i("Realtime: 录音已启动 (24kHz)")
                     } catch {
@@ -401,14 +400,14 @@ class RecordingController {
         Log.i("录音结束，数据大小: \(recording.data.count) 字节，格式: \(recording.format)，平均音量: \(averageRMS)")
 
         if EngineeringOptions.enableSilenceDetection {
-            if recording.data.count < Constants.minAudioDataSize {
+            if recording.data.count < EngineeringOptions.minAudioDataSize {
                 Log.i("音频太短，忽略")
                 currentState = .idle
                 return nil
             }
 
-            if averageRMS < Constants.minVoiceThreshold {
-                Log.i("音频音量太低 (\(averageRMS) < \(Constants.minVoiceThreshold))，可能只有噪音，跳过识别")
+            if averageRMS < EngineeringOptions.minVoiceThreshold {
+                Log.i("音频音量太低 (\(averageRMS) < \(EngineeringOptions.minVoiceThreshold))，可能只有噪音，跳过识别")
                 currentState = .idle
                 return nil
             }
@@ -511,14 +510,14 @@ class RecordingController {
 
         // 音量/数据检查（同标准模式）
         if EngineeringOptions.enableSilenceDetection {
-            if samples.count < Int(Constants.sampleRate * Constants.minAudioDuration) {
+            if samples.count < Int(EngineeringOptions.sampleRate * EngineeringOptions.minAudioDuration) {
                 Log.i("音频太短，忽略")
                 currentState = .idle
                 return
             }
 
-            if averageRMS < Constants.minVoiceThreshold {
-                Log.i("音频音量太低 (\(averageRMS) < \(Constants.minVoiceThreshold))，可能只有噪音，跳过识别")
+            if averageRMS < EngineeringOptions.minVoiceThreshold {
+                Log.i("音频音量太低 (\(averageRMS) < \(EngineeringOptions.minVoiceThreshold))，可能只有噪音，跳过识别")
                 currentState = .idle
                 return
             }
@@ -531,9 +530,9 @@ class RecordingController {
     /// 带超时的本地 WhisperKit 转录
     /// 使用 TaskGroup 竞速：转录任务和超时定时器同时运行，先完成的决定结果
     private func localTranscribeWithTimeout(samples: [Float], action: String) {
-        let audioDuration = Double(samples.count) / Constants.sampleRate
+        let audioDuration = Double(samples.count) / EngineeringOptions.sampleRate
         let minutes = audioDuration / 60.0
-        let timeout = min(max(minutes * 10, Constants.apiProcessingTimeoutMin), Constants.apiProcessingTimeoutMax)
+        let timeout = min(max(minutes * 10, EngineeringOptions.apiProcessingTimeoutMin), EngineeringOptions.apiProcessingTimeoutMax)
         Log.i("\(action): 音频时长 \(String(format: "%.1f", audioDuration))s，本地处理超时 \(String(format: "%.0f", timeout))s")
 
         Task {
@@ -629,7 +628,7 @@ class RecordingController {
         onError?(message)
 
         // 延迟自动恢复，给用户查看错误信息的时间
-        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.errorRecoveryDelay) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + EngineeringOptions.errorRecoveryDelay) { [weak self] in
             if self?.currentState == .error {
                 self?.currentState = .idle
             }
@@ -726,7 +725,7 @@ class RecordingController {
 
         case .always:
             // 延迟后自动按 Enter
-            DispatchQueue.main.asyncAfter(deadline: .now() + Constants.autoSendDelay) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + EngineeringOptions.autoSendDelay) { [weak self] in
                 self?.textInputter.pressReturnKey()
                 Log.i("自动发送: 已按下 Enter")
             }

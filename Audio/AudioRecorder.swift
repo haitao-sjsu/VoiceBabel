@@ -22,8 +22,7 @@
 //   - AVFoundation：AVAudioEngine, AVAudioConverter, AVCaptureDevice（权限检查）
 //   - CoreAudio：AudioObjectGetPropertyData（麦克风占用检测）
 //   - AudioEncoder：停止录音时的音频编码
-//   - EngineeringOptions：enableAudioCompression（编码格式选择）
-//   - Constants：sampleRate, realtimeSampleRate, checkTimerInterval
+//   - EngineeringOptions：enableAudioCompression（编码格式选择）、sampleRate, realtimeSampleRate, checkTimerInterval
 //
 // 架构角色：
 //   由 AppDelegate 创建，由 RecordingController 控制其启停。
@@ -155,7 +154,7 @@ class AudioRecorder {
     func startRecording(
         maxDuration: TimeInterval,
         streamingMode: Bool,
-        sampleRate: Double = Constants.sampleRate
+        sampleRate: Double = EngineeringOptions.sampleRate
     ) throws {
         guard !isRecording else {
             Log.i("已经在录音中")
@@ -377,10 +376,10 @@ class AudioRecorder {
 
     /// 启动周期性检查定时器
     ///
-    /// 每 0.5 秒（Constants.checkTimerInterval）检查一次：
+    /// 每 0.5 秒（EngineeringOptions.checkTimerInterval）检查一次：
     /// 是否达到最长录音时间 → 触发 onMaxDurationReached
     private func startCheckTimer() {
-        checkTimer = Timer.scheduledTimer(withTimeInterval: Constants.checkTimerInterval, repeats: true) { [weak self] _ in
+        checkTimer = Timer.scheduledTimer(withTimeInterval: EngineeringOptions.checkTimerInterval, repeats: true) { [weak self] _ in
             guard let self = self else { return }
 
             // 检查是否超过最长录音时间

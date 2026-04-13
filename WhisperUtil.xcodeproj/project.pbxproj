@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		D646E6782F3E4D6100376E45 /* ServiceLocalWhisper.swift in Sources */ = {isa = PBXBuildFile; fileRef = D646E6772F3E4D6100376E45 /* ServiceLocalWhisper.swift */; };
 		D64B58322F327E55003BEA1A /* ServiceRealtimeOpenAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B58312F327E55003BEA1A /* ServiceRealtimeOpenAI.swift */; };
-		D64B58362F3329CC003BEA1A /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B58352F3329CC003BEA1A /* Constants.swift */; };
 		D64B58382F333841003BEA1A /* UserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B58372F333841003BEA1A /* UserSettings.swift */; };
 		D6E0A0012F8400010000E001 /* EngineeringOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E0A0002F8400010000E001 /* EngineeringOptions.swift */; };
 		D64B583B2F334121003BEA1A /* RecordingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B583A2F334121003BEA1A /* RecordingController.swift */; };
@@ -33,7 +32,6 @@
 /* Begin PBXFileReference section */
 		D646E6772F3E4D6100376E45 /* ServiceLocalWhisper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLocalWhisper.swift; sourceTree = "<group>"; };
 		D64B58312F327E55003BEA1A /* ServiceRealtimeOpenAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceRealtimeOpenAI.swift; sourceTree = "<group>"; };
-		D64B58352F3329CC003BEA1A /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		D64B58372F333841003BEA1A /* UserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettings.swift; sourceTree = "<group>"; };
 		D6E0A0002F8400010000E001 /* EngineeringOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineeringOptions.swift; sourceTree = "<group>"; };
 		D64B58392F334121003BEA1A /* AudioEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEncoder.swift; sourceTree = "<group>"; };
@@ -143,7 +141,6 @@
 			isa = PBXGroup;
 			children = (
 				D69A0ED62F21D61C00CD1DC0 /* Config.swift */,
-				D64B58352F3329CC003BEA1A /* Constants.swift */,
 				D64B58372F333841003BEA1A /* UserSettings.swift */,
 				D6E0A0002F8400010000E001 /* EngineeringOptions.swift */,
 				D6D1A0002F8A000100000001 /* SettingsStore.swift */,
@@ -244,7 +241,6 @@
 				D69A0EE32F21D61C00CD1DC0 /* main.swift in Sources */,
 				D646E6782F3E4D6100376E45 /* ServiceLocalWhisper.swift in Sources */,
 				D64B58322F327E55003BEA1A /* ServiceRealtimeOpenAI.swift in Sources */,
-				D64B58362F3329CC003BEA1A /* Constants.swift in Sources */,
 				D6A1B0012F5A000100000001 /* Log.swift in Sources */,
 				D6C1A0012F7100010000C001 /* ServiceTextCleanup.swift in Sources */,
 				D6D1A0012F8A000100000001 /* SettingsStore.swift in Sources */,

@@ -19,8 +19,7 @@
 //         input_audio_buffer.speech_started/stopped, error
 //
 // 依赖：
-//   - Constants：realtimeWebSocketURL（WebSocket 端点）
-//   - EngineeringOptions：whisperModel（转录模型名称）
+//   - EngineeringOptions：realtimeWebSocketURL（WebSocket 端点）、whisperModel（转录模型名称）
 //   - URLSessionWebSocketDelegate：WebSocket 连接事件
 //
 // 架构角色：
@@ -70,7 +69,7 @@ class ServiceRealtimeOpenAI: NSObject {
     private var language: String = ""
 
     /// WebSocket 端点（GA 版转录专用模式，使用 gpt-4o-transcribe）
-    private let realtimeURL = Constants.realtimeWebSocketURL
+    private let realtimeURL = EngineeringOptions.realtimeWebSocketURL
 
     // MARK: - 初始化
 

@@ -24,7 +24,7 @@
 //   - 左右 Option 键均可触发
 //
 // 依赖：
-//   - Constants：optionHoldThreshold（按住阈值）、doubleTapWindow（双击窗口）
+//   - EngineeringOptions：optionHoldThreshold（按住阈值）、doubleTapWindow（双击窗口）
 //   - Log：日志输出
 //
 // 架构角色：
@@ -226,11 +226,11 @@ class HotkeyManager {
         let work = DispatchWorkItem { [weak self] in
             guard let self = self, self.state == .optionDown else { return }
             self.state = .pushToTalkActive
-            Log.i("Push-to-Talk 开始（Option 键按住 >\(Constants.optionHoldThreshold)s）")
+            Log.i("Push-to-Talk 开始（Option 键按住 >\(EngineeringOptions.optionHoldThreshold)s）")
             self.onPushToTalkStart?()
         }
         holdTimer = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.optionHoldThreshold, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + EngineeringOptions.optionHoldThreshold, execute: work)
     }
 
     /// 启动双击检测定时器
@@ -242,7 +242,7 @@ class HotkeyManager {
             self.onSingleTap?()
         }
         doubleTapTimer = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.doubleTapWindow, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + EngineeringOptions.doubleTapWindow, execute: work)
     }
 
     /// 取消所有定时器

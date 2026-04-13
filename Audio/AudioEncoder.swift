@@ -20,7 +20,7 @@
 //
 // 依赖：
 //   - AVFoundation：AVAudioFile, AVAudioPCMBuffer, AVAudioFormat
-//   - Constants：sampleRate（16kHz）、aacBitRate（24kbps）
+//   - EngineeringOptions：sampleRate（16kHz）、aacBitRate（24kbps）
 //
 // 架构角色：
 //   由 AudioRecorder.stopRecording() 调用，产出的数据传递给 ServiceCloudOpenAI。
@@ -57,7 +57,7 @@ enum AudioEncoder {
         // 创建输入格式描述：32位浮点、单声道、16kHz
         guard let inputFormat = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
-            sampleRate: Constants.sampleRate,
+            sampleRate: EngineeringOptions.sampleRate,
             channels: 1,
             interleaved: false
         ) else {
@@ -69,7 +69,7 @@ enum AudioEncoder {
         // 注意：AAC 是可变比特率编码，mBytesPerPacket/mBytesPerFrame 设为 0（由编码器决定）
         // mFramesPerPacket = 1024 是 AAC 标准帧大小
         var outputDescription = AudioStreamBasicDescription(
-            mSampleRate: Constants.sampleRate,
+            mSampleRate: EngineeringOptions.sampleRate,
             mFormatID: kAudioFormatMPEG4AAC,
             mFormatFlags: 0,
             mBytesPerPacket: 0,        // 可变比特率，编码器自行决定
@@ -107,9 +107,9 @@ enum AudioEncoder {
                 forWriting: tempURL,
                 settings: [
                     AVFormatIDKey: kAudioFormatMPEG4AAC,
-                    AVSampleRateKey: Constants.sampleRate,
+                    AVSampleRateKey: EngineeringOptions.sampleRate,
                     AVNumberOfChannelsKey: 1,
-                    AVEncoderBitRateKey: Constants.aacBitRate   // 24kbps，针对语音优化的低比特率
+                    AVEncoderBitRateKey: EngineeringOptions.aacBitRate   // 24kbps，针对语音优化的低比特率
                 ]
             )
             try outputFile.write(from: inputBuffer)
@@ -176,8 +176,8 @@ enum AudioEncoder {
         data.append(contentsOf: withUnsafeBytes(of: UInt32(16).littleEndian) { Array($0) })                         // SubchunkSize：PCM 格式固定 16 字节
         data.append(contentsOf: withUnsafeBytes(of: UInt16(1).littleEndian) { Array($0) })                          // AudioFormat：1 = PCM（无压缩）
         data.append(contentsOf: withUnsafeBytes(of: UInt16(1).littleEndian) { Array($0) })                          // NumChannels：1 = 单声道
-        data.append(contentsOf: withUnsafeBytes(of: UInt32(Constants.sampleRate).littleEndian) { Array($0) })       // SampleRate：16000 Hz
-        data.append(contentsOf: withUnsafeBytes(of: UInt32(Constants.sampleRate * 2).littleEndian) { Array($0) })   // ByteRate：采样率 x 声道数 x 每采样字节数
+        data.append(contentsOf: withUnsafeBytes(of: UInt32(EngineeringOptions.sampleRate).littleEndian) { Array($0) })       // SampleRate：16000 Hz
+        data.append(contentsOf: withUnsafeBytes(of: UInt32(EngineeringOptions.sampleRate * 2).littleEndian) { Array($0) })   // ByteRate：采样率 x 声道数 x 每采样字节数
         data.append(contentsOf: withUnsafeBytes(of: UInt16(2).littleEndian) { Array($0) })                          // BlockAlign：声道数 x 每采样字节数
         data.append(contentsOf: withUnsafeBytes(of: UInt16(16).littleEndian) { Array($0) })                         // BitsPerSample：16 位
 

@@ -23,8 +23,7 @@
 // 依赖：
 //   - CGEvent (Core Graphics)：模拟键盘事件
 //   - Carbon：虚拟键码常量（kVK_Return 等）
-//   - EngineeringOptions：enableTraditionalToSimplified, enableTagFiltering
-//   - Constants：clipboardPasteDelay, clipboardRestoreDelay
+//   - EngineeringOptions：enableTraditionalToSimplified, enableTagFiltering, clipboardPasteDelay, clipboardRestoreDelay
 //
 // 架构角色：
 //   由 AppDelegate 创建，由 RecordingController 在转录/翻译完成后调用。
@@ -150,11 +149,11 @@ class TextInputter {
         pressKey(keyCode: 9, flags: .maskCommand)
 
         // 等待目标应用处理粘贴事件
-        Thread.sleep(forTimeInterval: Constants.clipboardPasteDelay)
+        Thread.sleep(forTimeInterval: EngineeringOptions.clipboardPasteDelay)
 
         // 异步恢复原剪贴板内容（延迟一小段时间确保粘贴完成）
         if let original = originalContents {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Constants.clipboardRestoreDelay) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + EngineeringOptions.clipboardRestoreDelay) {
                 pasteboard.clearContents()
                 pasteboard.setString(original, forType: .string)
             }

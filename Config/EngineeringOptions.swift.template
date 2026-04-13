@@ -15,17 +15,30 @@ enum EngineeringOptions {
     /// OpenAI API Key
     static let apiKey = "YOUR_OPENAI_API_KEY_HERE"
 
+    static let whisperTranscribeURL = "https://api.openai.com/v1/audio/transcriptions"
+    static let whisperTranslateURL = "https://api.openai.com/v1/audio/translations"
+    static let chatCompletionsURL = "https://api.openai.com/v1/chat/completions"
+    static let realtimeWebSocketURL = "wss://api.openai.com/v1/realtime?intent=transcription"
+
     // ============================================================
-    // MARK: - Pre-processing
+    // MARK: - Audio capture
     // ============================================================
 
+    static let sampleRate: Double = 16000
+    static let realtimeSampleRate: Double = 24000
     static let enableSilenceDetection = true
+    static let minVoiceThreshold: Float = 0.001
+    static let minAudioDuration: TimeInterval = 0.5
+    static let minAudioDataSize: Int = 1000
+    static let maxRecordingDuration: TimeInterval = 600
 
     // ============================================================
     // MARK: - Audio encoding
     // ============================================================
 
     static let enableAudioCompression = true
+    static let aacBitRate: Int = 24000
+    static let aacFramesPerPacket: UInt32 = 1024
 
     // ============================================================
     // MARK: - Transcription models
@@ -33,18 +46,17 @@ enum EngineeringOptions {
 
     static let whisperModel = "gpt-4o-transcribe"
     static let localWhisperModel = "openai_whisper-large-v3-v20240930_626MB"
-
-    // ============================================================
-    // MARK: - Network fallback
-    // ============================================================
-
-    static let enableCloudFallback = true
-
-    // ============================================================
-    // MARK: - Realtime mode
-    // ============================================================
-
     static let realtimeDeltaMode = true
+
+    // ============================================================
+    // MARK: - Network
+    // ============================================================
+
+    static let apiProcessingTimeoutMin: TimeInterval = 5
+    static let apiProcessingTimeoutMax: TimeInterval = 90
+    static let realtimeResultTimeout: TimeInterval = 10
+    static let enableCloudFallback = true
+    static let cloudProbeInterval: TimeInterval = 30
 
     // ============================================================
     // MARK: - Post-processing
@@ -66,10 +78,21 @@ enum EngineeringOptions {
 
     static let inputMethod = "clipboard"
     static let typingDelay: TimeInterval = 0
+    static let clipboardPasteDelay: TimeInterval = 0.1
+    static let clipboardRestoreDelay: TimeInterval = 0.1
+    static let autoSendDelay: TimeInterval = 0.15
 
     // ============================================================
-    // MARK: - Recording
+    // MARK: - Hotkey
     // ============================================================
 
-    static let maxRecordingDuration: TimeInterval = 600
+    static let optionHoldThreshold: TimeInterval = 0.3
+    static let doubleTapWindow: TimeInterval = 0.5
+
+    // ============================================================
+    // MARK: - Internal timing
+    // ============================================================
+
+    static let checkTimerInterval: TimeInterval = 0.5
+    static let errorRecoveryDelay: TimeInterval = 3.0
 }

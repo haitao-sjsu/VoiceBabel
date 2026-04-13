@@ -15,7 +15,7 @@
 //
 // 依赖：
 //   - Network.NWPathMonitor：网络接口状态监测
-//   - Constants：cloudProbeInterval（探测间隔）
+//   - EngineeringOptions：cloudProbeInterval（探测间隔）
 //
 // 架构角色：
 //   由 AppDelegate 创建并配置 onCloudRecovered 回调。
@@ -62,7 +62,7 @@ class NetworkHealthMonitor {
 
     // MARK: - 初始化
 
-    init(apiKey: String, probeInterval: TimeInterval = Constants.cloudProbeInterval) {
+    init(apiKey: String, probeInterval: TimeInterval = EngineeringOptions.cloudProbeInterval) {
         self.apiKey = apiKey
         self.probeInterval = probeInterval
     }
