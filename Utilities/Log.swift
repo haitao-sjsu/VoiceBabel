@@ -66,7 +66,7 @@ enum Log {
         handle?.seekToEndOfFile()
 
         // 写入启动分隔线
-        let separator = "\n========== WhisperUtil 启动 (\(DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .medium))) ==========\n"
+        let separator = "\n========== WhisperUtil Launch (\(DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .medium))) ==========\n"
         if let data = separator.data(using: .utf8) {
             handle?.write(data)
         }

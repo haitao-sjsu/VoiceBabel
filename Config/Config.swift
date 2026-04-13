@@ -45,7 +45,7 @@ struct Config {
 
     /// 从 UserSettings 和 EngineeringOptions 加载配置
     static func load() -> Config {
-        Log.d("正在加载配置...")
+        Log.d("Loading config...")
 
         let config = Config(
             // 工程选项
@@ -63,7 +63,7 @@ struct Config {
             textCleanupMode: UserSettings.textCleanupMode
         )
 
-        Log.d("配置加载完成")
+        Log.d("Config loaded")
         return config
     }
 }

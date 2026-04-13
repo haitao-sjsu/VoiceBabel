@@ -111,7 +111,7 @@ class AudioRecorder {
             )
 
             if runningStatus == noErr, isRunning != 0 {
-                Log.i("检测到麦克风正被其他程序使用（Core Audio）")
+                Log.i(LocaleManager.shared.logLocalized("Microphone in use by another program detected (Core Audio)"))
                 return false
             }
         }
@@ -119,7 +119,7 @@ class AudioRecorder {
         // 方式二：检测 macOS 系统听写是否激活
         // DictationIM 进程常驻后台，但只有在听写激活时才会创建悬浮窗口
         if isDictationActive() {
-            Log.i("检测到系统听写正在运行")
+            Log.i(LocaleManager.shared.logLocalized("System dictation detected running"))
             return false
         }
 
@@ -157,7 +157,7 @@ class AudioRecorder {
         sampleRate: Double = EngineeringOptions.sampleRate
     ) throws {
         guard !isRecording else {
-            Log.i("已经在录音中")
+            Log.i(LocaleManager.shared.logLocalized("Already recording"))
             return
         }
 
@@ -173,7 +173,7 @@ class AudioRecorder {
             // 首次请求权限（异步弹出系统授权对话框）
             AVCaptureDevice.requestAccess(for: .audio) { granted in
                 if !granted {
-                    Log.w("用户拒绝了麦克风权限")
+                    Log.w(LocaleManager.shared.logLocalized("User denied microphone permission"))
                 }
             }
             // 首次请求时立即抛出错误，等待用户授权后重试
@@ -224,14 +224,15 @@ class AudioRecorder {
         startCheckTimer()
 
         // 打印启动信息（方便调试）
-        var modeInfo = "手动停止模式"
+        let lm = LocaleManager.shared
+        var modeInfo = lm.logLocalized("manual stop mode")
         if maxDuration > 0 {
-            modeInfo += "，最长 \(Int(maxDuration / 60)) 分钟"
+            modeInfo += ", max \(Int(maxDuration / 60)) min"
         }
         if streamingMode {
-            modeInfo += "，流式传输"
+            modeInfo += ", streaming"
         }
-        Log.i("录音已开始（\(modeInfo)）")
+        Log.i(lm.logLocalized("Recording started") + " (\(modeInfo))")
     }
 
     /// 停止录音并返回编码后的音频数据
@@ -257,7 +258,8 @@ class AudioRecorder {
         isRecording = false
 
         let duration = recordingStartTime.map { Date().timeIntervalSince($0) } ?? 0
-        Log.i("录音已停止，时长: \(String(format: "%.1f", duration)) 秒，采样点数: \(audioBuffer.count)")
+        let lm = LocaleManager.shared
+        Log.i(lm.logLocalized("Recording stopped, duration:") + " \(String(format: "%.1f", duration))s, " + lm.logLocalized("sample count:") + " \(audioBuffer.count)")
 
         // 使用 AudioEncoder 将采样数据编码（根据 enableAudioCompression 选择格式）
         let encoded: AudioEncoder.EncodingResult?
@@ -334,7 +336,7 @@ class AudioRecorder {
         converter.convert(to: outputBuffer, error: &error, withInputFrom: inputBlock)
 
         if let error = error {
-            Log.e("音频转换错误: \(error)")
+            Log.e(LocaleManager.shared.logLocalized("Audio conversion error:") + " \(error)")
             return
         }
 
@@ -385,7 +387,7 @@ class AudioRecorder {
             // 检查是否超过最长录音时间
             let currentDuration = self.getCurrentRecordingDuration()
             if let maxDuration = self.maxRecordingDuration, currentDuration >= maxDuration {
-                Log.i("已达到最长录音时间 \(Int(maxDuration / 60)) 分钟，自动停止录音")
+                Log.i(LocaleManager.shared.logLocalized("Max recording duration reached") + " \(Int(maxDuration / 60)) min, " + LocaleManager.shared.logLocalized("auto stopping recording"))
                 DispatchQueue.main.async {
                     self.onMaxDurationReached?()
                 }
@@ -415,13 +417,13 @@ class AudioRecorder {
         var errorDescription: String? {
             switch self {
             case .permissionDenied:
-                return "麦克风权限被拒绝，请在系统设置中授权"
+                return String(localized: "Microphone permission denied, please authorize in System Settings")
             case .engineCreationFailed:
-                return "音频引擎创建失败"
+                return String(localized: "Audio engine creation failed")
             case .formatCreationFailed:
-                return "音频格式创建失败"
+                return String(localized: "Audio format creation failed")
             case .microphoneInUse:
-                return "麦克风正被其他应用使用，请先关闭其他语音输入程序"
+                return String(localized: "Microphone is in use by another app")
             }
         }
     }

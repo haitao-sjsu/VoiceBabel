@@ -29,6 +29,7 @@
 		D6D1A0012F8A000100000001 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D1A0002F8A000100000001 /* SettingsStore.swift */; };
 		D6D1A0032F8A000100000003 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D1A0022F8A000100000003 /* SettingsView.swift */; };
 		D6D1A0052F8A000100000005 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D1A0042F8A000100000005 /* SettingsWindowController.swift */; };
+		D6L0C0012FB400010000L001 /* LocaleManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6L0C0002FB400010000L001 /* LocaleManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +56,7 @@
 		D6D1A0002F8A000100000001 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		D6D1A0022F8A000100000003 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D6D1A0042F8A000100000005 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		D6L0C0002FB400010000L001 /* LocaleManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocaleManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -127,6 +129,7 @@
 				D69A0EDA2F21D61C00CD1DC0 /* TextInputter.swift */,
 				D69A0EF02F21D61C00CD1DC0 /* NetworkHealthMonitor.swift */,
 				D6A1B0002F5A000100000001 /* Log.swift */,
+				D6L0C0002FB400010000L001 /* LocaleManager.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -201,6 +204,25 @@
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
+				"zh-Hant",
+				ja,
+				ko,
+				es,
+				fr,
+				de,
+				pt,
+				ru,
+				ar,
+				hi,
+				id,
+				th,
+				vi,
+				tr,
+				pl,
+				nl,
+				it,
+				sv,
 			);
 			mainGroup = D69A0EBA2F21D5B700CD1DC0;
 			minimizedProjectReferenceProxies = 1;
@@ -254,6 +276,7 @@
 				D6D1A0052F8A000100000005 /* SettingsWindowController.swift in Sources */,
 				D6F1A0012FA300010000F001 /* KeychainHelper.swift in Sources */,
 				D6F1A0032FA300010000F003 /* ApiKeyValidator.swift in Sources */,
+				D6L0C0012FB400010000L001 /* LocaleManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

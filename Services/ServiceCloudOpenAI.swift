@@ -110,7 +110,7 @@ class ServiceCloudOpenAI {
                     completion(.success(""))
                     return
                 }
-                Log.i("两步翻译 Step 1 完成，转录结果: \(trimmedText)")
+                Log.i(LocaleManager.shared.logLocalized("Two-step translation Step 1 complete, transcription result:") + " \(trimmedText)")
                 // Step 2: 用 GPT 翻译
                 self?.chatTranslate(text: trimmedText, completion: completion)
             case .failure(let error):
@@ -149,7 +149,7 @@ class ServiceCloudOpenAI {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         } catch {
-            completion(.failure(WhisperError.networkError("JSON 序列化失败: \(error.localizedDescription)")))
+            completion(.failure(WhisperError.networkError("JSON serialization failed: \(error.localizedDescription)")))
             return
         }
 
@@ -170,12 +170,12 @@ class ServiceCloudOpenAI {
             }
 
             if httpResponse.statusCode != 200 {
-                let errorMessage = String(data: data, encoding: .utf8) ?? "未知错误"
+                let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
                 completion(.failure(WhisperError.apiError(httpResponse.statusCode, errorMessage)))
                 return
             }
 
-            // 解析 Chat Completions 响应 JSON
+            // Parse Chat Completions response JSON
             do {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let choices = json["choices"] as? [[String: Any]],
@@ -231,7 +231,7 @@ class ServiceCloudOpenAI {
 
         // 动态超时：根据音频时长计算，短音频快速失败，长音频耐心等待
         let timeout = calculateProcessingTimeout(audioDuration: audioDuration)
-        Log.d("API 超时设置: \(String(format: "%.0f", timeout))s（音频时长 \(String(format: "%.1f", audioDuration))s）")
+        Log.d("API timeout: \(String(format: "%.0f", timeout))s (audio duration \(String(format: "%.1f", audioDuration))s)")
 
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.timeoutIntervalForRequest = timeout
@@ -307,12 +307,12 @@ class ServiceCloudOpenAI {
 
             // 处理错误状态码
             if httpResponse.statusCode != 200 {
-                let errorMessage = String(data: data, encoding: .utf8) ?? "未知错误"
+                let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
                 completion(.failure(WhisperError.apiError(httpResponse.statusCode, errorMessage)))
                 return
             }
 
-            // 解析响应（text 格式直接返回文本）
+            // Parse response (text format returns text directly)
             if let text = String(data: data, encoding: .utf8) {
                 completion(.success(text))
             } else {
@@ -335,15 +335,15 @@ class ServiceCloudOpenAI {
         var errorDescription: String? {
             switch self {
             case .networkError(let message):
-                return "网络错误: \(message)"
+                return String(localized: "Network error: \(message)")
             case .invalidResponse:
-                return "无效的响应"
+                return String(localized: "Invalid response")
             case .noData:
-                return "没有返回数据"
+                return String(localized: "No data returned")
             case .apiError(let code, let message):
-                return "API 错误 (\(code)): \(message)"
+                return String(localized: "API error (\(code)): \(message)")
             case .decodingError:
-                return "响应解码失败"
+                return String(localized: "Response decoding failed")
             }
         }
     }

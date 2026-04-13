@@ -55,11 +55,11 @@ class ServiceLocalWhisper {
         var errorDescription: String? {
             switch self {
             case .modelNotLoaded:
-                return "WhisperKit 模型尚未加载，请稍候"
+                return String(localized: "WhisperKit model not loaded yet, please wait")
             case .noAudioData:
-                return "没有音频数据可供转录"
+                return String(localized: "No audio data available for transcription")
             case .transcriptionFailed(let reason):
-                return "本地转录失败: \(reason)"
+                return String(localized: "Local transcription failed: \(reason)")
             }
         }
     }
@@ -79,7 +79,7 @@ class ServiceLocalWhisper {
     /// 建议在 AppDelegate 启动时调用以预热模型。
     func loadModel() async throws {
         isModelLoading = true
-        Log.i("LocalWhisper: 正在加载模型...")
+        Log.i(LocaleManager.shared.logLocalized("LocalWhisper: loading model..."))
 
         do {
             let config = WhisperKitConfig(model: EngineeringOptions.localWhisperModel, download: true)
@@ -88,7 +88,7 @@ class ServiceLocalWhisper {
             self.whisperKit = kit
             self.isModelLoaded = true
             self.isModelLoading = false
-            Log.i("LocalWhisper: 模型加载完成")
+            Log.i(LocaleManager.shared.logLocalized("LocalWhisper: model loaded"))
         } catch {
             self.isModelLoading = false
             throw error
@@ -116,7 +116,8 @@ class ServiceLocalWhisper {
             throw LocalWhisperError.noAudioData
         }
 
-        Log.i("LocalWhisper: 开始转录，采样点数: \(samples.count)，时长: \(String(format: "%.1f", Double(samples.count) / 16000.0))秒")
+        let lm = LocaleManager.shared
+        Log.i(lm.logLocalized("LocalWhisper: starting transcription, sample count:") + " \(samples.count), " + lm.logLocalized("duration:") + " \(String(format: "%.1f", Double(samples.count) / 16000.0))s")
 
         // 配置解码选项
         var options = DecodingOptions()
@@ -179,9 +180,9 @@ class ServiceLocalWhisper {
         }
 
         if text.isEmpty {
-            Log.i("LocalWhisper: 转录结果为空")
+            Log.i(lm.logLocalized("LocalWhisper: transcription result is empty"))
         } else {
-            Log.i("LocalWhisper: 转录完成: \(text)")
+            Log.i(lm.logLocalized("LocalWhisper: transcription complete:") + " \(text)")
         }
 
         return text

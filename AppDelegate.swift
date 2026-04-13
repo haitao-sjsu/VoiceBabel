@@ -1,38 +1,27 @@
 // AppDelegate.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// WhisperUtil - macOS menu bar speech-to-text tool
 //
-// 组合根（Composition Root）—— 应用程序委托，负责初始化所有组件并通过回调连接。
+// Composition Root — initializes all components and connects them via callbacks.
 //
-// 职责：
-//   1. 加载运行时配置（Config.load() ← UserSettings + EngineeringOptions）
-//   2. 创建并连接所有组件：AudioRecorder、各 Service、RecordingController、
-//      StatusBarController、HotkeyManager、NetworkHealthMonitor、SettingsWindowController
-//   3. 通过 Combine 订阅 SettingsStore 的 @Published 属性，实时将设置变更传播到各组件
-//   4. 异步预加载 WhisperKit 本地模型
-//   5. 管理应用生命周期（优雅退出：等待录音/处理完成后再退出）
+// Responsibilities:
+//   1. Load runtime config (Config.load() <- UserSettings + EngineeringOptions)
+//   2. Create and connect all components
+//   3. Subscribe to SettingsStore changes via Combine, propagate to components
+//   4. Async preload WhisperKit local model
+//   5. Manage app lifecycle (graceful quit: wait for recording/processing to finish)
 //
-// 组件连接方式：
-//   - HotkeyManager → RecordingController（通过闭包回调触发录音开始/停止/切换/取消）
-//   - RecordingController → StatusBarController（通过 onStateChange/onError 回调更新 UI）
-//   - SettingsStore → RecordingController/StatusBarController（通过 Combine $publisher 实时更新）
-//   - NetworkHealthMonitor → RecordingController/StatusBarController（通过 onCloudRecovered 回调恢复网络模式）
-//
-// 依赖：
-//   - Config, SettingsStore：配置管理
-//   - AudioRecorder：音频采集
-//   - ServiceCloudOpenAI, ServiceRealtimeOpenAI, ServiceLocalWhisper, ServiceTextCleanup：转写后端
-//   - RecordingController：核心状态机
-//   - StatusBarController, SettingsWindowController：UI
-//   - HotkeyManager：快捷键
-//   - NetworkHealthMonitor：网络恢复探测
-//   - TextInputter：文字输入
+// Dependencies:
+//   - Config, SettingsStore, LocaleManager
+//   - AudioRecorder, Services, RecordingController
+//   - StatusBarController, SettingsWindowController
+//   - HotkeyManager, NetworkHealthMonitor, TextInputter
 
 import Cocoa
 import Combine
 
 class AppDelegate: NSObject, NSApplicationDelegate {
 
-    // MARK: - 组件
+    // MARK: - Components
 
     private var statusBarController: StatusBarController!
     private var recordingController: RecordingController!
@@ -49,71 +38,71 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindowController: SettingsWindowController!
     private var cancellables = Set<AnyCancellable>()
 
-    /// 标记当前录音是否由 Push-to-Talk 触发（用于区分 PTT 和双击模式）
     private var isPushToTalkActive = false
-
-    /// 标记是否有待处理的退出请求（等待录音/处理完成后退出）
     private var pendingQuit = false
 
-    // MARK: - 生命周期
+    // MARK: - Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        Log.i("WhisperUtil 启动中...")
-        Log.i("日志文件路径: \(Log.logFilePath)")
+        let lm = LocaleManager.shared
+        Log.i(lm.logLocalized("WhisperUtil starting..."))
+        Log.i(lm.logLocalized("Log file path:") + " \(Log.logFilePath)")
 
         settingsStore = SettingsStore.shared
 
         config = Config.load()
-        Log.i("配置: 模型=\(config.whisperModel), 快捷键=Option键手势")
+        Log.i(lm.logLocalized("Config:") + " model=\(config.whisperModel), hotkey=Option gesture")
 
         setupComponents()
 
         let apiModeDescription: String
         switch config.defaultApiMode {
-        case "realtime": apiModeDescription = "实时 (WebSocket)"
-        case "cloud":    apiModeDescription = "网络 API (gpt-4o-transcribe)"
-        default:         apiModeDescription = "本地识别 (WhisperKit)"
+        case "realtime": apiModeDescription = "Realtime (WebSocket)"
+        case "cloud":    apiModeDescription = "Cloud API (gpt-4o-transcribe)"
+        default:         apiModeDescription = "Local (WhisperKit)"
         }
-        Log.i("WhisperUtil 已启动 — API模式: \(apiModeDescription), 发送模式: \(StatusBarController.AutoSendMode.from(config.autoSendMode).displayName)")
+        Log.i(lm.logLocalized("WhisperUtil started") + " — API mode: \(apiModeDescription), send mode: \(StatusBarController.AutoSendMode.from(config.autoSendMode).displayName)")
 
-        // 异步预加载本地 WhisperKit 模型
-        statusBarController.showNotification(title: "WhisperKit", message: "正在加载语音识别模型，首次使用需下载...")
+        // Async preload WhisperKit model
+        statusBarController.showNotification(title: "WhisperKit", message: String(localized: "Loading speech recognition model, first use requires download..."))
         Task {
             do {
                 try await localWhisperService.loadModel()
-                Log.i("WhisperKit 模型预加载完成")
+                Log.i(lm.logLocalized("WhisperKit model preload complete"))
                 await MainActor.run {
-                    statusBarController.showNotification(title: "WhisperKit", message: "模型加载完成，本地识别已就绪")
+                    statusBarController.showNotification(title: "WhisperKit", message: String(localized: "Model loaded, local recognition ready"))
                 }
             } catch {
-                Log.e("WhisperKit 模型预加载失败: \(error.localizedDescription)")
+                Log.e(lm.logLocalized("WhisperKit model preload failed:") + " \(error.localizedDescription)")
                 await MainActor.run {
-                    statusBarController.showNotification(title: "WhisperKit", message: "模型加载失败: \(error.localizedDescription)")
+                    statusBarController.showNotification(title: "WhisperKit", message: String(localized: "Model loading failed: \(error.localizedDescription)"))
                 }
             }
         }
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        let lm = LocaleManager.shared
         let state = recordingController.currentState
         if state == .idle || state == .error {
-            Log.i("收到退出请求，当前空闲，立即退出")
+            Log.i(lm.logLocalized("Quit requested, currently idle, quitting now"))
             return .terminateNow
         }
-        // Recording or processing in progress — wait for completion
-        Log.i("收到退出请求，当前状态: \(state)，等待完成后退出...")
+        Log.i(lm.logLocalized("Quit requested, current state:") + " \(state)" + lm.logLocalized(", waiting for completion..."))
         pendingQuit = true
         return .terminateLater
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        Log.i("WhisperUtil 正在退出...")
+        Log.i(LocaleManager.shared.logLocalized("WhisperUtil quitting..."))
         hotkeyManager?.stopMonitoring()
     }
 
-    // MARK: - 初始化
+    // MARK: - Setup
 
     private func setupComponents() {
+        let lm = LocaleManager.shared
+
         audioRecorder = AudioRecorder()
         textInputter = TextInputter()
 
@@ -146,7 +135,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             config: config
         )
 
-        // 设置默认 API 模式
         let defaultMode: StatusBarController.ApiMode
         switch config.defaultApiMode {
         case "realtime": defaultMode = .realtime
@@ -156,23 +144,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         recordingController.preferredApiMode = defaultMode
         recordingController.currentApiMode = defaultMode
 
-        // 初始化网络健康探测器
         networkHealthMonitor = NetworkHealthMonitor(apiKey: config.openaiApiKey)
         networkHealthMonitor.onCloudRecovered = { [weak self] in
             guard let self = self else { return }
             self.recordingController.recoverFromFallback()
-            // fallback 模式 UI 已通过 setApiMode 处理
             self.statusBarController.setApiMode(self.recordingController.currentApiMode)
             self.statusBarController.updateState(self.recordingController.currentState)
-            self.statusBarController.showNotification(title: "WhisperUtil", message: "网络已恢复，已切回网络 API")
+            self.statusBarController.showNotification(title: "WhisperUtil", message: String(localized: "Network recovered, switched back to Cloud API"))
         }
 
-        // 网络回退时的探测启动逻辑在 onError 回调中处理
         recordingController.autoSendMode = StatusBarController.AutoSendMode.from(config.autoSendMode)
         recordingController.smartModeWaitDuration = config.smartModeWaitDuration
         recordingController.textCleanupMode = TextCleanupMode.from(config.textCleanupMode)
 
-        // 初始化快捷键管理器（Option 键手势）
         hotkeyManager = HotkeyManager()
         hotkeyManager.onPushToTalkStart = { [weak self] in
             guard let self = self else { return }
@@ -204,16 +188,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         hotkeyManager.startMonitoring()
 
-        // 初始化菜单栏（简化：只需 API 模式）
         statusBarController = StatusBarController(apiMode: recordingController.currentApiMode)
 
-        // 创建设置窗口
         settingsWindowController = SettingsWindowController(settingsStore: settingsStore)
         statusBarController.onOpenSettings = { [weak self] in
             self?.settingsWindowController.showSettings()
         }
 
-        // 设置菜单栏回调
         statusBarController.onTranscribeToggle = { [weak self] in
             self?.recordingController.toggleRecording(mode: .transcribe)
         }
@@ -224,7 +205,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSApplication.shared.terminate(nil)
         }
 
-        // Combine 监听设置变更
+        // Combine subscriptions for settings changes
         settingsStore.$defaultApiMode.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] modeString in
             guard let self = self else { return }
             let mode: StatusBarController.ApiMode
@@ -235,41 +216,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             self.recordingController.userDidChangeApiMode(mode)
             self.networkHealthMonitor.stopMonitoring()
-            // fallback 模式 UI 已通过 setApiMode 处理
             self.statusBarController.setApiMode(mode)
-            Log.i("设置: API 模式切换为 \(modeString)")
+            Log.i(lm.logLocalized("Settings: API mode changed to") + " \(modeString)")
         }.store(in: &cancellables)
 
         settingsStore.$autoSendMode.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] modeString in
             self?.recordingController.autoSendMode = StatusBarController.AutoSendMode.from(modeString)
-            Log.i("设置: 发送模式切换为 \(modeString)")
+            Log.i(lm.logLocalized("Settings: Send mode changed to") + " \(modeString)")
         }.store(in: &cancellables)
 
         settingsStore.$smartModeWaitDuration.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] duration in
             self?.recordingController.smartModeWaitDuration = duration
-            Log.i("设置: 延迟时间切换为 \(Int(duration))秒")
+            Log.i(lm.logLocalized("Settings: Delay changed to") + " \(Int(duration))s")
         }.store(in: &cancellables)
 
         settingsStore.$textCleanupMode.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] modeString in
             self?.recordingController.textCleanupMode = TextCleanupMode(rawValue: modeString) ?? .off
-            Log.i("设置: 文本优化切换为 \(modeString)")
+            Log.i(lm.logLocalized("Settings: Text cleanup changed to") + " \(modeString)")
         }.store(in: &cancellables)
 
         settingsStore.$playSound.receive(on: DispatchQueue.main).sink { [weak self] value in
             self?.recordingController.playSound = value
-            Log.i("设置: 提示音 \(value ? "开启" : "关闭")")
+            Log.i(lm.logLocalized("Settings: Sound effects") + " \(value ? "on" : "off")")
         }.store(in: &cancellables)
 
         settingsStore.$apiKeyVersion.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
             self?.rebuildServicesWithNewApiKey()
         }.store(in: &cancellables)
 
-        // 设置录音控制器回调
         recordingController.onStateChange = { [weak self] state in
             self?.statusBarController.updateState(state)
-            // Check if we have a pending quit request and the app is now idle
             if self?.pendingQuit == true && (state == .idle || state == .error) {
-                Log.i("处理完成，执行延迟退出")
+                Log.i(lm.logLocalized("Processing complete, executing delayed quit"))
                 NSApplication.shared.reply(toApplicationShouldTerminate: true)
             }
         }
@@ -280,10 +258,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self = self else { return }
             self.statusBarController.showNotification(title: "WhisperUtil", message: message)
 
-            // 进入回退模式时，更新菜单栏显示并启动网络探测
             if self.recordingController.isInFallbackMode && !self.networkHealthMonitor.isMonitoring {
                 self.statusBarController.setApiMode(.local)
-                // fallback 模式 UI 已通过 setApiMode(.local) 处理
                 self.networkHealthMonitor.startMonitoring()
             }
         }
@@ -291,27 +267,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusBarController.updateState(.idle)
     }
 
-    // MARK: - API Key 变更
+    // MARK: - API Key Change
 
-    /// 当 API Key 变更时重建所有依赖 API Key 的服务
     private func rebuildServicesWithNewApiKey() {
+        let lm = LocaleManager.shared
         let newKey = KeychainHelper.load() ?? ""
 
         if newKey.isEmpty {
-            Log.w("API Key 已清除，网络功能将不可用")
-            // 如果当前是网络模式，自动切换到本地模式
+            Log.w(lm.logLocalized("API Key cleared, network features unavailable"))
             if recordingController.currentApiMode != .local {
                 recordingController.userDidChangeApiMode(.local)
                 statusBarController.setApiMode(.local)
                 statusBarController.showNotification(
                     title: "WhisperUtil",
-                    message: "API Key 已清除，已切换到本地识别模式"
+                    message: String(localized: "API Key cleared, switched to local mode")
                 )
             }
             return
         }
 
-        // 重建服务
         whisperService = ServiceCloudOpenAI(
             apiKey: newKey,
             model: config.whisperModel,
@@ -324,14 +298,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         textCleanupService = ServiceTextCleanup(apiKey: newKey)
         networkHealthMonitor = NetworkHealthMonitor(apiKey: newKey)
 
-        // 重新注入到 RecordingController
         recordingController.updateServices(
             whisperService: whisperService,
             realtimeService: realtimeService,
             textCleanupService: textCleanupService
         )
 
-        // 恢复用户偏好的 API 模式
         let preferredMode: StatusBarController.ApiMode
         switch settingsStore.defaultApiMode {
         case "realtime": preferredMode = .realtime
@@ -341,10 +313,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         recordingController.userDidChangeApiMode(preferredMode)
         statusBarController.setApiMode(preferredMode)
 
-        Log.i("API Key 已更新，服务已重建，模式恢复为 \(settingsStore.defaultApiMode)")
+        Log.i(lm.logLocalized("API Key updated, services rebuilt, mode restored to") + " \(settingsStore.defaultApiMode)")
         statusBarController.showNotification(
             title: "WhisperUtil",
-            message: "API Key 已更新"
+            message: String(localized: "API Key updated")
         )
     }
 

@@ -53,6 +53,7 @@ final class SettingsStore: ObservableObject {
         static let smartModeWaitDuration = "smartModeWaitDuration"
         static let textCleanupMode = "textCleanupMode"
         static let translationTargetLanguage = "translationTargetLanguage"
+        static let appLanguage = "appLanguage"
     }
 
     @Published var defaultApiMode: String {
@@ -76,6 +77,12 @@ final class SettingsStore: ObservableObject {
     @Published var translationTargetLanguage: String {
         didSet { defaults.set(translationTargetLanguage, forKey: Keys.translationTargetLanguage) }
     }
+    @Published var appLanguage: String {
+        didSet {
+            defaults.set(appLanguage, forKey: Keys.appLanguage)
+            LocaleManager.shared.setLocale(appLanguage)
+        }
+    }
 
     @Published var apiKeyInput: String = ""
     @Published var hasApiKey: Bool = false
@@ -93,6 +100,10 @@ final class SettingsStore: ObservableObject {
         self.smartModeWaitDuration = defaults.object(forKey: Keys.smartModeWaitDuration) as? TimeInterval ?? UserSettings.smartModeWaitDuration
         self.textCleanupMode = defaults.object(forKey: Keys.textCleanupMode) as? String ?? UserSettings.textCleanupMode
         self.translationTargetLanguage = defaults.object(forKey: Keys.translationTargetLanguage) as? String ?? "en"
+        self.appLanguage = defaults.object(forKey: Keys.appLanguage) as? String ?? "system"
+
+        // Apply saved locale
+        LocaleManager.shared.setLocale(self.appLanguage)
 
         // 初始化 API Key 状态
         self.hasApiKey = KeychainHelper.exists()
@@ -113,10 +124,10 @@ final class SettingsStore: ObservableObject {
             apiKeyInput = ""
             apiKeyStatus = .unchecked
             apiKeyVersion += 1
-            Log.i("API Key 已保存到 Keychain")
+            Log.i(LocaleManager.shared.logLocalized("API Key saved to Keychain"))
         } else {
-            apiKeyStatus = .invalid("保存失败，请重试")
-            Log.e("API Key 保存到 Keychain 失败")
+            apiKeyStatus = .invalid(String(localized: "Save failed, please retry"))
+            Log.e(LocaleManager.shared.logLocalized("API Key save to Keychain failed"))
         }
     }
 
@@ -133,13 +144,13 @@ final class SettingsStore: ObservableObject {
         maskedApiKey = ""
         apiKeyStatus = .unchecked
         apiKeyVersion += 1
-        Log.i("API Key 已从 Keychain 清除")
+        Log.i(LocaleManager.shared.logLocalized("API Key cleared from Keychain"))
     }
 
     /// 验证 API Key（异步调用 /v1/models）
     func validateApiKey() {
         guard let key = KeychainHelper.load(), !key.isEmpty else {
-            apiKeyStatus = .invalid("未设置 API Key")
+            apiKeyStatus = .invalid(String(localized: "API Key not set"))
             return
         }
         isValidatingKey = true

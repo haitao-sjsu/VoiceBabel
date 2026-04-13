@@ -110,7 +110,7 @@ class HotkeyManager {
             return event
         }
 
-        Log.i("Option 键手势监听已启动")
+        Log.i(LocaleManager.shared.logLocalized("Option key gesture monitoring started"))
     }
 
     /// 停止监听
@@ -126,7 +126,7 @@ class HotkeyManager {
         cancelAllTimers()
         state = .idle
         wasOptionPressed = false
-        Log.i("Option 键手势监听已停止")
+        Log.i(LocaleManager.shared.logLocalized("Option key gesture monitoring stopped"))
     }
 
     // MARK: - 事件处理
@@ -164,14 +164,14 @@ class HotkeyManager {
     private func handleKeyDown(_ event: NSEvent) {
         // ESC 键（keyCode 53）：取消录音/处理
         if event.keyCode == 53 {
-            Log.i("检测到 ESC 键")
+            Log.i(LocaleManager.shared.logLocalized("ESC key detected"))
             onEscPressed?()
             return
         }
 
         if state == .optionDown || state == .waitingSecondTap {
             // Option 按住期间或等待双击期间按了其他键 → 取消检测，不干扰正常快捷键
-            Log.d("Option 手势取消：检测到其他按键 (keyCode: \(event.keyCode))")
+            Log.d("Option gesture cancelled: other key detected (keyCode: \(event.keyCode))")
             cancelAndReset()
         }
     }
@@ -190,7 +190,7 @@ class HotkeyManager {
             // 在双击窗口内再次按下 → 双击确认！
             cancelAllTimers()
             state = .idle
-            Log.i("检测到 Option 双击")
+            Log.i(LocaleManager.shared.logLocalized("Option double-tap detected"))
             onDoubleTap?()
 
         case .pushToTalkActive, .optionDown:
@@ -211,7 +211,7 @@ class HotkeyManager {
         case .pushToTalkActive:
             // Push-to-Talk 结束
             state = .idle
-            Log.i("Push-to-Talk 结束（Option 键松开）")
+            Log.i(LocaleManager.shared.logLocalized("Push-to-Talk ended (Option key released)"))
             onPushToTalkStop?()
 
         case .idle, .waitingSecondTap:
@@ -226,7 +226,7 @@ class HotkeyManager {
         let work = DispatchWorkItem { [weak self] in
             guard let self = self, self.state == .optionDown else { return }
             self.state = .pushToTalkActive
-            Log.i("Push-to-Talk 开始（Option 键按住 >\(EngineeringOptions.optionHoldThreshold)s）")
+            Log.i(LocaleManager.shared.logLocalized("Push-to-Talk started (Option key held") + " >\(EngineeringOptions.optionHoldThreshold)s)")
             self.onPushToTalkStart?()
         }
         holdTimer = work
@@ -238,7 +238,7 @@ class HotkeyManager {
         let work = DispatchWorkItem { [weak self] in
             guard let self = self, self.state == .waitingSecondTap else { return }
             self.state = .idle
-            Log.i("检测到 Option 单击")
+            Log.i(LocaleManager.shared.logLocalized("Option single-tap detected"))
             self.onSingleTap?()
         }
         doubleTapTimer = work

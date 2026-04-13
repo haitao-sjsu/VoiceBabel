@@ -74,14 +74,14 @@ class NetworkHealthMonitor {
         guard !isMonitoring else { return }
         isMonitoring = true
 
-        Log.i("NetworkHealthMonitor: 开始探测 Cloud API 可达性（间隔 \(Int(probeInterval)) 秒）")
+        Log.i(LocaleManager.shared.logLocalized("NetworkHealthMonitor: starting Cloud API probe") + " (interval \(Int(probeInterval))s)")
 
         // 启动网络路径监控
         pathMonitor = NWPathMonitor()
         pathMonitor?.pathUpdateHandler = { [weak self] path in
             let connected = path.status == .satisfied
             self?.hasNetwork = connected
-            Log.d("NetworkHealthMonitor: 网络状态 → \(connected ? "已连接" : "未连接")")
+            Log.d("NetworkHealthMonitor: network status -> \(connected ? "connected" : "disconnected")")
         }
         pathMonitor?.start(queue: DispatchQueue.global(qos: .utility))
 
@@ -102,7 +102,7 @@ class NetworkHealthMonitor {
         guard isMonitoring else { return }
         isMonitoring = false
 
-        Log.i("NetworkHealthMonitor: 停止探测")
+        Log.i(LocaleManager.shared.logLocalized("NetworkHealthMonitor: stopped probing"))
 
         probeTimer?.invalidate()
         probeTimer = nil
@@ -117,7 +117,7 @@ class NetworkHealthMonitor {
     private func probeCloudAPI() {
         // 没有网络接口时跳过探测
         guard hasNetwork else {
-            Log.d("NetworkHealthMonitor: 无网络，跳过探测")
+            Log.d("NetworkHealthMonitor: no network, skipping probe")
             return
         }
 
@@ -130,19 +130,19 @@ class NetworkHealthMonitor {
             guard let self = self, self.isMonitoring else { return }
 
             if let error = error {
-                Log.d("NetworkHealthMonitor: 探测失败 — \(error.localizedDescription)")
+                Log.d("NetworkHealthMonitor: probe failed - \(error.localizedDescription)")
                 return
             }
 
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
-                Log.i("NetworkHealthMonitor: Cloud API 已恢复可达")
+                Log.i(LocaleManager.shared.logLocalized("NetworkHealthMonitor: Cloud API recovered"))
                 DispatchQueue.main.async {
                     self.stopMonitoring()
                     self.onCloudRecovered?()
                 }
             } else {
                 let code = (response as? HTTPURLResponse)?.statusCode ?? -1
-                Log.d("NetworkHealthMonitor: 探测返回非 200 状态码: \(code)")
+                Log.d("NetworkHealthMonitor: probe returned non-200 status: \(code)")
             }
         }
         task.resume()

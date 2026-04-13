@@ -1,34 +1,37 @@
 // SettingsView.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// WhisperUtil - macOS menu bar speech-to-text tool
 //
-// SwiftUI 设置面板视图 —— 通过 SettingsStore 双向绑定所有用户可调参数。
+// SwiftUI settings panel — binds all user-adjustable parameters via SettingsStore.
 //
-// 职责：
-//   提供图形化的设置界面，让用户无需修改代码即可调整偏好。
-//   所有设置通过 @ObservedObject 绑定到 SettingsStore，变更即时持久化到 UserDefaults
-//   并通过 Combine 通知 AppDelegate 更新业务逻辑。
+// Responsibilities:
+//   Provides a graphical settings UI. All settings are bound to SettingsStore via
+//   @ObservedObject, changes are instantly persisted to UserDefaults and propagated
+//   via Combine to AppDelegate.
 //
-// 面板布局（4 个 Section）：
-//   1. 语言：识别语言选择（自动/中文/英文/日文/韩文）
-//   2. 转写：默认 API 模式（本地/网络/实时）、文本优化模式（关闭/自然/正式/口语）
-//   3. 翻译：输出语言选择（英/中/日/韩/法/德/西）
-//   4. 通用：发送模式（仅转写/自动发送/延迟发送）、延迟时间 Stepper、提示音开关
+// Panel layout (5 Sections):
+//   1. API Key: OpenAI API Key input and validation
+//   2. Language: Recognition language selection
+//   3. Transcription: Default API mode, text cleanup mode
+//   4. Translation: Output language selection
+//   5. General: Interface language, send mode, delay stepper, sound toggle
 //
-// 依赖：
-//   - SettingsStore：ObservableObject 单例，持久化用户偏好
+// Dependencies:
+//   - SettingsStore: ObservableObject singleton, persists user preferences
+//   - LocaleManager: Manages UI locale for instant language switching
 //
-// 架构角色：
-//   嵌入在 SettingsWindowController 的 NSHostingController 中显示。
-//   由 StatusBarController 的"设置..."菜单项触发打开。
+// Architecture:
+//   Embedded in SettingsWindowController's NSHostingController.
+//   Triggered by StatusBarController's "Settings..." menu item.
 
 import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var store: SettingsStore
+    @ObservedObject var localeManager = LocaleManager.shared
 
     var body: some View {
         Form {
-            // MARK: - API 密钥
+            // MARK: - API Key
             Section {
                 HStack {
                     Text("OpenAI API Key")
@@ -45,13 +48,13 @@ struct SettingsView: View {
                     }
                 }
 
-                // 状态行：验证结果 / 未设置提示 + 操作按钮
+                // Status line: validation result / not-set hint + action buttons
                 HStack(spacing: 6) {
                     if store.hasApiKey {
                         switch store.apiKeyStatus {
                         case .valid:
                             Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                            Text("密钥有效").foregroundColor(.green).font(.caption)
+                            Text("API Key Valid").foregroundColor(.green).font(.caption)
                         case .invalid(let message):
                             Image(systemName: "xmark.circle.fill").foregroundColor(.red)
                             Text(message).foregroundColor(.red).font(.caption)
@@ -60,57 +63,75 @@ struct SettingsView: View {
                         }
                     } else {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
-                        Text("需要 API Key 才能使用网络转写和翻译功能")
+                        Text("API Key required for cloud transcription and translation")
                             .foregroundColor(.secondary).font(.caption)
                     }
 
                     Spacer()
 
                     if store.hasApiKey {
-                        Button("验证") { store.validateApiKey() }
+                        Button("Validate") { store.validateApiKey() }
                             .disabled(store.isValidatingKey)
-                        Button("清除") { store.clearApiKey() }
+                        Button("Clear") { store.clearApiKey() }
                     } else {
-                        Link("获取 API Key",
+                        Link("Get API Key",
                              destination: URL(string: "https://platform.openai.com/api-keys")!)
-                        Button("验证") { store.saveAndValidateApiKey() }
+                        Button("Validate") { store.saveAndValidateApiKey() }
                             .disabled(store.apiKeyInput.isEmpty)
                     }
                 }
             } header: {
-                Text("API 密钥")
+                Text("API Key")
             }
 
-            // MARK: - 语言
-            Section("语言") {
-                Picker("识别语言", selection: $store.whisperLanguage) {
-                    Text("自动检测").tag("")
-                    Text("中文").tag("zh")
+            // MARK: - Language
+            Section("Language") {
+                Picker("Recognition Language", selection: $store.whisperLanguage) {
+                    Text("Auto Detect").tag("")
+                    Text("Same as Interface").tag("ui")
+                    Divider()
                     Text("English").tag("en")
+                    Text("简体中文").tag("zh")
+                    Text("繁體中文").tag("zh-Hant")
                     Text("日本語").tag("ja")
                     Text("한국어").tag("ko")
+                    Text("Español").tag("es")
+                    Text("Français").tag("fr")
+                    Text("Deutsch").tag("de")
+                    Text("Português").tag("pt")
+                    Text("Русский").tag("ru")
+                    Text("العربية").tag("ar")
+                    Text("हिन्दी").tag("hi")
+                    Text("Bahasa Indonesia").tag("id")
+                    Text("ไทย").tag("th")
+                    Text("Tiếng Việt").tag("vi")
+                    Text("Türkçe").tag("tr")
+                    Text("Polski").tag("pl")
+                    Text("Nederlands").tag("nl")
+                    Text("Italiano").tag("it")
+                    Text("Svenska").tag("sv")
                 }
             }
 
-            // MARK: - 转写
-            Section("转写") {
-                Picker("默认 API 模式", selection: $store.defaultApiMode) {
-                    Text("本地识别 (WhisperKit)").tag("local")
-                    Text("网络 API").tag("cloud")
-                    Text("实时 API").tag("realtime")
+            // MARK: - Transcription
+            Section("Transcription") {
+                Picker("Default API Mode", selection: $store.defaultApiMode) {
+                    Text("Local (WhisperKit)").tag("local")
+                    Text("Cloud API").tag("cloud")
+                    Text("Realtime API").tag("realtime")
                 }
 
-                Picker("文本优化", selection: $store.textCleanupMode) {
-                    Text("关闭").tag("off")
-                    Text("自然润色").tag("neutral")
-                    Text("正式风格").tag("formal")
-                    Text("口语风格").tag("casual")
+                Picker("Text Cleanup", selection: $store.textCleanupMode) {
+                    Text("Off").tag("off")
+                    Text("Natural").tag("neutral")
+                    Text("Formal").tag("formal")
+                    Text("Casual").tag("casual")
                 }
             }
 
-            // MARK: - 翻译
-            Section("翻译") {
-                Picker("输出语言", selection: $store.translationTargetLanguage) {
+            // MARK: - Translation
+            Section("Translation") {
+                Picker("Output Language", selection: $store.translationTargetLanguage) {
                     Text("English").tag("en")
                     Text("中文").tag("zh")
                     Text("日本語").tag("ja")
@@ -121,28 +142,37 @@ struct SettingsView: View {
                 }
             }
 
-            // MARK: - 通用
-            Section("通用") {
-                Picker("发送模式", selection: $store.autoSendMode) {
-                    Text("仅转写").tag("off")
-                    Text("转写+自动发送").tag("always")
-                    Text("转写+延迟发送").tag("smart")
+            // MARK: - General
+            Section("General") {
+                Picker("Interface Language", selection: $store.appLanguage) {
+                    Text("Follow System").tag("system")
+                    Divider()
+                    ForEach(LocaleManager.supportedLanguages, id: \.code) { lang in
+                        Text(lang.name).tag(lang.code)
+                    }
+                }
+
+                Picker("Send Mode", selection: $store.autoSendMode) {
+                    Text("Transcribe Only").tag("off")
+                    Text("Transcribe + Auto Send").tag("always")
+                    Text("Transcribe + Delayed Send").tag("smart")
                 }
 
                 if store.autoSendMode == "smart" {
                     Stepper(
-                        "延迟时间: \(Int(store.smartModeWaitDuration)) 秒",
+                        "Delay: \(Int(store.smartModeWaitDuration)) seconds",
                         value: $store.smartModeWaitDuration,
                         in: 2...15,
                         step: 1
                     )
                 }
 
-                Toggle("播放提示音", isOn: $store.playSound)
+                Toggle("Play Sound Effects", isOn: $store.playSound)
             }
         }
         .formStyle(.grouped)
         .frame(width: 440)
         .padding()
+        .environment(\.locale, localeManager.currentLocale)
     }
 }

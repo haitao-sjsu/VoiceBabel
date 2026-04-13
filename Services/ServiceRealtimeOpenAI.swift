@@ -84,16 +84,16 @@ class ServiceRealtimeOpenAI: NSObject {
     /// 建立 WebSocket 连接
     func connect() {
         guard connectionState == .disconnected else {
-            Log.w("Realtime: 已经连接或正在连接中")
+            Log.w(LocaleManager.shared.logLocalized("Realtime: already connected or connecting"))
             return
         }
 
-        Log.i("Realtime: 正在连接 WebSocket... URL: \(realtimeURL)")
+        Log.i(LocaleManager.shared.logLocalized("Realtime: connecting WebSocket...") + " URL: \(realtimeURL)")
         connectionState = .connecting
         onConnectionStateChange?(.connecting)
 
         guard let url = URL(string: realtimeURL) else {
-            Log.e("Realtime: 无效的 URL: \(realtimeURL)")
+            Log.e(LocaleManager.shared.logLocalized("Realtime: invalid URL:") + " \(realtimeURL)")
             let error = RealtimeError.invalidURL
             onError?(error)
             return
@@ -102,12 +102,12 @@ class ServiceRealtimeOpenAI: NSObject {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("realtime=v1", forHTTPHeaderField: "OpenAI-Beta")
-        Log.d("Realtime: 请求头已设置 (Authorization + OpenAI-Beta)")
+        Log.d("Realtime: request headers set (Authorization + OpenAI-Beta)")
 
         urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
         webSocket = urlSession?.webSocketTask(with: request)
         webSocket?.resume()
-        Log.d("Realtime: WebSocket task 已启动")
+        Log.d("Realtime: WebSocket task started")
 
         // 开始接收消息
         receiveMessage()
@@ -145,11 +145,11 @@ class ServiceRealtimeOpenAI: NSObject {
         // 打印完整的配置 JSON 用于调试
         if let jsonData = try? JSONSerialization.data(withJSONObject: sessionConfig, options: .prettyPrinted),
            let jsonStr = String(data: jsonData, encoding: .utf8) {
-            Log.d("Realtime: 发送会话配置:\n\(jsonStr)")
+            Log.d("Realtime: sending session config:\n\(jsonStr)")
         }
 
         sendJSON(sessionConfig)
-        Log.i("Realtime: 已发送转录会话配置（gpt-4o-transcribe，语言: \(language.isEmpty ? "自动" : language)）")
+        Log.i(LocaleManager.shared.logLocalized("Realtime: transcription session config sent") + " (gpt-4o-transcribe, lang: \(language.isEmpty ? "auto" : language))")
     }
 
     /// 发送音频块（PCM 16-bit 数据）
@@ -179,7 +179,7 @@ class ServiceRealtimeOpenAI: NSObject {
         ]
 
         sendJSON(message)
-        Log.i("Realtime: 已提交音频缓冲区")
+        Log.i(LocaleManager.shared.logLocalized("Realtime: audio buffer committed"))
     }
 
     /// 断开连接
@@ -187,7 +187,7 @@ class ServiceRealtimeOpenAI: NSObject {
         guard connectionState != .disconnected else { return }
         connectionState = .disconnected
 
-        Log.i("Realtime: 正在断开连接...")
+        Log.i(LocaleManager.shared.logLocalized("Realtime: disconnecting..."))
         webSocket?.cancel(with: .normalClosure, reason: nil)
         webSocket = nil
         urlSession?.invalidateAndCancel()
@@ -207,14 +207,14 @@ class ServiceRealtimeOpenAI: NSObject {
     private func sendJSON(_ dict: [String: Any]) {
         guard let data = try? JSONSerialization.data(withJSONObject: dict),
               let jsonString = String(data: data, encoding: .utf8) else {
-            Log.e("Realtime: JSON 序列化失败")
+            Log.e(LocaleManager.shared.logLocalized("Realtime: JSON serialization failed"))
             return
         }
 
         let message = URLSessionWebSocketTask.Message.string(jsonString)
         webSocket?.send(message) { error in
             if let error = error {
-                Log.e("Realtime: 发送消息失败 - \(error)")
+                Log.e("Realtime: send message failed - \(error)")
             }
         }
     }
@@ -237,7 +237,7 @@ class ServiceRealtimeOpenAI: NSObject {
                 if case .disconnected = self.connectionState {
                     return
                 }
-                Log.e("Realtime: 接收消息失败 - \(error)")
+                Log.e("Realtime: receive message failed - \(error)")
                 self.connectionState = .disconnected
                 DispatchQueue.main.async {
                     self.onConnectionStateChange?(.disconnected)
@@ -274,26 +274,26 @@ class ServiceRealtimeOpenAI: NSObject {
         guard let data = text.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let type = json["type"] as? String else {
-            Log.w("Realtime: 无法解析 JSON 消息: \(text.prefix(200))")
+            Log.w(LocaleManager.shared.logLocalized("Realtime: cannot parse JSON message:") + " \(text.prefix(200))")
             return
         }
 
         switch type {
         case "transcription_session.created":
-            Log.i("Realtime: 转录会话已创建")
+            Log.i(LocaleManager.shared.logLocalized("Realtime: transcription session created"))
             connectionState = .connected
             onConnectionStateChange?(.connected)
             configureSession(language: language)
 
         case "transcription_session.updated":
-            Log.i("Realtime: 转录会话已配置，状态 → configured")
+            Log.i(LocaleManager.shared.logLocalized("Realtime: transcription session configured, state -> configured"))
             connectionState = .configured
             onConnectionStateChange?(.configured)
 
         case "conversation.item.input_audio_transcription.delta":
             if let delta = json["delta"] as? String, !delta.isEmpty {
                 accumulatedTranscription += delta
-                Log.d("Realtime: 转录增量 - \(delta)")
+                Log.d("Realtime: transcription delta - \(delta)")
                 DispatchQueue.main.async {
                     self.onTranscriptionDelta?(delta)
                 }
@@ -301,7 +301,7 @@ class ServiceRealtimeOpenAI: NSObject {
 
         case "conversation.item.input_audio_transcription.completed":
             if let transcript = json["transcript"] as? String {
-                Log.i("Realtime: 一段转录完成 - \(transcript)")
+                Log.i(LocaleManager.shared.logLocalized("Realtime: segment transcription complete") + " - \(transcript)")
                 accumulatedTranscription = ""
                 DispatchQueue.main.async {
                     self.onTranscriptionComplete?(transcript)
@@ -309,22 +309,22 @@ class ServiceRealtimeOpenAI: NSObject {
             }
 
         case "input_audio_buffer.committed":
-            Log.d("Realtime: 音频缓冲区已确认提交")
+            Log.d("Realtime: audio buffer commit confirmed")
 
         case "input_audio_buffer.speech_started":
-            Log.d("Realtime: 检测到语音开始")
+            Log.d("Realtime: speech started detected")
 
         case "input_audio_buffer.speech_stopped":
-            Log.d("Realtime: 检测到语音结束")
+            Log.d("Realtime: speech stopped detected")
 
         case "error":
             if let errorInfo = json["error"] as? [String: Any],
                let errorMessage = errorInfo["message"] as? String {
-                Log.e("Realtime: API 错误 - \(errorMessage)")
+                Log.e(LocaleManager.shared.logLocalized("Realtime: API error") + " - \(errorMessage)")
                 // 打印完整错误信息用于调试
                 if let errorData = try? JSONSerialization.data(withJSONObject: errorInfo, options: .prettyPrinted),
                    let errorStr = String(data: errorData, encoding: .utf8) {
-                    Log.e("Realtime: 错误详情:\n\(errorStr)")
+                    Log.e("Realtime: error details:\n\(errorStr)")
                 }
                 let error = RealtimeError.apiError(errorMessage)
                 DispatchQueue.main.async {
@@ -333,7 +333,7 @@ class ServiceRealtimeOpenAI: NSObject {
             }
 
         default:
-            Log.d("Realtime: 收到事件 - \(type)")
+            Log.d("Realtime: received event - \(type)")
         }
     }
 
@@ -346,9 +346,9 @@ class ServiceRealtimeOpenAI: NSObject {
         var errorDescription: String? {
             switch self {
             case .invalidURL:
-                return "无效的 WebSocket URL"
+                return String(localized: "Invalid WebSocket URL")
             case .apiError(let message):
-                return "Realtime API 错误: \(message)"
+                return String(localized: "Realtime API error: \(message)")
             }
         }
     }
@@ -359,12 +359,12 @@ class ServiceRealtimeOpenAI: NSObject {
 extension ServiceRealtimeOpenAI: URLSessionWebSocketDelegate {
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
-        Log.i("Realtime: WebSocket 连接已建立")
+        Log.i(LocaleManager.shared.logLocalized("Realtime: WebSocket connection established"))
     }
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
-        let reasonStr = reason.flatMap { String(data: $0, encoding: .utf8) } ?? "无"
-        Log.w("Realtime: WebSocket 连接已关闭，代码: \(closeCode.rawValue)，原因: \(reasonStr)")
+        let reasonStr = reason.flatMap { String(data: $0, encoding: .utf8) } ?? "none"
+        Log.w(LocaleManager.shared.logLocalized("Realtime: WebSocket connection closed, code:") + " \(closeCode.rawValue), reason: \(reasonStr)")
         connectionState = .disconnected
         DispatchQueue.main.async {
             self.onConnectionStateChange?(.disconnected)

@@ -32,11 +32,12 @@ enum TextCleanupMode: String {
     case casual = "casual"
 
     var displayName: String {
+        let lm = LocaleManager.shared
         switch self {
-        case .off: return "关闭"
-        case .neutral: return "自然润色"
-        case .formal: return "正式风格"
-        case .casual: return "口语风格"
+        case .off: return lm.localized("Off")
+        case .neutral: return lm.localized("Natural")
+        case .formal: return lm.localized("Formal")
+        case .casual: return lm.localized("Casual")
         }
     }
 
@@ -105,7 +106,7 @@ class ServiceTextCleanup {
         }
 
         guard let url = URL(string: EngineeringOptions.chatCompletionsURL) else {
-            Log.e("文本优化: URL 无效")
+            Log.e(LocaleManager.shared.logLocalized("Text cleanup: URL invalid"))
             completion(.success(text))  // 失败时返回原始文本
             return
         }
@@ -139,33 +140,33 @@ class ServiceTextCleanup {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         } catch {
-            Log.e("文本优化: JSON 序列化失败: \(error.localizedDescription)")
+            Log.e(LocaleManager.shared.logLocalized("Text cleanup: JSON serialization failed:") + " \(error.localizedDescription)")
             completion(.success(text))  // 失败时返回原始文本
             return
         }
 
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                Log.e("文本优化: 网络错误: \(error.localizedDescription)")
+                Log.e(LocaleManager.shared.logLocalized("Text cleanup: network error:") + " \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                Log.e("文本优化: 无效响应")
+                Log.e(LocaleManager.shared.logLocalized("Text cleanup: invalid response"))
                 completion(.failure(CleanupError.invalidResponse))
                 return
             }
 
             guard let data = data else {
-                Log.e("文本优化: 没有返回数据")
+                Log.e(LocaleManager.shared.logLocalized("Text cleanup: no data returned"))
                 completion(.failure(CleanupError.noData))
                 return
             }
 
             if httpResponse.statusCode != 200 {
-                let errorMessage = String(data: data, encoding: .utf8) ?? "未知错误"
-                Log.e("文本优化: API 错误 (\(httpResponse.statusCode)): \(errorMessage)")
+                let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+                Log.e(LocaleManager.shared.logLocalized("Text cleanup: API error") + " (\(httpResponse.statusCode)): \(errorMessage)")
                 completion(.failure(CleanupError.apiError(httpResponse.statusCode, errorMessage)))
                 return
             }
@@ -178,14 +179,14 @@ class ServiceTextCleanup {
                    let message = firstChoice["message"] as? [String: Any],
                    let content = message["content"] as? String {
                     let cleanedText = content.trimmingCharacters(in: .whitespacesAndNewlines)
-                    Log.i("文本优化完成: \"\(text)\" → \"\(cleanedText)\"")
+                    Log.i(LocaleManager.shared.logLocalized("Text cleanup complete:") + " \"\(text)\" -> \"\(cleanedText)\"")
                     completion(.success(cleanedText))
                 } else {
-                    Log.e("文本优化: 响应解码失败")
+                    Log.e(LocaleManager.shared.logLocalized("Text cleanup: response decoding failed"))
                     completion(.failure(CleanupError.decodingError))
                 }
             } catch {
-                Log.e("文本优化: JSON 解析失败: \(error.localizedDescription)")
+                Log.e(LocaleManager.shared.logLocalized("Text cleanup: JSON parse failed:") + " \(error.localizedDescription)")
                 completion(.failure(CleanupError.decodingError))
             }
         }
@@ -204,13 +205,13 @@ class ServiceTextCleanup {
         var errorDescription: String? {
             switch self {
             case .invalidResponse:
-                return "文本优化: 无效的响应"
+                return String(localized: "Text cleanup: invalid response")
             case .noData:
-                return "文本优化: 没有返回数据"
+                return String(localized: "Text cleanup: no data returned")
             case .apiError(let code, let message):
-                return "文本优化: API 错误 (\(code)): \(message)"
+                return String(localized: "Text cleanup: API error (\(code)): \(message)")
             case .decodingError:
-                return "文本优化: 响应解码失败"
+                return String(localized: "Text cleanup: response decoding failed")
             }
         }
     }

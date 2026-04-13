@@ -202,6 +202,13 @@ enum EngineeringOptions {
     static let doubleTapWindow: TimeInterval = 0.5
 
     // ============================================================
+    // MARK: - Logging
+    // ============================================================
+
+    /// Log message language: "en" or "zh"
+    static let logLanguage = "en"
+
+    // ============================================================
     // MARK: - Internal timing
     // ============================================================
 

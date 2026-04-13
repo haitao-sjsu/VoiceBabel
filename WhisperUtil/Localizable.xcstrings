@@ -1,0 +1,855 @@
+{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "API Key": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "API 密钥" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "API 密鑰" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "APIキー" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "API 키" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Clave API" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Clé API" } },
+        "de": { "stringUnit": { "state": "translated", "value": "API-Schlüssel" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Chave API" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "API-ключ" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "مفتاح API" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "API कुंजी" } },
+        "id": { "stringUnit": { "state": "translated", "value": "Kunci API" } },
+        "th": { "stringUnit": { "state": "translated", "value": "คีย์ API" } },
+        "vi": { "stringUnit": { "state": "translated", "value": "Khóa API" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "API Anahtarı" } },
+        "pl": { "stringUnit": { "state": "translated", "value": "Klucz API" } },
+        "nl": { "stringUnit": { "state": "translated", "value": "API-sleutel" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Chiave API" } },
+        "sv": { "stringUnit": { "state": "translated", "value": "API-nyckel" } }
+      }
+    },
+    "API Key Valid": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "密钥有效" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "密鑰有效" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "APIキー有効" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "API 키 유효" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Clave API válida" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Clé API valide" } },
+        "de": { "stringUnit": { "state": "translated", "value": "API-Schlüssel gültig" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Chave API válida" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "API-ключ действителен" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "مفتاح API صالح" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "API कुंजी मान्य" } },
+        "id": { "stringUnit": { "state": "translated", "value": "Kunci API valid" } },
+        "th": { "stringUnit": { "state": "translated", "value": "คีย์ API ใช้ได้" } },
+        "vi": { "stringUnit": { "state": "translated", "value": "Khóa API hợp lệ" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "API Anahtarı geçerli" } },
+        "pl": { "stringUnit": { "state": "translated", "value": "Klucz API prawidłowy" } },
+        "nl": { "stringUnit": { "state": "translated", "value": "API-sleutel geldig" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Chiave API valida" } },
+        "sv": { "stringUnit": { "state": "translated", "value": "API-nyckel giltig" } }
+      }
+    },
+    "API Key required for cloud transcription and translation": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "需要 API Key 才能使用网络转写和翻译功能" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "需要 API Key 才能使用網路轉寫和翻譯功能" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "クラウド文字起こしと翻訳にはAPIキーが必要です" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "클라우드 전사 및 번역에 API 키가 필요합니다" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Se requiere clave API para transcripción y traducción en la nube" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Clé API requise pour la transcription et la traduction cloud" } },
+        "de": { "stringUnit": { "state": "translated", "value": "API-Schlüssel für Cloud-Transkription und Übersetzung erforderlich" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Chave API necessária para transcrição e tradução na nuvem" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Для облачной транскрипции и перевода требуется API-ключ" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "مفتاح API مطلوب للنسخ والترجمة السحابية" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "क्लाउड ट्रांसक्रिप्शन और अनुवाद के लिए API कुंजी आवश्यक" } },
+        "id": { "stringUnit": { "state": "translated", "value": "Kunci API diperlukan untuk transkripsi dan terjemahan cloud" } },
+        "th": { "stringUnit": { "state": "translated", "value": "ต้องใช้คีย์ API สำหรับการถอดเสียงและแปลภาษาบนคลาวด์" } },
+        "vi": { "stringUnit": { "state": "translated", "value": "Cần khóa API cho phiên âm và dịch thuật đám mây" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bulut transkripsiyon ve çeviri için API Anahtarı gerekli" } },
+        "pl": { "stringUnit": { "state": "translated", "value": "Klucz API wymagany do transkrypcji i tłumaczenia w chmurze" } },
+        "nl": { "stringUnit": { "state": "translated", "value": "API-sleutel vereist voor cloudtranscriptie en vertaling" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Chiave API necessaria per trascrizione e traduzione cloud" } },
+        "sv": { "stringUnit": { "state": "translated", "value": "API-nyckel krävs för molntranskription och översättning" } }
+      }
+    },
+    "Validate": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "验证" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "驗證" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "検証" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "검증" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Validar" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Valider" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Überprüfen" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Validar" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Проверить" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "تحقق" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "सत्यापित करें" } },
+        "id": { "stringUnit": { "state": "translated", "value": "Validasi" } },
+        "th": { "stringUnit": { "state": "translated", "value": "ตรวจสอบ" } },
+        "vi": { "stringUnit": { "state": "translated", "value": "Xác thực" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Doğrula" } },
+        "pl": { "stringUnit": { "state": "translated", "value": "Zweryfikuj" } },
+        "nl": { "stringUnit": { "state": "translated", "value": "Valideren" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Verifica" } },
+        "sv": { "stringUnit": { "state": "translated", "value": "Verifiera" } }
+      }
+    },
+    "Clear": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "清除" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "清除" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "クリア" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "지우기" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Borrar" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Effacer" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Löschen" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Limpar" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Очистить" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "مسح" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "साफ़ करें" } },
+        "id": { "stringUnit": { "state": "translated", "value": "Hapus" } },
+        "th": { "stringUnit": { "state": "translated", "value": "ล้าง" } },
+        "vi": { "stringUnit": { "state": "translated", "value": "Xóa" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Temizle" } },
+        "pl": { "stringUnit": { "state": "translated", "value": "Wyczyść" } },
+        "nl": { "stringUnit": { "state": "translated", "value": "Wissen" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Cancella" } },
+        "sv": { "stringUnit": { "state": "translated", "value": "Rensa" } }
+      }
+    },
+    "Get API Key": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "获取 API Key" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "取得 API Key" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "APIキーを取得" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "API 키 받기" } }
+      }
+    },
+    "Language": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "语言" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "語言" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "言語" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "언어" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Idioma" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Langue" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Sprache" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Idioma" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Язык" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "اللغة" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "भाषा" } },
+        "id": { "stringUnit": { "state": "translated", "value": "Bahasa" } },
+        "th": { "stringUnit": { "state": "translated", "value": "ภาษา" } },
+        "vi": { "stringUnit": { "state": "translated", "value": "Ngôn ngữ" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dil" } },
+        "pl": { "stringUnit": { "state": "translated", "value": "Język" } },
+        "nl": { "stringUnit": { "state": "translated", "value": "Taal" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Lingua" } },
+        "sv": { "stringUnit": { "state": "translated", "value": "Språk" } }
+      }
+    },
+    "Recognition Language": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "识别语言" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "辨識語言" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "認識言語" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "인식 언어" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Idioma de reconocimiento" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Langue de reconnaissance" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Erkennungssprache" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Idioma de reconhecimento" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Язык распознавания" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "لغة التعرف" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "पहचान भाषा" } },
+        "id": { "stringUnit": { "state": "translated", "value": "Bahasa pengenalan" } },
+        "th": { "stringUnit": { "state": "translated", "value": "ภาษาที่รู้จำ" } },
+        "vi": { "stringUnit": { "state": "translated", "value": "Ngôn ngữ nhận dạng" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tanıma dili" } },
+        "pl": { "stringUnit": { "state": "translated", "value": "Język rozpoznawania" } },
+        "nl": { "stringUnit": { "state": "translated", "value": "Herkenningstaal" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Lingua di riconoscimento" } },
+        "sv": { "stringUnit": { "state": "translated", "value": "Igenkänningsspråk" } }
+      }
+    },
+    "Auto Detect": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "自动检测" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "自動偵測" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "自動検出" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "자동 감지" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Detección automática" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Détection automatique" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Automatische Erkennung" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Detecção automática" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Автоопределение" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "اكتشاف تلقائي" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "स्वतः पहचान" } },
+        "id": { "stringUnit": { "state": "translated", "value": "Deteksi otomatis" } },
+        "th": { "stringUnit": { "state": "translated", "value": "ตรวจจับอัตโนมัติ" } },
+        "vi": { "stringUnit": { "state": "translated", "value": "Tự động phát hiện" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Otomatik algıla" } },
+        "pl": { "stringUnit": { "state": "translated", "value": "Automatyczne wykrywanie" } },
+        "nl": { "stringUnit": { "state": "translated", "value": "Automatisch detecteren" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Rilevamento automatico" } },
+        "sv": { "stringUnit": { "state": "translated", "value": "Automatisk identifiering" } }
+      }
+    },
+    "Same as Interface": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "与界面语言一致" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "與介面語言一致" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "インターフェース言語と同じ" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "인터페이스 언어와 동일" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Igual que la interfaz" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Identique à l'interface" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Wie Oberfläche" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Mesmo que a interface" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Как интерфейс" } }
+      }
+    },
+    "Transcription": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "转写" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "轉寫" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "文字起こし" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "전사" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Transcripción" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Transcription" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Transkription" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Transcrição" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Транскрипция" } },
+        "ar": { "stringUnit": { "state": "translated", "value": "النسخ" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "ट्रांसक्रिप्शन" } },
+        "id": { "stringUnit": { "state": "translated", "value": "Transkripsi" } },
+        "th": { "stringUnit": { "state": "translated", "value": "ถอดเสียง" } },
+        "vi": { "stringUnit": { "state": "translated", "value": "Phiên âm" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Transkripsiyon" } },
+        "pl": { "stringUnit": { "state": "translated", "value": "Transkrypcja" } },
+        "nl": { "stringUnit": { "state": "translated", "value": "Transcriptie" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Trascrizione" } },
+        "sv": { "stringUnit": { "state": "translated", "value": "Transkription" } }
+      }
+    },
+    "Default API Mode": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "默认 API 模式" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預設 API 模式" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "デフォルトAPIモード" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "기본 API 모드" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Modo API predeterminado" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Mode API par défaut" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Standard-API-Modus" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Modo API padrão" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Режим API по умолчанию" } }
+      }
+    },
+    "Local (WhisperKit)": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "本地识别 (WhisperKit)" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "本機辨識 (WhisperKit)" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ローカル (WhisperKit)" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "로컬 (WhisperKit)" } }
+      }
+    },
+    "Cloud API": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "网络 API" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "網路 API" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "クラウドAPI" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "클라우드 API" } }
+      }
+    },
+    "Realtime API": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "实时 API" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "即時 API" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "リアルタイムAPI" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "실시간 API" } }
+      }
+    },
+    "Text Cleanup": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "文本优化" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "文字優化" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "テキスト最適化" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "텍스트 정리" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Limpieza de texto" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Nettoyage du texte" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Textbereinigung" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Limpeza de texto" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Очистка текста" } }
+      }
+    },
+    "Off": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "关闭" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "關閉" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "オフ" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "끄기" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Desactivado" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Désactivé" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Aus" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Desativado" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Выкл" } }
+      }
+    },
+    "Natural": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "自然润色" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "自然潤色" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ナチュラル" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "자연스럽게" } }
+      }
+    },
+    "Formal": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正式风格" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正式風格" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "フォーマル" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "격식체" } }
+      }
+    },
+    "Casual": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "口语风格" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "口語風格" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "カジュアル" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "구어체" } }
+      }
+    },
+    "Translation": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "翻译" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "翻譯" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "翻訳" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "번역" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Traducción" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Traduction" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Übersetzung" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Tradução" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Перевод" } }
+      }
+    },
+    "Output Language": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "输出语言" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "輸出語言" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "出力言語" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "출력 언어" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Idioma de salida" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Langue de sortie" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Ausgabesprache" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Idioma de saída" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Язык вывода" } }
+      }
+    },
+    "General": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "通用" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "一般" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "一般" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "일반" } },
+        "es": { "stringUnit": { "state": "translated", "value": "General" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Général" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Allgemein" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Geral" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Основные" } }
+      }
+    },
+    "Interface Language": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "界面语言" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "介面語言" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "インターフェース言語" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "인터페이스 언어" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Idioma de interfaz" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Langue de l'interface" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Oberflächensprache" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Idioma da interface" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Язык интерфейса" } }
+      }
+    },
+    "Follow System": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "跟随系统" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "跟隨系統" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "システムに従う" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "시스템 따라가기" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Seguir sistema" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Suivre le système" } },
+        "de": { "stringUnit": { "state": "translated", "value": "System folgen" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Seguir sistema" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Как в системе" } }
+      }
+    },
+    "Send Mode": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "发送模式" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "傳送模式" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "送信モード" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "전송 모드" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Modo de envío" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Mode d'envoi" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Sendemodus" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Modo de envio" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Режим отправки" } }
+      }
+    },
+    "Transcribe Only": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "仅转写" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "僅轉寫" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "文字起こしのみ" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "전사만" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Solo transcribir" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Transcription seule" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Nur Transkription" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Apenas transcrever" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Только транскрипция" } }
+      }
+    },
+    "Transcribe + Auto Send": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "转写+自动发送" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "轉寫+自動傳送" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "文字起こし+自動送信" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "전사+자동 전송" } }
+      }
+    },
+    "Transcribe + Delayed Send": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "转写+延迟发送" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "轉寫+延遲傳送" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "文字起こし+遅延送信" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "전사+지연 전송" } }
+      }
+    },
+    "Delay: %lld seconds": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "延迟时间: %lld 秒" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "延遲時間: %lld 秒" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "遅延: %lld 秒" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "지연: %lld 초" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Retraso: %lld segundos" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Délai: %lld secondes" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Verzögerung: %lld Sekunden" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Atraso: %lld segundos" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Задержка: %lld сек" } }
+      }
+    },
+    "Play Sound Effects": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "播放提示音" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "播放提示音" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "サウンド効果を再生" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "효과음 재생" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Reproducir efectos de sonido" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Jouer les effets sonores" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Soundeffekte abspielen" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Reproduzir efeitos sonoros" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Воспроизводить звуки" } }
+      }
+    },
+    "🎤 Start Transcription (⌥)": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "🎤 开始转录 (⌥)" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "🎤 開始轉錄 (⌥)" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "🎤 文字起こし開始 (⌥)" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "🎤 전사 시작 (⌥)" } },
+        "es": { "stringUnit": { "state": "translated", "value": "🎤 Iniciar transcripción (⌥)" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "🎤 Démarrer la transcription (⌥)" } },
+        "de": { "stringUnit": { "state": "translated", "value": "🎤 Transkription starten (⌥)" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "🎤 Iniciar transcrição (⌥)" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "🎤 Начать транскрипцию (⌥)" } }
+      }
+    },
+    "🌐 Start Translation (⌥⌥)": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "🌐 开始翻译 (⌥⌥)" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "🌐 開始翻譯 (⌥⌥)" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "🌐 翻訳開始 (⌥⌥)" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "🌐 번역 시작 (⌥⌥)" } },
+        "es": { "stringUnit": { "state": "translated", "value": "🌐 Iniciar traducción (⌥⌥)" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "🌐 Démarrer la traduction (⌥⌥)" } },
+        "de": { "stringUnit": { "state": "translated", "value": "🌐 Übersetzung starten (⌥⌥)" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "🌐 Iniciar tradução (⌥⌥)" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "🌐 Начать перевод (⌥⌥)" } }
+      }
+    },
+    "Copy & Paste Last Transcription:": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "复制并粘贴上次转写:" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "複製並貼上上次轉寫:" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "前回の文字起こしをコピー&ペースト:" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "마지막 전사 복사 및 붙여넣기:" } }
+      }
+    },
+    "  (None)": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "  (无)" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "  (無)" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "  (なし)" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "  (없음)" } }
+      }
+    },
+    "Settings...": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "设置..." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "設定..." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "設定..." } },
+        "ko": { "stringUnit": { "state": "translated", "value": "설정..." } },
+        "es": { "stringUnit": { "state": "translated", "value": "Ajustes..." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Paramètres..." } },
+        "de": { "stringUnit": { "state": "translated", "value": "Einstellungen..." } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Configurações..." } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Настройки..." } }
+      }
+    },
+    "About WhisperUtil": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "关于 WhisperUtil" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "關於 WhisperUtil" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WhisperUtil について" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "WhisperUtil 정보" } }
+      }
+    },
+    "Quit": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "退出" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "結束" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "終了" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "종료" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Salir" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Quitter" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Beenden" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Sair" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Выход" } }
+      }
+    },
+    "⏹ Stop Recording": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "⏹ 停止录音" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "⏹ 停止錄音" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "⏹ 録音停止" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "⏹ 녹음 중지" } }
+      }
+    },
+    "⏳ Processing...": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "⏳ 处理中..." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "⏳ 處理中..." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "⏳ 処理中..." } },
+        "ko": { "stringUnit": { "state": "translated", "value": "⏳ 처리 중..." } }
+      }
+    },
+    "⏳ Waiting to Send... (tap ⌥ to cancel)": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "⏳ 等待发送... (单击⌥取消)" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "⏳ 等待傳送... (點擊⌥取消)" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "⏳ 送信待ち... (⌥でキャンセル)" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "⏳ 전송 대기... (⌥로 취소)" } }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "确定" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "確定" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "OK" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "확인" } }
+      }
+    },
+    "Version": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "版本" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "版本" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "バージョン" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "버전" } }
+      }
+    },
+    "Speech-to-text & translation tool": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "语音转文字 & 翻译工具" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "語音轉文字 & 翻譯工具" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "音声テキスト変換 & 翻訳ツール" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "음성 텍스트 변환 & 번역 도구" } }
+      }
+    },
+    "Powered by OpenAI Whisper API": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "使用 OpenAI Whisper API" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "使用 OpenAI Whisper API" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "OpenAI Whisper API 使用" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "OpenAI Whisper API 기반" } }
+      }
+    },
+    "Features:": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "功能:" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "功能:" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "機能:" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "기능:" } }
+      }
+    },
+    "Speech-to-text — recognize speech and output original text": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "语音转文字 - 识别语音并输出原文" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "語音轉文字 - 辨識語音並輸出原文" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "音声テキスト変換 — 音声を認識して原文を出力" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "음성 텍스트 변환 — 음성을 인식하여 원문 출력" } }
+      }
+    },
+    "Speech translation — recognize speech and translate": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "语音翻译 - 识别语音并翻译" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "語音翻譯 - 辨識語音並翻譯" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "音声翻訳 — 音声を認識して翻訳" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "음성 번역 — 음성을 인식하여 번역" } }
+      }
+    },
+    "WhisperUtil Settings": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "WhisperUtil 设置" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "WhisperUtil 設定" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WhisperUtil 設定" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "WhisperUtil 설정" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Ajustes de WhisperUtil" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Paramètres WhisperUtil" } },
+        "de": { "stringUnit": { "state": "translated", "value": "WhisperUtil Einstellungen" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Configurações do WhisperUtil" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Настройки WhisperUtil" } }
+      }
+    },
+    "Loading speech recognition model, first use requires download...": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在加载语音识别模型，首次使用需下载..." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在載入語音辨識模型，首次使用需下載..." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "音声認識モデルを読み込み中、初回はダウンロードが必要です..." } },
+        "ko": { "stringUnit": { "state": "translated", "value": "음성 인식 모델 로딩 중, 첫 사용 시 다운로드 필요..." } }
+      }
+    },
+    "Model loaded, local recognition ready": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "模型加载完成，本地识别已就绪" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "模型載入完成，本機辨識已就緒" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "モデル読み込み完了、ローカル認識準備完了" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "모델 로딩 완료, 로컬 인식 준비 완료" } }
+      }
+    },
+    "Model loading failed: %@": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "模型加载失败: %@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "模型載入失敗: %@" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "モデル読み込み失敗: %@" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "모델 로딩 실패: %@" } }
+      }
+    },
+    "Network recovered, switched back to Cloud API": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "网络已恢复，已切回网络 API" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "網路已恢復，已切回網路 API" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ネットワーク回復、クラウドAPIに切り替えました" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "네트워크 복구, 클라우드 API로 전환" } }
+      }
+    },
+    "API Key cleared, switched to local mode": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "API Key 已清除，已切换到本地识别模式" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "API Key 已清除，已切換到本機辨識模式" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "APIキーをクリア、ローカルモードに切り替えました" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "API 키 삭제됨, 로컬 모드로 전환" } }
+      }
+    },
+    "API Key updated": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "API Key 已更新" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "API Key 已更新" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "APIキーが更新されました" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "API 키 업데이트됨" } }
+      }
+    },
+    "Please configure OpenAI API Key in Settings": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "请先在设置中配置 OpenAI API Key" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "請先在設定中配置 OpenAI API Key" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "設定でOpenAI APIキーを設定してください" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "설정에서 OpenAI API 키를 구성해주세요" } }
+      }
+    },
+    "Microphone is in use by another app": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "麦克风正被其他应用使用" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "麥克風正被其他應用使用" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "マイクが他のアプリで使用中です" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "마이크가 다른 앱에서 사용 중입니다" } }
+      }
+    },
+    "WhisperKit model is loading, please wait...": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "WhisperKit 模型正在加载中，请稍候..." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "WhisperKit 模型正在載入中，請稍候..." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WhisperKitモデル読み込み中、お待ちください..." } },
+        "ko": { "stringUnit": { "state": "translated", "value": "WhisperKit 모델 로딩 중, 잠시 기다려주세요..." } }
+      }
+    },
+    "WhisperKit model not loaded yet, please try again later": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "WhisperKit 模型尚未加载，请稍候再试" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "WhisperKit 模型尚未載入，請稍候再試" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WhisperKitモデルが未ロードです、後でもう一度お試しください" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "WhisperKit 모델이 아직 로드되지 않았습니다, 나중에 다시 시도해주세요" } }
+      }
+    },
+    "Recording start failed: %@": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "录音启动失败: %@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "錄音啟動失敗: %@" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "録音開始失敗: %@" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "녹음 시작 실패: %@" } }
+      }
+    },
+    "WebSocket connection disconnected": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "WebSocket 连接断开" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "WebSocket 連接斷開" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WebSocket接続が切断されました" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "WebSocket 연결 끊김" } }
+      }
+    },
+    "Cloud API failed and cannot fall back to local transcription": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "网络 API 失败，且无法回退到本地转录" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "網路 API 失敗，且無法回退到本機轉錄" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "クラウドAPIが失敗し、ローカル転写にフォールバックできません" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "클라우드 API 실패, 로컬 전사로 전환 불가" } }
+      }
+    },
+    "Cloud API timed out, automatically switched to local recognition": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "网络 API 超时，已自动切换到本地识别" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "網路 API 逾時，已自動切換到本機辨識" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "クラウドAPIがタイムアウト、ローカル認識に自動切替" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "클라우드 API 시간 초과, 자동으로 로컬 인식으로 전환" } }
+      }
+    },
+    "Microphone permission denied, please authorize in System Settings": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "麦克风权限被拒绝，请在系统设置中授权" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "麥克風權限被拒絕，請在系統設定中授權" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "マイクの権限が拒否されました。システム設定で許可してください" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "마이크 권한이 거부되었습니다. 시스템 설정에서 권한을 부여해주세요" } }
+      }
+    },
+    "Audio engine creation failed": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "音频引擎创建失败" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "音訊引擎建立失敗" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "オーディオエンジンの作成に失敗しました" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "오디오 엔진 생성 실패" } }
+      }
+    },
+    "Audio format creation failed": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "音频格式创建失败" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "音訊格式建立失敗" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "オーディオフォーマットの作成に失敗しました" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "오디오 형식 생성 실패" } }
+      }
+    },
+    "Save failed, please retry": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "保存失败，请重试" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "儲存失敗，請重試" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "保存に失敗しました。再試行してください" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "저장 실패, 다시 시도해주세요" } }
+      }
+    },
+    "API Key not set": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "未设置 API Key" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "未設置 API Key" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "APIキーが設定されていません" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "API 키가 설정되지 않았습니다" } }
+      }
+    },
+    "API Key invalid or expired": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "API Key 无效或已过期" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "API Key 無效或已過期" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "APIキーが無効または期限切れです" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "API 키가 유효하지 않거나 만료됨" } }
+      }
+    },
+    "API Key insufficient permissions": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "API Key 权限不足" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "API Key 權限不足" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "APIキーの権限が不足しています" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "API 키 권한 부족" } }
+      }
+    },
+    "Realtime transcription error: %@": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "实时转录错误: %@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "即時轉錄錯誤: %@" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "リアルタイム文字起こしエラー: %@" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "실시간 전사 오류: %@" } }
+      }
+    },
+    "Network error: %@": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "网络错误: %@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "網路錯誤: %@" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ネットワークエラー: %@" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "네트워크 오류: %@" } }
+      }
+    },
+    "Invalid response": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "无效的响应" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "無效的回應" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "無効なレスポンス" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "잘못된 응답" } }
+      }
+    },
+    "No data returned": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "没有返回数据" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "沒有返回資料" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "データが返されませんでした" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "반환된 데이터 없음" } }
+      }
+    },
+    "Response decoding failed": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "响应解码失败" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "回應解碼失敗" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "レスポンスのデコードに失敗しました" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "응답 디코딩 실패" } }
+      }
+    },
+    "WhisperKit model not loaded yet, please wait": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "WhisperKit 模型尚未加载，请稍候" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "WhisperKit 模型尚未載入，請稍候" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WhisperKitモデルが未ロードです、お待ちください" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "WhisperKit 모델이 아직 로드되지 않았습니다, 기다려주세요" } }
+      }
+    },
+    "No audio data available for transcription": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "没有音频数据可供转录" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "沒有音訊資料可供轉錄" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "文字起こし用の音声データがありません" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "전사에 사용할 오디오 데이터 없음" } }
+      }
+    },
+    "Invalid WebSocket URL": {
+      "localizations": {
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "无效的 WebSocket URL" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "無效的 WebSocket URL" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "無効なWebSocket URL" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "잘못된 WebSocket URL" } }
+      }
+    }
+  }
+}

@@ -22,7 +22,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     init(settingsStore: SettingsStore) {
         let hostingController = NSHostingController(rootView: SettingsView(store: settingsStore))
         let window = NSWindow(contentViewController: hostingController)
-        window.title = "WhisperUtil 设置"
+        window.title = LocaleManager.shared.localized("WhisperUtil Settings")
         window.styleMask = [.titled, .closable]
         window.setContentSize(NSSize(width: 500, height: 560))
         window.center()
