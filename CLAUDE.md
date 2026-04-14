@@ -10,6 +10,49 @@ WhisperUtil is a macOS menu bar speech-to-text tool built with Swift. It support
 
 All three modes support transcription. Translation (to English) uses the Whisper HTTP API regardless of the selected mode.
 
+## Architecture
+
+```
+main.swift -> AppDelegate (Composition Root)
+                 |
+                 +-- Config/Config <-- Config/UserSettings (user preference defaults)
+                 |                 <-- Config/EngineeringOptions (engineering switches/constants)
+                 +-- Config/SettingsStore (UserDefaults + ObservableObject)
+                 +-- Config/KeychainHelper (API Key secure storage)
+                 +-- UI/StatusBarController (menu bar UI)
+                 +-- UI/SettingsWindowController -> UI/SettingsView (SwiftUI settings panel)
+                 +-- HotkeyManager (Option key gesture detection)
+                 +-- RecordingController (state machine / core dispatcher)
+                 |       +-- Audio/AudioRecorder -> Audio/AudioEncoder
+                 |       +-- Services/ServiceCloudOpenAI (HTTP transcription/translation)
+                 |       +-- Services/ServiceRealtimeOpenAI (WebSocket streaming)
+                 |       +-- Services/ServiceLocalWhisper (WhisperKit local)
+                 |       +-- Services/ServiceTextCleanup (GPT-4o-mini text cleanup)
+                 |       +-- Utilities/TextInputter (text output to active window)
+                 +-- Utilities/LocaleManager (i18n locale management)
+                 +-- Utilities/NetworkHealthMonitor (network recovery probe)
+```
+
+Components communicate via closures/callbacks, connected in `AppDelegate.setupComponents()`. Settings changes propagate in real-time via Combine publishers.
+
+## Directory Structure
+
+```
+Root/                       — Entry, composition root, core logic, hotkey handling
+Config/                     — Configuration (user prefs, engineering options, Keychain, settings store)
+UI/                         — Menu bar controller, SwiftUI settings panel, settings window
+Services/                   — Transcription backends (Cloud / Realtime / Local / Text cleanup)
+Audio/                      — Audio capture and encoding
+Utilities/                  — Helpers (text input, network probe, logging, i18n locale manager)
+WhisperUtil/                — Resources (Assets, Storyboard, String Catalogs)
+.claude-research-tech/      — Technical research documents
+.claude-research-commercial/— Commercial research documents
+.claude-plan/               — Implementation plans
+.claude-code-review/        — Code review documents
+.human-learn/               — Learning notes (hand-written code reproductions)
+.human-devlog/              — Development log (daily work journal)
+```
+
 ## Background Mode
 
 All tasks should run in the background by default. Only report to the user in these cases:
@@ -44,10 +87,11 @@ If build fails, debug and fix it yourself.
 **Important: Do NOT use `CONFIGURATION_BUILD_DIR=$(pwd)`** -- it generates intermediate files in the project directory.
 **Important: Always use `make` targets instead of raw `xcodebuild` commands.**
 
-## Project Structure
+## Internationalization (i18n)
 
-- Source code: `.swift` files in the project root directory
-- Resources: `WhisperUtil/` subdirectory (Assets, Storyboard, etc.)
-- Project config: `WhisperUtil.xcodeproj/`
-- Sensitive files: `UserSettings.swift` (contains API keys, do NOT commit to git)
-- **Codebase index: `CODEBASE_INDEX.md`** — 每个文件的功能说明和架构图，修改代码前应先阅读此文件定位相关源文件，避免全量阅读所有代码
+- UI strings are localized via String Catalogs (`WhisperUtil/Localizable.xcstrings`), supporting 20 languages
+- Log strings use a separate catalog (`WhisperUtil/LogStrings.xcstrings`), supporting en + zh only
+- `Utilities/LocaleManager.swift` manages runtime locale switching (instant, no restart)
+- AppKit code uses `LocaleManager.shared.localized("key")`, SwiftUI uses `Text("key")` with `.environment(\.locale)`
+- Log messages use `LocaleManager.shared.logLocalized("key")`
+- Log language is controlled by `EngineeringOptions.logLanguage` ("en" or "zh")
