@@ -43,15 +43,6 @@ Package.resolved
 *.log
 
 # ============================================================
-# Claude Code working files
+# Claude Code local settings (machine-specific, not project content)
 # ============================================================
 .claude/
-.claude-research-tech/
-.claude-research-commercial/
-.claude-plan/
-.claude-code-review/
-
-# ============================================================
-# Learning notes
-# ============================================================
-.learn/
