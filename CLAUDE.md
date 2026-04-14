@@ -8,7 +8,7 @@ WhisperUtil is a macOS menu bar speech-to-text tool built with Swift. It support
 - **Cloud** (gpt-4o-transcribe) - HTTP API transcription
 - **Realtime** (GA WebSocket) - streaming transcription via WebSocket
 
-All three modes support transcription. Translation (to English) uses the Whisper HTTP API regardless of the selected mode.
+All three modes support transcription. Translation uses a two-step approach: first transcribe (using current API mode), then translate text via Apple Translation (local, macOS 15.0+) or Cloud GPT (gpt-4o-mini). The `translationEngine` setting in EngineeringOptions controls the strategy ("auto"/"apple"/"cloud").
 
 ## Architecture
 
@@ -24,9 +24,10 @@ main.swift -> AppDelegate (Composition Root)
                  +-- HotkeyManager (Option key gesture detection)
                  +-- RecordingController (state machine / core dispatcher)
                  |       +-- Audio/AudioRecorder -> Audio/AudioEncoder
-                 |       +-- Services/ServiceCloudOpenAI (HTTP transcription/translation)
+                 |       +-- Services/ServiceCloudOpenAI (HTTP transcription + GPT translation)
                  |       +-- Services/ServiceRealtimeOpenAI (WebSocket streaming)
                  |       +-- Services/ServiceLocalWhisper (WhisperKit local)
+                 |       +-- Services/ServiceAppleTranslation (Apple Translation local, macOS 15.0+)
                  |       +-- Services/ServiceTextCleanup (GPT-4o-mini text cleanup)
                  |       +-- Utilities/TextInputter (text output to active window)
                  +-- Utilities/LocaleManager (i18n locale management)
@@ -41,7 +42,7 @@ Components communicate via closures/callbacks, connected in `AppDelegate.setupCo
 Root/                       — Entry, composition root, core logic, hotkey handling
 Config/                     — Configuration (user prefs, engineering options, Keychain, settings store)
 UI/                         — Menu bar controller, SwiftUI settings panel, settings window
-Services/                   — Transcription backends (Cloud / Realtime / Local / Text cleanup)
+Services/                   — Transcription & translation backends (Cloud / Realtime / Local / Apple Translation / Text cleanup)
 Audio/                      — Audio capture and encoding
 Utilities/                  — Helpers (text input, network probe, logging, i18n locale manager)
 WhisperUtil/                — Resources (Assets, Storyboard, String Catalogs)
