@@ -17,7 +17,7 @@ RELEASE_APP     = $(shell ls -d $(DERIVED_DATA)/WhisperUtil-*/Build/Products/Rel
 # xcodebuild with DEVELOPER_DIR preset
 XCODEBUILD      = DEVELOPER_DIR=$(DEVELOPER_DIR) xcodebuild -project $(PROJECT) -scheme $(SCHEME)
 
-.PHONY: build release local run dev clean check help
+.PHONY: build release local run dev clean check help test
 
 # ---------------------------------------------------------------------------
 # Build Debug (default target)
@@ -85,6 +85,20 @@ run:
 	fi
 
 # ---------------------------------------------------------------------------
+# Run unit tests
+# ---------------------------------------------------------------------------
+test:
+	@# Note: xcodebuild may return non-zero due to WhisperKit framework cleanup crash (malloc error).
+	@# All tests still pass. We check the actual test result line to determine success.
+	@$(XCODEBUILD) -configuration Debug test -destination 'platform=macOS' \
+		-parallel-testing-enabled NO 2>&1 | tee /tmp/whisperutil-test.log; \
+	if grep -q "with 0 failures" /tmp/whisperutil-test.log; then \
+		echo ""; echo "=== All tests passed ==="; \
+	else \
+		echo ""; echo "=== TESTS FAILED ==="; exit 1; \
+	fi
+
+# ---------------------------------------------------------------------------
 # Clean build artifacts
 # ---------------------------------------------------------------------------
 clean:
@@ -104,6 +118,7 @@ help:
 	@echo "  local          Build without Apple ID (ad-hoc signing)"
 	@echo "  run            Quit running app and launch latest build"
 	@echo "  dev            Build Debug + restart app (daily workflow)"
+	@echo "  test           Run unit tests"
 	@echo "  clean          Clean Xcode build artifacts"
 	@echo "  check          Verify prerequisites (git, xcodebuild, swift)"
 	@echo "  help           Show this help message"

@@ -5,10 +5,9 @@
 //
 // 职责：
 //   1. transcribe() → /v1/audio/transcriptions（gpt-4o-transcribe，语音转文字，保持原语言）
-//   2. translate()  → /v1/audio/translations（whisper-1，直接翻译成英文）
-//   3. translateTwoStep() → 两步翻译法：先用 transcribe() 转录原文，再用 GPT Chat Completions 翻译
-//   4. 手动构造 multipart/form-data 请求体（sendRequest 通用方法）
-//   5. 根据音频时长动态计算处理超时：公式 = min(max(分钟数×10, 5s), 90s)
+//   2. chatTranslate() → Chat Completions API（GPT 文本翻译，支持多目标语言）
+//   3. 手动构造 multipart/form-data 请求体（sendRequest 通用方法）
+//   4. 根据音频时长动态计算处理超时：公式 = min(max(分钟数×10, 5s), 90s)
 //
 // 核心流程：
 //   sendRequest() 是统一的 HTTP 请求方法，处理：
@@ -18,7 +17,7 @@
 //   - 错误分类（WhisperError：网络错误可触发本地回退，API 错误不回退）
 //
 // 依赖：
-//   - EngineeringOptions：API 端点 URL（whisperTranscribeURL, whisperTranslateURL, chatCompletionsURL）、超时参数
+//   - EngineeringOptions：API 端点 URL（whisperTranscribeURL, chatCompletionsURL）、超时参数、模型名
 //   - AudioRecorder.AudioFormat：音频格式信息（文件名、Content-Type）
 //
 // 架构角色：
@@ -38,13 +37,10 @@ class ServiceCloudOpenAI {
     private let model: String
 
     /// 语言代码（如 "zh", "en"，空字符串表示自动检测）
-    private let language: String
+    var language: String
 
     /// 转录 API 端点
     private let transcribeURL = URL(string: EngineeringOptions.whisperTranscribeURL)!
-
-    /// 翻译 API 端点（翻译成英文）
-    private let translateURL = URL(string: EngineeringOptions.whisperTranslateURL)!
 
     // MARK: - 初始化
 
@@ -74,70 +70,37 @@ class ServiceCloudOpenAI {
         )
     }
 
-    /// 翻译音频（语音翻译成英文）— 方法1：Whisper translations API
-    /// 注意：translations API 只支持 whisper-1 模型
+    /// 调用 Chat Completions API 将文本翻译为目标语言
     /// - Parameters:
-    ///   - audioData: 音频数据
-    ///   - format: 音频格式
-    ///   - completion: 完成回调，返回翻译后的英文文本或错误
-    func translate(audioData: Data, format: AudioRecorder.AudioFormat, audioDuration: TimeInterval = 0, completion: @escaping (Result<String, Error>) -> Void) {
-        sendRequest(
-            url: translateURL,
-            audioData: audioData,
-            format: format,
-            includeLanguage: true,  // 告知 API 源语言以提高翻译质量
-            overrideModel: "whisper-1",  // translations API 只支持 whisper-1
-            audioDuration: audioDuration,
-            prompt: "Translate to English.",
-            completion: completion
-        )
-    }
+    ///   - text: 待翻译文本
+    ///   - targetLanguage: 目标语言代码（如 "en", "zh", "ja"）
+    ///   - completion: 完成回调
+    func chatTranslate(text: String, targetLanguage: String = "en", completion: @escaping (Result<String, Error>) -> Void) {
+        let languageName = Self.languageDisplayName(for: targetLanguage)
+        Log.i(LocaleManager.shared.logLocalized("GPT translation: translating to") + " \(languageName)")
 
-    /// 翻译音频（语音翻译成英文）— 方法2：两步法（先转录再用 GPT 翻译）
-    /// Step 1: 用 gpt-4o-transcribe 转录为原文
-    /// Step 2: 用 gpt-4o-mini 将原文翻译为英文
-    /// - Parameters:
-    ///   - audioData: 音频数据
-    ///   - format: 音频格式
-    ///   - completion: 完成回调，返回翻译后的英文文本或错误
-    func translateTwoStep(audioData: Data, format: AudioRecorder.AudioFormat, audioDuration: TimeInterval = 0, completion: @escaping (Result<String, Error>) -> Void) {
-        // Step 1: 转录
-        transcribe(audioData: audioData, format: format, audioDuration: audioDuration) { [weak self] result in
-            switch result {
-            case .success(let transcribedText):
-                let trimmedText = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
-                if trimmedText.isEmpty {
-                    completion(.success(""))
-                    return
-                }
-                Log.i(LocaleManager.shared.logLocalized("Two-step translation Step 1 complete, transcription result:") + " \(trimmedText)")
-                // Step 2: 用 GPT 翻译
-                self?.chatTranslate(text: trimmedText, completion: completion)
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
-    }
-
-    /// 调用 Chat Completions API 将文本翻译为英文
-    private func chatTranslate(text: String, completion: @escaping (Result<String, Error>) -> Void) {
         guard let url = URL(string: EngineeringOptions.chatCompletionsURL) else {
             completion(.failure(WhisperError.invalidResponse))
             return
         }
 
+        // 使用自定义 session，与 sendRequest() 保持一致
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.timeoutIntervalForRequest = EngineeringOptions.apiProcessingTimeoutMax
+        let session = URLSession(configuration: sessionConfig)
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = EngineeringOptions.apiProcessingTimeoutMin
 
         let payload: [String: Any] = [
-            "model": "gpt-4o-mini",
+            "model": EngineeringOptions.chatTranslationModel,
+            "temperature": 0.3,
             "messages": [
                 [
                     "role": "system",
-                    "content": "You are a translator. Translate the following text to English. Output ONLY the translation, nothing else."
+                    "content": "You are a translator. Translate the following text to \(languageName). Output ONLY the translation, nothing else."
                 ],
                 [
                     "role": "user",
@@ -149,28 +112,35 @@ class ServiceCloudOpenAI {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         } catch {
+            Log.e(LocaleManager.shared.logLocalized("GPT translation: JSON serialization failed:") + " \(error.localizedDescription)")
             completion(.failure(WhisperError.networkError("JSON serialization failed: \(error.localizedDescription)")))
             return
         }
 
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        let task = session.dataTask(with: request) { data, response, error in
+            session.finishTasksAndInvalidate()
+
             if let error = error {
+                Log.e(LocaleManager.shared.logLocalized("GPT translation: network error:") + " \(error.localizedDescription)")
                 completion(.failure(WhisperError.networkError(error.localizedDescription)))
                 return
             }
 
             guard let httpResponse = response as? HTTPURLResponse else {
+                Log.e(LocaleManager.shared.logLocalized("GPT translation: invalid response"))
                 completion(.failure(WhisperError.invalidResponse))
                 return
             }
 
             guard let data = data else {
+                Log.e(LocaleManager.shared.logLocalized("GPT translation: no data returned"))
                 completion(.failure(WhisperError.noData))
                 return
             }
 
             if httpResponse.statusCode != 200 {
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+                Log.e(LocaleManager.shared.logLocalized("GPT translation: API error") + " (\(httpResponse.statusCode)): \(errorMessage)")
                 completion(.failure(WhisperError.apiError(httpResponse.statusCode, errorMessage)))
                 return
             }
@@ -184,9 +154,11 @@ class ServiceCloudOpenAI {
                    let content = message["content"] as? String {
                     completion(.success(content))
                 } else {
+                    Log.e(LocaleManager.shared.logLocalized("GPT translation: response decoding failed"))
                     completion(.failure(WhisperError.decodingError))
                 }
             } catch {
+                Log.e(LocaleManager.shared.logLocalized("GPT translation: JSON parse failed:") + " \(error.localizedDescription)")
                 completion(.failure(WhisperError.decodingError))
             }
         }
@@ -209,7 +181,7 @@ class ServiceCloudOpenAI {
     ///   --boundary--
     /// 根据音频时长计算处理超时时间
     /// 公式：音频时长(分钟) × 10，限制在 [min, max] 范围内
-    private func calculateProcessingTimeout(audioDuration: TimeInterval) -> TimeInterval {
+    func calculateProcessingTimeout(audioDuration: TimeInterval) -> TimeInterval {
         let minutes = audioDuration / 60.0
         let timeout = minutes * 10
         return min(max(timeout, EngineeringOptions.apiProcessingTimeoutMin), EngineeringOptions.apiProcessingTimeoutMax)
@@ -263,8 +235,15 @@ class ServiceCloudOpenAI {
         body.append("text\r\n".data(using: .utf8)!)
 
         // 添加语言参数（如果需要）
+        // 优先使用用户指定的识别语言；若为空或 "ui"，则从界面语言推导
         if includeLanguage {
-            let effectiveLanguage = language.isEmpty ? "zh" : language
+            let effectiveLanguage: String
+            if language.isEmpty || language == "ui" {
+                let interfaceCode = LocaleManager.shared.currentLocale.language.languageCode?.identifier ?? "en"
+                effectiveLanguage = LocaleManager.whisperCode(for: interfaceCode)
+            } else {
+                effectiveLanguage = language
+            }
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
             body.append("\(effectiveLanguage)\r\n".data(using: .utf8)!)
@@ -321,6 +300,28 @@ class ServiceCloudOpenAI {
         }
 
         task.resume()
+    }
+
+    // MARK: - 语言代码映射
+
+    /// 将语言代码映射为英文语言名称（用于 GPT prompt）
+    static func languageDisplayName(for code: String) -> String {
+        switch code {
+        case "en": return "English"
+        case "zh": return "Simplified Chinese"
+        case "zh-Hant": return "Traditional Chinese"
+        case "ja": return "Japanese"
+        case "ko": return "Korean"
+        case "fr": return "French"
+        case "de": return "German"
+        case "es": return "Spanish"
+        case "pt": return "Portuguese"
+        case "ru": return "Russian"
+        case "ar": return "Arabic"
+        case "hi": return "Hindi"
+        case "it": return "Italian"
+        default: return Locale(identifier: "en").localizedString(forLanguageCode: code) ?? code
+        }
     }
 
     // MARK: - 错误类型

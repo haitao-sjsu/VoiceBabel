@@ -29,7 +29,6 @@ struct Config {
     let openaiApiKey: String
     let whisperModel: String
     let maxRecordingDuration: TimeInterval
-    let translationMethod: String
     let inputMethod: String
     let typingDelay: TimeInterval
 
@@ -52,7 +51,6 @@ struct Config {
             openaiApiKey: KeychainHelper.load() ?? "",
             whisperModel: EngineeringOptions.whisperModel,
             maxRecordingDuration: EngineeringOptions.maxRecordingDuration,
-            translationMethod: EngineeringOptions.translationMethod,
             inputMethod: EngineeringOptions.inputMethod,
             typingDelay: EngineeringOptions.typingDelay,
             // 用户设置

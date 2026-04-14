@@ -37,10 +37,7 @@ enum EngineeringOptions {
     /// Whisper 转录 API 端点
     static let whisperTranscribeURL = "https://api.openai.com/v1/audio/transcriptions"
 
-    /// Whisper 翻译 API 端点
-    static let whisperTranslateURL = "https://api.openai.com/v1/audio/translations"
-
-    /// Chat Completions API 端点（用于两步翻译法的第二步）
+    /// Chat Completions API 端点（用于翻译和文本优化）
     static let chatCompletionsURL = "https://api.openai.com/v1/chat/completions"
 
     /// Realtime API WebSocket 端点（转录专用模式）
@@ -156,13 +153,15 @@ enum EngineeringOptions {
     // MARK: - Translation
     // ============================================================
 
-    /// 翻译方法
-    /// - "whisper": 使用 Whisper translations API 直接翻译
-    /// - "two-step": 先转录再用 GPT 翻译（更准确）
-    static let translationMethod = "two-step"
+    /// Chat 翻译模型（用于两步翻译法的第二步）
+    static let chatTranslationModel = "gpt-4o-mini"
 
-    /// 翻译时当语言未指定时的回退源语言
-    static let translationSourceLanguageFallback = "zh"
+    /// 翻译引擎
+    /// - "auto": 优先 Apple Translation（本地），失败或不支持时 fallback 到 Cloud
+    /// - "apple": 强制使用 Apple Translation（离线可用，macOS 15.0+）
+    /// - "cloud": 强制使用 Cloud API（gpt-4o-mini，需网络）
+    static let translationEngine = "auto"
+
 
     // ============================================================
     // MARK: - Text output

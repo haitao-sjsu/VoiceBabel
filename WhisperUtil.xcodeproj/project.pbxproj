@@ -30,6 +30,12 @@
 		D6D1A0032F8A000100000003 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D1A0022F8A000100000003 /* SettingsView.swift */; };
 		D6D1A0052F8A000100000005 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D1A0042F8A000100000005 /* SettingsWindowController.swift */; };
 		D6L0C0012FB400010000L001 /* LocaleManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6L0C0002FB400010000L001 /* LocaleManager.swift */; };
+		D6AT00012FC000010000A001 /* ServiceAppleTranslation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6AT00002FC000010000A001 /* ServiceAppleTranslation.swift */; };
+		D6TF00012FD400010000TF02 /* AudioEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00002FD400010000TF01 /* AudioEncoderTests.swift */; };
+		D6TF00032FD400010000TF04 /* ServiceCloudOpenAITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00022FD400010000TF03 /* ServiceCloudOpenAITests.swift */; };
+		D6TF00052FD400010000TF06 /* RecordingControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00042FD400010000TF05 /* RecordingControllerTests.swift */; };
+		D6TF00072FD400010000TF08 /* ServiceLocalWhisperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00062FD400010000TF07 /* ServiceLocalWhisperTests.swift */; };
+		D6TF00092FD400010000TF10 /* ServiceAppleTranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00082FD400010000TF09 /* ServiceAppleTranslationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -57,6 +63,13 @@
 		D6D1A0022F8A000100000003 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D6D1A0042F8A000100000005 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		D6L0C0002FB400010000L001 /* LocaleManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocaleManager.swift; sourceTree = "<group>"; };
+		D6AT00002FC000010000A001 /* ServiceAppleTranslation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceAppleTranslation.swift; sourceTree = "<group>"; };
+		D6TS00012FD400010000TS02 /* WhisperUtilTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WhisperUtilTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D6TF00002FD400010000TF01 /* AudioEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEncoderTests.swift; sourceTree = "<group>"; };
+		D6TF00022FD400010000TF03 /* ServiceCloudOpenAITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceCloudOpenAITests.swift; sourceTree = "<group>"; };
+		D6TF00042FD400010000TF05 /* RecordingControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingControllerTests.swift; sourceTree = "<group>"; };
+		D6TF00062FD400010000TF07 /* ServiceLocalWhisperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLocalWhisperTests.swift; sourceTree = "<group>"; };
+		D6TF00082FD400010000TF09 /* ServiceAppleTranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceAppleTranslationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -69,6 +82,13 @@
 
 /* Begin PBXFrameworksBuildPhase section */
 		D69A0EC02F21D5B700CD1DC0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D6TS00062FD400010000TS07 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -91,6 +111,7 @@
 				D6B0A0022F6A000100000002 /* Audio */,
 				D6B0A0032F6A000100000003 /* Utilities */,
 				D69A0EC52F21D5B700CD1DC0 /* WhisperUtil */,
+				D6TS00092FD400010000TS10 /* WhisperUtilTests */,
 				D69A0EC42F21D5B700CD1DC0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -99,6 +120,7 @@
 			isa = PBXGroup;
 			children = (
 				D69A0EC32F21D5B700CD1DC0 /* WhisperUtil.app */,
+				D6TS00012FD400010000TS02 /* WhisperUtilTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -110,6 +132,7 @@
 				D64B58312F327E55003BEA1A /* ServiceRealtimeOpenAI.swift */,
 				D646E6772F3E4D6100376E45 /* ServiceLocalWhisper.swift */,
 				D6C1A0002F7100010000C001 /* ServiceTextCleanup.swift */,
+				D6AT00002FC000010000A001 /* ServiceAppleTranslation.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -157,6 +180,18 @@
 			path = Config;
 			sourceTree = "<group>";
 		};
+		D6TS00092FD400010000TS10 /* WhisperUtilTests */ = {
+			isa = PBXGroup;
+			children = (
+				D6TF00002FD400010000TF01 /* AudioEncoderTests.swift */,
+				D6TF00022FD400010000TF03 /* ServiceCloudOpenAITests.swift */,
+				D6TF00042FD400010000TF05 /* RecordingControllerTests.swift */,
+				D6TF00062FD400010000TF07 /* ServiceLocalWhisperTests.swift */,
+				D6TF00082FD400010000TF09 /* ServiceAppleTranslationTests.swift */,
+			);
+			path = WhisperUtilTests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -183,6 +218,25 @@
 			productReference = D69A0EC32F21D5B700CD1DC0 /* WhisperUtil.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D6TS00002FD400010000TS01 /* WhisperUtilTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D6TS00022FD400010000TS03 /* Build configuration list for PBXNativeTarget "WhisperUtilTests" */;
+			buildPhases = (
+				D6TS00052FD400010000TS06 /* Sources */,
+				D6TS00062FD400010000TS07 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D6TS00072FD400010000TS08 /* PBXTargetDependency */,
+			);
+			name = WhisperUtilTests;
+			packageProductDependencies = (
+			);
+			productName = WhisperUtilTests;
+			productReference = D6TS00012FD400010000TS02 /* WhisperUtilTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -195,6 +249,10 @@
 				TargetAttributes = {
 					D69A0EC22F21D5B700CD1DC0 = {
 						CreatedOnToolsVersion = 26.2;
+					};
+					D6TS00002FD400010000TS01 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = D69A0EC22F21D5B700CD1DC0;
 					};
 				};
 			};
@@ -235,6 +293,7 @@
 			projectRoot = "";
 			targets = (
 				D69A0EC22F21D5B700CD1DC0 /* WhisperUtil */,
+				D6TS00002FD400010000TS01 /* WhisperUtilTests */,
 			);
 		};
 /* End PBXProject section */
@@ -277,10 +336,41 @@
 				D6F1A0012FA300010000F001 /* KeychainHelper.swift in Sources */,
 				D6F1A0032FA300010000F003 /* ApiKeyValidator.swift in Sources */,
 				D6L0C0012FB400010000L001 /* LocaleManager.swift in Sources */,
+				D6AT00012FC000010000A001 /* ServiceAppleTranslation.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D6TS00052FD400010000TS06 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D6TF00012FD400010000TF02 /* AudioEncoderTests.swift in Sources */,
+				D6TF00032FD400010000TF04 /* ServiceCloudOpenAITests.swift in Sources */,
+				D6TF00052FD400010000TF06 /* RecordingControllerTests.swift in Sources */,
+				D6TF00072FD400010000TF08 /* ServiceLocalWhisperTests.swift in Sources */,
+				D6TF00092FD400010000TF10 /* ServiceAppleTranslationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXContainerItemProxy section */
+		D6TS00082FD400010000TS09 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D69A0EBB2F21D5B700CD1DC0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D69A0EC22F21D5B700CD1DC0;
+			remoteInfo = WhisperUtil;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		D6TS00072FD400010000TS08 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D69A0EC22F21D5B700CD1DC0 /* WhisperUtil */;
+			targetProxy = D6TS00082FD400010000TS09 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		D69A0ECF2F21D5B800CD1DC0 /* Debug */ = {
@@ -493,6 +583,42 @@
 			};
 			name = Release;
 		};
+		D6TS00032FD400010000TS04 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RXYSNLH22K;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Personal.WhisperUtilTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WhisperUtil.app/Contents/MacOS/WhisperUtil";
+			};
+			name = Debug;
+		};
+		D6TS00042FD400010000TS05 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RXYSNLH22K;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Personal.WhisperUtilTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WhisperUtil.app/Contents/MacOS/WhisperUtil";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -510,6 +636,15 @@
 			buildConfigurations = (
 				D69A0ED22F21D5B800CD1DC0 /* Debug */,
 				D69A0ED32F21D5B800CD1DC0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D6TS00022FD400010000TS03 /* Build configuration list for PBXNativeTarget "WhisperUtilTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D6TS00032FD400010000TS04 /* Debug */,
+				D6TS00042FD400010000TS05 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

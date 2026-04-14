@@ -71,7 +71,10 @@ class StatusBarController {
     private var currentApiMode: ApiMode
     private var lastTranscriptionItem: NSMenuItem!
     private var lastTranscriptionText: String = ""
-    private var copyHintItem: NSMenuItem!
+    private var copyTranscriptionHintItem: NSMenuItem!
+    private var lastTranslationItem: NSMenuItem!
+    private var lastTranslationText: String = ""
+    private var copyTranslationHintItem: NSMenuItem!
     private var settingsItem: NSMenuItem!
     private var aboutItem: NSMenuItem!
     private var quitItem: NSMenuItem!
@@ -134,9 +137,9 @@ class StatusBarController {
 
         menu.addItem(NSMenuItem.separator())
 
-        copyHintItem = NSMenuItem(title: lm.localized("Copy & Paste Last Transcription:"), action: nil, keyEquivalent: "")
-        copyHintItem.isEnabled = false
-        menu.addItem(copyHintItem)
+        copyTranscriptionHintItem = NSMenuItem(title: lm.localized("Copy & Paste Last Transcription:"), action: nil, keyEquivalent: "")
+        copyTranscriptionHintItem.isEnabled = false
+        menu.addItem(copyTranscriptionHintItem)
 
         lastTranscriptionItem = NSMenuItem(
             title: lm.localized("  (None)"),
@@ -146,6 +149,19 @@ class StatusBarController {
         lastTranscriptionItem.target = self
         lastTranscriptionItem.isEnabled = false
         menu.addItem(lastTranscriptionItem)
+
+        copyTranslationHintItem = NSMenuItem(title: lm.localized("Copy & Paste Last Translation:"), action: nil, keyEquivalent: "")
+        copyTranslationHintItem.isEnabled = false
+        menu.addItem(copyTranslationHintItem)
+
+        lastTranslationItem = NSMenuItem(
+            title: lm.localized("  (None)"),
+            action: nil,
+            keyEquivalent: ""
+        )
+        lastTranslationItem.target = self
+        lastTranslationItem.isEnabled = false
+        menu.addItem(lastTranslationItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -191,14 +207,18 @@ class StatusBarController {
         let lm = LocaleManager.shared
 
         // Refresh static menu items
-        copyHintItem.title = lm.localized("Copy & Paste Last Transcription:")
+        copyTranscriptionHintItem.title = lm.localized("Copy & Paste Last Transcription:")
+        copyTranslationHintItem.title = lm.localized("Copy & Paste Last Translation:")
         settingsItem.title = lm.localized("Settings...")
         aboutItem.title = lm.localized("About WhisperUtil")
         quitItem.title = lm.localized("Quit")
 
-        // Refresh last transcription item
+        // Refresh last transcription/translation items
         if lastTranscriptionText.isEmpty {
             lastTranscriptionItem.title = lm.localized("  (None)")
+        }
+        if lastTranslationText.isEmpty {
+            lastTranslationItem.title = lm.localized("  (None)")
         }
 
         // Refresh state-dependent items
@@ -227,6 +247,22 @@ class StatusBarController {
             lastTranscriptionItem.title = "  📋 \(preview)"
             lastTranscriptionItem.action = #selector(copyLastTranscription)
             lastTranscriptionItem.isEnabled = true
+        }
+    }
+
+    func setLastTranslation(_ text: String) {
+        lastTranslationText = text
+        if text.isEmpty {
+            lastTranslationItem.title = LocaleManager.shared.localized("  (None)")
+            lastTranslationItem.action = nil
+            lastTranslationItem.isEnabled = false
+        } else {
+            let preview = text.count > 10
+                ? String(text.prefix(10)) + "..."
+                : text
+            lastTranslationItem.title = "  📋 \(preview)"
+            lastTranslationItem.action = #selector(copyLastTranslation)
+            lastTranslationItem.isEnabled = true
         }
     }
 
@@ -295,12 +331,20 @@ class StatusBarController {
     }
 
     @objc private func copyLastTranscription() {
-        guard !lastTranscriptionText.isEmpty else { return }
+        copyAndPaste(lastTranscriptionText, label: "transcription")
+    }
+
+    @objc private func copyLastTranslation() {
+        copyAndPaste(lastTranslationText, label: "translation")
+    }
+
+    private func copyAndPaste(_ text: String, label: String) {
+        guard !text.isEmpty else { return }
         let pasteboard = NSPasteboard.general
 
         pasteboard.clearContents()
-        pasteboard.setString(lastTranscriptionText, forType: .string)
-        Log.i(LocaleManager.shared.logLocalized("Copy and paste last transcription:") + " \(lastTranscriptionText)")
+        pasteboard.setString(text, forType: .string)
+        Log.i(LocaleManager.shared.logLocalized("Copy and paste last \(label):") + " \(text)")
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             let source = CGEventSource(stateID: .hidSystemState)

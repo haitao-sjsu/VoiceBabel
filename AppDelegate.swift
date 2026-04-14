@@ -36,6 +36,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var networkHealthMonitor: NetworkHealthMonitor!
     private var settingsStore: SettingsStore!
     private var settingsWindowController: SettingsWindowController!
+    #if canImport(Translation)
+    private var appleTranslationService: Any?  // ServiceAppleTranslation, type-erased for availability
+    #endif
     private var cancellables = Set<AnyCancellable>()
 
     private var isPushToTalkActive = false
@@ -44,6 +47,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 测试环境下跳过完整初始化（避免 AVAudioEngine 等硬件依赖在测试退出时 crash）
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return
+        }
+
         let lm = LocaleManager.shared
         Log.i(lm.logLocalized("WhisperUtil starting..."))
         Log.i(lm.logLocalized("Log file path:") + " \(Log.logFilePath)")
@@ -134,6 +142,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             textCleanupService: textCleanupService,
             config: config
         )
+
+        // Apple Translation service (macOS 14.4+)
+        #if canImport(Translation)
+        if #available(macOS 15.0, *) {
+            let service = ServiceAppleTranslation()
+            self.appleTranslationService = service
+            recordingController.setAppleTranslationService(service)
+            Log.i(lm.logLocalized("Apple Translation service initialized"))
+        }
+        #endif
 
         let defaultMode: StatusBarController.ApiMode
         switch config.defaultApiMode {
@@ -240,6 +258,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Log.i(lm.logLocalized("Settings: Sound effects") + " \(value ? "on" : "off")")
         }.store(in: &cancellables)
 
+        settingsStore.$whisperLanguage.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] lang in
+            self?.updateServicesLanguage(lang)
+            Log.i(lm.logLocalized("Settings: Recognition language changed to") + " \(lang.isEmpty ? "auto" : lang)")
+        }.store(in: &cancellables)
+
         settingsStore.$apiKeyVersion.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
             self?.rebuildServicesWithNewApiKey()
         }.store(in: &cancellables)
@@ -254,6 +277,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         recordingController.onTranscriptionResult = { [weak self] text in
             self?.statusBarController.setLastTranscription(text)
         }
+        recordingController.onTranslationResult = { [weak self] text in
+            self?.statusBarController.setLastTranslation(text)
+        }
         recordingController.onError = { [weak self] message in
             guard let self = self else { return }
             self.statusBarController.showNotification(title: "WhisperUtil", message: message)
@@ -265,6 +291,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         statusBarController.updateState(.idle)
+    }
+
+    // MARK: - Language Change
+
+    private func updateServicesLanguage(_ lang: String) {
+        whisperService.language = lang
+        realtimeService.language = lang
+        localWhisperService.language = lang
     }
 
     // MARK: - API Key Change

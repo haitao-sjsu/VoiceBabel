@@ -66,7 +66,7 @@ class ServiceRealtimeOpenAI: NSObject {
     private var accumulatedTranscription: String = ""
 
     /// 语言设置（如 "zh", "en"，空字符串表示自动检测）
-    private var language: String = ""
+    var language: String = ""
 
     /// WebSocket 端点（GA 版转录专用模式，使用 gpt-4o-transcribe）
     private let realtimeURL = EngineeringOptions.realtimeWebSocketURL

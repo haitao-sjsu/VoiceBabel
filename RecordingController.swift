@@ -40,6 +40,7 @@ class RecordingController {
     var onStateChange: ((AppState) -> Void)?
     var onError: ((String) -> Void)?
     var onTranscriptionResult: ((String) -> Void)?
+    var onTranslationResult: ((String) -> Void)?
 
     // MARK: - Dependencies
 
@@ -50,6 +51,9 @@ class RecordingController {
     private let textInputter: TextInputter
     private var textCleanupService: ServiceTextCleanup
     private let config: Config
+    #if canImport(Translation)
+    private var appleTranslationService: Any?  // ServiceAppleTranslation, type-erased for availability
+    #endif
 
     // MARK: - State
 
@@ -91,6 +95,13 @@ class RecordingController {
 
         setupCallbacks()
     }
+
+    #if canImport(Translation)
+    @available(macOS 15.0, *)
+    func setAppleTranslationService(_ service: ServiceAppleTranslation) {
+        self.appleTranslationService = service
+    }
+    #endif
 
     func updateServices(
         whisperService: ServiceCloudOpenAI,
@@ -532,18 +543,153 @@ class RecordingController {
 
     // MARK: - Audio Processing
 
+    /// 翻译音频：统一入口，两步法（先转录再翻译）
+    /// Step 1: 转录（使用当前 API 模式）
+    /// Step 2: 翻译（根据 translationEngine 选择 Apple Translation 或 Cloud GPT）
     private func translateAudio(_ recording: AudioRecorder.RecordingResult, audioDuration: TimeInterval) {
         let lm = LocaleManager.shared
-        if config.translationMethod == "two-step" {
-            Log.i(lm.logLocalized("Calling two-step translation (transcribe + GPT translate)..."))
-            whisperService.translateTwoStep(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
-                self?.handleResult(result, action: lm.logLocalized("Speech translation (two-step)"))
+        let targetLang = SettingsStore.shared.translationTargetLanguage
+        let savedSamples = audioRecorder.getAudioSamples()
+
+        Log.i(lm.logLocalized("Starting two-step translation: transcribe then translate to") + " \(targetLang)")
+
+        // Step 1: 转录
+        if currentApiMode == .local && localWhisperService.isReady() {
+            Task {
+                do {
+                    let text = try await localWhisperService.transcribe(samples: savedSamples)
+                    await MainActor.run {
+                        self.translateStep2(transcribedText: text, targetLanguage: targetLang, recording: recording, audioDuration: audioDuration)
+                    }
+                } catch {
+                    await MainActor.run {
+                        Log.e(lm.logLocalized("Transcription (step 1) failed:") + " \(error.localizedDescription)")
+                        self.handleError(String(localized: "Transcription failed: \(error.localizedDescription)"))
+                    }
+                }
             }
         } else {
-            Log.i(lm.logLocalized("Calling Whisper API (direct translation)..."))
-            whisperService.translate(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
-                self?.handleResult(result, action: lm.logLocalized("Speech translation"))
+            whisperService.transcribe(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let text):
+                        self?.translateStep2(transcribedText: text, targetLanguage: targetLang, recording: recording, audioDuration: audioDuration)
+                    case .failure(let error):
+                        Log.e(LocaleManager.shared.logLocalized("Transcription (step 1) failed:") + " \(error.localizedDescription)")
+                        self?.handleError(String(localized: "Transcription failed: \(error.localizedDescription)"))
+                    }
+                }
             }
+        }
+    }
+
+    /// Step 2: 翻译已转录的文本
+    private func translateStep2(transcribedText: String, targetLanguage: String, recording: AudioRecorder.RecordingResult, audioDuration: TimeInterval) {
+        let lm = LocaleManager.shared
+        let trimmed = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            Log.i(lm.logLocalized("Transcription result is empty, skipping translation"))
+            currentState = .idle
+            return
+        }
+
+        Log.i(lm.logLocalized("Two-step translation Step 1 complete, transcription result:") + " \(trimmed)")
+        // 保存转录结果到 last transcription（即使翻译失败也可恢复）
+        onTranscriptionResult?(trimmed)
+
+        let engine = EngineeringOptions.translationEngine
+
+        switch engine {
+        case "apple":
+            translateTextViaApple(trimmed, targetLanguage: targetLanguage, fallbackToCloud: false)
+        case "cloud":
+            translateTextViaCloud(trimmed, targetLanguage: targetLanguage)
+        default: // "auto"
+            translateTextViaApple(trimmed, targetLanguage: targetLanguage, fallbackToCloud: true)
+        }
+    }
+
+    /// Cloud GPT 翻译
+    private func translateTextViaCloud(_ text: String, targetLanguage: String) {
+        let lm = LocaleManager.shared
+        Log.i(lm.logLocalized("Calling GPT translation (cloud)..."))
+        whisperService.chatTranslate(text: text, targetLanguage: targetLanguage) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.handleTranslationResult(result, transcribedText: text)
+            }
+        }
+    }
+
+    /// Apple Translation 本地翻译
+    private func translateTextViaApple(_ text: String, targetLanguage: String, fallbackToCloud: Bool) {
+        let lm = LocaleManager.shared
+
+        #if canImport(Translation)
+        guard #available(macOS 15.0, *),
+              let service = appleTranslationService as? ServiceAppleTranslation else {
+            if fallbackToCloud {
+                Log.i(lm.logLocalized("Apple Translation unavailable, falling back to Cloud API"))
+                translateTextViaCloud(text, targetLanguage: targetLanguage)
+            } else {
+                handleError(String(localized: "Apple Translation requires macOS 15.0 or later"))
+            }
+            return
+        }
+
+        Log.i(lm.logLocalized("Calling Apple Translation (local)..."))
+        let sourceLang = effectiveWhisperLanguage()
+        service.translate(
+            text: text,
+            sourceLanguage: sourceLang.isEmpty ? nil : sourceLang,
+            targetLanguage: targetLanguage
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                switch result {
+                case .success:
+                    self.handleTranslationResult(result, transcribedText: text)
+                case .failure(let error):
+                    if fallbackToCloud {
+                        Log.w(lm.logLocalized("Apple Translation failed, falling back to Cloud API:") + " \(error.localizedDescription)")
+                        self.translateTextViaCloud(text, targetLanguage: targetLanguage)
+                    } else {
+                        self.handleTranslationResult(result, transcribedText: text)
+                    }
+                }
+            }
+        }
+        #else
+        if fallbackToCloud {
+            Log.i(lm.logLocalized("Translation framework not available, falling back to Cloud API"))
+            translateTextViaCloud(text, targetLanguage: targetLanguage)
+        } else {
+            handleError(String(localized: "Apple Translation is not available on this system"))
+        }
+        #endif
+    }
+
+    /// 处理翻译结果：成功时输出翻译文本，失败时保留转录文本到 last transcription
+    private func handleTranslationResult(_ result: Result<String, Error>, transcribedText: String) {
+        let lm = LocaleManager.shared
+        switch result {
+        case .success(let translatedText):
+            let trimmed = translatedText.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                Log.i(lm.logLocalized("Translation result is empty"))
+                currentState = .idle
+            } else {
+                Log.i(lm.logLocalized("Translation result:") + " \(trimmed)")
+                onTranslationResult?(trimmed)
+                onTranscriptionResult?(transcribedText)
+                textInputter.inputText(trimmed)
+                currentState = .idle
+                handleAutoSend()
+            }
+        case .failure(let error):
+            Log.e(lm.logLocalized("Translation (step 2) failed:") + " \(error.localizedDescription)")
+            // 翻译失败，但转录结果已保存到 last transcription
+            Log.i(lm.logLocalized("Transcription preserved in menu bar"))
+            handleError(String(localized: "Translation failed: \(error.localizedDescription). Transcription preserved in menu bar."))
         }
     }
 

@@ -43,7 +43,7 @@ class ServiceLocalWhisper {
     private(set) var isModelLoading: Bool = false
 
     /// 语言参数："zh", "en", "" (自动检测)
-    private let language: String
+    var language: String
 
     // MARK: - 错误类型
 
