@@ -119,47 +119,64 @@ List {
 
 #### 数据模型
 
+**转录优先级**只包含 Cloud 和 Local 两种模式。Realtime（WebSocket 流式）是独立的工作模式，不参与 fallback 队列——它的交互方式（流式逐词输出）与 Cloud/Local（一次性返回完整文本）根本不同，无法互相替代。
+
+**翻译优先级**包含 Cloud GPT 和 Apple Translation 两种引擎。一步法翻译（whisper-1 直接翻译）已移除——所有翻译都是两步法（先转录再翻译），区别仅在于第二步用哪个翻译引擎。
+
 定义两个有序数组，存储在 UserDefaults 中：
 
 ```swift
 // 转录优先级（有序数组，索引 0 = 最高优先级）
-// 默认值：["cloud", "local", "realtime"]
+// 默认值：["cloud", "local"]
+// 注意：Realtime 模式独立，不在此队列中
 var transcriptionPriority: [String]
 
-// 翻译优先级（有序数组）
-// 默认值：["two-step", "one-step"]
-var translationPriority: [String]
+// 翻译引擎优先级（有序数组）
+// 默认值：["apple", "cloud"]
+// "apple" = Apple Translation（本地离线）
+// "cloud" = Cloud GPT（gpt-4o-mini，需网络）
+var translationEnginePriority: [String]
 ```
 
 **存储方式**：UserDefaults 的 `[String]` 数组，与现有 `SettingsStore` 的 `String` 存储风格一致。无需 Codable，简单字符串数组足矣。
 
+**Realtime 模式的处理**：用户在设置面板中仍可选择 Realtime 作为默认模式（通过现有的 `defaultApiMode`）。当选择 Realtime 时，转录优先级队列不生效；当选择非 Realtime 模式时，按优先级队列依次尝试。
+
 #### 调度逻辑
 
+**转录**（仅在非 Realtime 模式下生效）：
 ```
-用户按下录音键
-    → 读取优先级数组 transcriptionPriority
+用户按下录音键（非 Realtime 模式）
+    → 读取优先级数组 transcriptionPriority（["cloud", "local"] 或 ["local", "cloud"]）
     → 从 index 0 开始尝试
     → 模式失败且可 fallback？ → index += 1，尝试下一个
     → 所有模式都失败 → 报错
+
+用户按下录音键（Realtime 模式）
+    → 直接走 Realtime WebSocket 流程，不经过优先级队列
+    → 失败直接报错（不 fallback 到 Cloud/Local，因为交互模式不同）
 ```
 
-对于翻译：
+**翻译**（两步法：先转录，再翻译文本）：
 ```
 用户按下翻译键
-    → 读取优先级数组 translationPriority
-    → 从 index 0 开始尝试
-    → 失败 → 尝试下一个
-    → 所有方法都失败 → 报错
+    → Step 1: 转录音频（按 transcriptionPriority 走 fallback）
+    → Step 2: 翻译文本
+        → 读取 translationEnginePriority（["apple", "cloud"] 或 ["cloud", "apple"]）
+        → 从 index 0 开始尝试
+        → 失败 → 尝试下一个引擎
+        → 所有引擎都失败 → 报错
 ```
 
 #### Fallback 判断规则
 
-不同模式的 fallback 条件不同：
-- **Cloud**：网络错误时可 fallback（保持现有 `shouldFallbackToLocal` 的逻辑，泛化为 `shouldFallback`）
-- **Realtime**：WebSocket 连接失败或断开时可 fallback
-- **Local**：模型未加载时可 fallback（跳过该模式尝试下一个）
-- **翻译两步法**：任一步骤网络失败时可 fallback
-- **翻译一步法**：网络失败时可 fallback
+**转录 fallback**：
+- **Cloud → Local**：网络错误时 fallback（保持现有 `shouldFallbackToLocal` 逻辑）
+- **Local → Cloud**：模型未加载或本地转录失败时 fallback
+
+**翻译引擎 fallback**：
+- **Apple Translation → Cloud GPT**：语言对不支持、语言包未下载、翻译超时时 fallback
+- **Cloud GPT → Apple Translation**：网络错误时 fallback（需设备端已安装对应语言包）
 
 ### B2. 后端改动清单
 
@@ -168,17 +185,18 @@ var translationPriority: [String]
 在 `RecordingController.swift` 中新增：
 
 ```swift
-/// 转录模式标识（用于优先级数组）
+/// 转录模式标识（用于优先级数组，不含 Realtime）
 enum TranscriptionBackend: String, CaseIterable {
     case cloud = "cloud"
-    case realtime = "realtime"
     case local = "local"
 }
 
-/// 翻译方法标识（用于优先级数组）
-enum TranslationMethod: String, CaseIterable {
-    case twoStep = "two-step"
-    case oneStep = "one-step"
+/// 翻译引擎标识（用于优先级数组）
+/// 注意：这里是翻译的第二步（文本→译文）的引擎选择
+/// 第一步（音频→文本）走 transcriptionPriority
+enum TranslationEngine: String, CaseIterable {
+    case apple = "apple"   // Apple Translation（本地，macOS 15.0+，ServiceAppleTranslation）
+    case cloud = "cloud"   // Cloud GPT（gpt-4o-mini，ServiceCloudOpenAI.chatTranslate()）
 }
 ```
 
@@ -186,14 +204,14 @@ enum TranslationMethod: String, CaseIterable {
 
 **1. `Config/UserSettings.swift`** — 新增默认优先级
 ```swift
-static let transcriptionPriority = ["cloud", "local", "realtime"]
-static let translationPriority = ["two-step", "one-step"]
+static let transcriptionPriority = ["cloud", "local"]
+static let translationEnginePriority = ["apple", "cloud"]
 ```
 
 **2. `Config/SettingsStore.swift`** — 新增 Published 属性
 ```swift
 @Published var transcriptionPriority: [String]
-@Published var translationPriority: [String]
+@Published var translationEnginePriority: [String]
 ```
 - `init()` 中从 UserDefaults 读取，fallback 到 `UserSettings` 默认值
 - `didSet` 中写入 UserDefaults
@@ -201,22 +219,26 @@ static let translationPriority = ["two-step", "one-step"]
 **3. `Config/Config.swift`** — 新增字段
 ```swift
 let transcriptionPriority: [String]
-let translationPriority: [String]
+let translationEnginePriority: [String]
 ```
 - `Config.load()` 中从 `UserSettings` 读取
-- 移除 `translationMethod` 字段（被 `translationPriority` 取代）
+- 移除 `translationMethod` 字段（被 `translationEnginePriority` 取代）
+- `translationEngine`（EngineeringOptions 中现有的）可保留为工程级 override，优先级队列作为用户级设置
 
 **4. `RecordingController.swift`** — 核心改动
 
 (a) 新增属性：
 ```swift
 var transcriptionPriority: [String] = UserSettings.transcriptionPriority
-var translationPriority: [String] = UserSettings.translationPriority
+var translationEnginePriority: [String] = UserSettings.translationEnginePriority
 ```
 
-(b) 替换 `preferredApiMode` / `currentApiMode` 的单模式逻辑。不再需要 `preferredApiMode`，改为使用 `transcriptionPriority[0]` 作为首选模式。`currentApiMode` 保留，用于标识当前实际使用的模式。
+(b) `preferredApiMode` / `currentApiMode` 的调整：
+- Realtime 模式保持现有 `defaultApiMode` 选择逻辑不变
+- 当 `defaultApiMode` 为 `"cloud"` 或 `"local"` 时，实际按 `transcriptionPriority` 队列调度
+- `currentApiMode` 保留，用于标识当前实际使用的模式
 
-(c) 重写 `stopCloudRecording()`，将 fallback 逻辑泛化：
+(c) 重写 `stopCloudRecording()` / `stopLocalRecording()`，将 fallback 逻辑泛化：
 ```swift
 private func transcribeWithFallback(
     recording: AudioRecorder.RecordingResult,
@@ -224,7 +246,7 @@ private func transcribeWithFallback(
     audioDuration: TimeInterval,
     priorityIndex: Int = 0
 ) {
-    let priority = transcriptionPriority
+    let priority = transcriptionPriority  // ["cloud", "local"] 或 ["local", "cloud"]
     guard priorityIndex < priority.count else {
         handleError("All transcription modes failed")
         return
@@ -234,13 +256,29 @@ private func transcribeWithFallback(
 }
 ```
 
-(d) 类似地重写 `translateAudio()`：
+(d) 翻译流程拆分为两步 fallback：
 ```swift
+/// Step 1: 转录（按 transcriptionPriority fallback）
+/// Step 2: 翻译文本（按 translationEnginePriority fallback）
 private func translateWithFallback(
-    recording: AudioRecorder.RecordingResult,
-    audioDuration: TimeInterval,
-    priorityIndex: Int = 0
-) { ... }
+    text: String,               // Step 1 已完成的转录文本
+    targetLanguage: String,
+    engineIndex: Int = 0
+) {
+    let engines = translationEnginePriority  // ["apple", "cloud"] 或 ["cloud", "apple"]
+    guard engineIndex < engines.count else {
+        handleError("All translation engines failed")
+        return
+    }
+    switch engines[engineIndex] {
+    case "apple":
+        // 调用 ServiceAppleTranslation.translate()
+        // 失败时递归 engineIndex + 1
+    case "cloud":
+        // 调用 ServiceCloudOpenAI.chatTranslate()
+        // 失败时递归 engineIndex + 1
+    }
+}
 ```
 
 (e) 移除 `shouldFallbackToLocal()` 和 `fallbackToLocalTranscription()`——被通用 fallback 逻辑取代。
@@ -257,14 +295,18 @@ settingsStore.$transcriptionPriority.dropFirst()...sink { [weak self] priority i
     // 更新 StatusBar 图标
 }
 
-settingsStore.$translationPriority.dropFirst()...sink { [weak self] priority in
-    self?.recordingController.translationPriority = priority
+settingsStore.$translationEnginePriority.dropFirst()...sink { [weak self] priority in
+    self?.recordingController.translationEnginePriority = priority
 }
 ```
 
-**6. `Config/EngineeringOptions.swift`** — 移除 `translationMethod`
+**6. `Config/EngineeringOptions.swift`** — 调整翻译配置
 
-将 `translationMethod`（`EngineeringOptions.swift:162`）迁移为用户设置，从 `EngineeringOptions` 中移除。`enableCloudFallback` 保留——它控制的是"是否允许 fallback"这个工程级开关。
+- 移除 `translationMethod`（已无一步法/两步法之分，所有翻译都是两步法）
+- `translationEngine`（现有值 "auto"/"apple"/"cloud"）可保留为工程级 override：
+  - "auto" = 按用户优先级队列
+  - "apple"/"cloud" = 强制使用指定引擎（跳过优先级队列）
+- `enableCloudFallback` 保留——它控制的是"是否允许 fallback"这个工程级开关
 
 **7. 网络恢复逻辑调整**
 
@@ -281,35 +323,41 @@ settingsStore.$translationPriority.dropFirst()...sink { [weak self] priority in
 ```
 ┌─ Transcription ──────────────────────────┐
 │                                          │
-│  Transcription Priority                  │
+│  Mode  [ Cloud / Local / Realtime  ▾ ]   │  ← 现有的模式选择（含 Realtime）
+│                                          │
+│  Fallback Priority (Cloud/Local only)    │
 │  ┌──────────────────────────────────┐    │
 │  │ ≡  ☁️  Cloud API                │    │
 │  │     gpt-4o-transcribe           │    │
 │  ├──────────────────────────────────┤    │
 │  │ ≡  🏠  Local (WhisperKit)       │    │
 │  │     On-device, offline          │    │
-│  ├──────────────────────────────────┤    │
-│  │ ≡  📶  Realtime API             │    │
-│  │     WebSocket streaming         │    │
 │  └──────────────────────────────────┘    │
+│  ⓘ Realtime mode does not fallback      │
 │                                          │
 │  Text Cleanup  [ Off              ▾ ]    │
 │                                          │
 ├─ Translation ────────────────────────────┤
 │                                          │
-│  Translation Priority                    │
+│  Translation Engine Priority             │
 │  ┌──────────────────────────────────┐    │
-│  │ ≡  📝  Two-step                 │    │
-│  │     Transcribe + GPT translate  │    │
+│  │ ≡  🍎  Apple Translation        │    │
+│  │     On-device, offline, free    │    │
 │  ├──────────────────────────────────┤    │
-│  │ ≡  ⚡  One-step                 │    │
-│  │     Whisper direct translation  │    │
+│  │ ≡  ☁️  Cloud GPT               │    │
+│  │     gpt-4o-mini, needs network  │    │
 │  └──────────────────────────────────┘    │
 │                                          │
 │  Output Language  [ English       ▾ ]    │
 │                                          │
 └──────────────────────────────────────────┘
 ```
+
+**设计说明**：
+- 模式选择（Cloud/Local/Realtime）保持现有 Picker 不变，用户选择默认模式
+- 当选择 Cloud 或 Local 时，优先级队列决定 fallback 顺序（排第一的是首选）
+- 当选择 Realtime 时，优先级队列灰显并提示"Realtime 模式不支持 fallback"
+- 翻译引擎优先级独立于转录模式，决定的是翻译第二步（文本→译文）用哪个引擎
 
 #### 每个模式项显示的信息
 
@@ -376,10 +424,11 @@ Section("Transcription") {
 - `AppDelegate.swift` — 新增 Combine 订阅
 
 **验证方式**：
-- 默认优先级 [Cloud, Local, Realtime]：正常使用 Cloud 转录
+- 默认优先级 [Cloud, Local]：正常使用 Cloud 转录
 - 断网测试：Cloud 失败后自动 fallback 到 Local
 - 修改优先级为 [Local, Cloud]：直接使用 Local 转录
-- 翻译测试：两步法/一步法按优先级尝试
+- Realtime 模式：确认不受优先级队列影响
+- 翻译测试：Apple Translation / Cloud GPT 按优先级尝试和 fallback
 
 #### Phase 3：设置面板拖拽排序 UI（可独立验证）
 
@@ -407,20 +456,19 @@ Section("Transcription") {
 
 ### B5. 风险和注意事项
 
-1. **Realtime 模式的 fallback 时机**：Realtime 模式通过 WebSocket 流式转录，没有明确的"一次转录失败"时点。需要定义何时判定 Realtime 失败——建议在连接失败（`connectionState` 从非 disconnected 变为 disconnected）时触发 fallback，而非在流式传输中途。
-
-2. **录音数据兼容性**：
+1. **录音数据兼容性**：
    - Cloud 模式使用编码后的音频数据（M4A/WAV）
    - Local 模式使用 Float32 PCM samples
-   - Realtime 模式使用 PCM16 24kHz
    - fallback 时需要确保目标模式能使用已有的录音数据。当前的 `stopCloudRecording()` 已经通过 `audioRecorder.getAudioSamples()` 提前保存了 samples 用于 fallback，新方案需要保持这一设计。
 
-3. **Realtime → 其他模式的 fallback 数据问题**：Realtime 模式在录音开始前就建立 WebSocket 连接，如果连接失败，此时还没有录音数据，无法 fallback。建议策略：Realtime 连接失败时提示用户重试，或者先录音再 fallback（但这需要改变 Realtime 的录音流程）。**最简方案**：Realtime fallback 仅在连接建立前触发，提示用户"Realtime 不可用，已切换到下一优先级模式"，下次录音自动使用下一模式。
+2. **`List` 嵌套在 `Form` 中的布局**：SwiftUI 的 `Form` + `.formStyle(.grouped)` 中嵌套 `List` 可能产生滚动冲突。需要测试实际效果，可能需要改用 `ForEach` + `.onMove` 直接放在 `Section` 内（不额外嵌套 `List`）。
 
-4. **翻译一步法的局限**：一步法使用 `whisper-1` 模型，只能翻译成英文。如果用户设置了非英文的翻译目标语言（`translationTargetLanguage`），一步法应自动跳过或标记为不可用。
+3. **`EngineeringOptions.enableCloudFallback` 的语义变化**：原来控制"Cloud → Local 是否允许 fallback"，新方案中应泛化为"是否允许任何模式间的 fallback"。建议重命名为 `enableModeFallback`。
 
-5. **`List` 嵌套在 `Form` 中的布局**：SwiftUI 的 `Form` + `.formStyle(.grouped)` 中嵌套 `List` 可能产生滚动冲突。需要测试实际效果，可能需要改用 `ForEach` + `.onMove` 直接放在 `Section` 内（不额外嵌套 `List`）。
+4. **向后兼容**：用户升级后，UserDefaults 中没有优先级数组。`SettingsStore.init()` 需要正确 fallback 到 `UserSettings` 默认值。如果用户之前选择了 `defaultApiMode = "local"`，升级后应将 local 放在优先级数组首位——需要迁移逻辑。
 
-6. **`EngineeringOptions.enableCloudFallback` 的语义变化**：原来控制"Cloud → Local 是否允许 fallback"，新方案中应泛化为"是否允许任何模式间的 fallback"。建议重命名为 `enableModeFallback`。
+5. **Apple Translation 可用性**：Apple Translation 要求 macOS 15.0+。如果用户系统低于此版本，翻译引擎优先级列表中应自动隐藏 Apple Translation 选项，只保留 Cloud GPT。代码中已有 `@available(macOS 15.0, *)` 条件编译。
 
-7. **向后兼容**：用户升级后，UserDefaults 中没有优先级数组。`SettingsStore.init()` 需要正确 fallback 到 `UserSettings` 默认值。如果用户之前选择了 `defaultApiMode = "local"`，升级后应将 local 放在优先级数组首位——需要迁移逻辑。
+6. **Apple Translation 语言包未下载**：用户首次使用某语言对时，系统会弹出下载对话框。如果用户拒绝下载或下载失败，应自动 fallback 到 Cloud GPT。可通过 `ServiceAppleTranslation.checkAvailability()` 提前检查。
+
+7. **Realtime 模式不参与优先级队列**：这是有意的设计决策。Realtime 的交互模式（流式逐词输出）与 Cloud/Local（一次性返回完整文本）根本不同，无法作为彼此的 fallback。用户选择 Realtime 时就是选择了流式体验。
