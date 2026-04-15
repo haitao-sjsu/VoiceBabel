@@ -43,14 +43,18 @@ class ServiceAppleTranslation {
     }
 
     private func setupBridgeWindow() {
+        // 桥接窗口：1x1 像素，屏幕左下角，对用户不可见但对 window server 可见。
+        // 必须 orderFrontRegardless() 让 SwiftUI 生命周期激活。
+        // 不能用 alphaValue=0，否则系统语言包下载对话框无法弹出。
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1, height: 1),
             styleMask: [],
             backing: .buffered,
-            defer: true
+            defer: false
         )
         window.isReleasedWhenClosed = false
-        window.orderOut(nil)  // 确保不可见
+        window.level = .init(-1)         // 略低于普通窗口
+        window.orderFrontRegardless()
         self.bridgeWindow = window
     }
 
@@ -76,8 +80,29 @@ class ServiceAppleTranslation {
             return
         }
 
-        DispatchQueue.main.async { [weak self] in
-            self?.performTranslation(text: text, source: source, target: target, completion: completion)
+        // 先检查语言包状态，给用户明确提示
+        Task {
+            let availability = LanguageAvailability()
+            let sourceLang = source ?? Locale.Language(identifier: "en")
+            let status = await availability.status(from: sourceLang, to: target)
+
+            await MainActor.run { [weak self] in
+                switch status {
+                case .installed:
+                    break
+                case .supported:
+                    Log.i("[AppleTranslation] Language pack not installed (\(sourceLanguage ?? "auto")→\(targetLanguage)), system will prompt for download")
+                case .unsupported:
+                    completion(.failure(TranslationError.unsupportedLanguagePair))
+                    return
+                @unknown default:
+                    completion(.failure(TranslationError.unsupportedLanguagePair))
+                    return
+                }
+                // installed 和 supported 都继续翻译
+                // supported 时 session.translate() 会自动弹出系统下载对话框
+                self?.performTranslation(text: text, source: source, target: target, completion: completion)
+            }
         }
     }
 
@@ -138,7 +163,7 @@ class ServiceAppleTranslation {
 
         let view = TranslationHostView(
             text: text,
-            configuration: config,
+            targetConfig: config,
             completion: safeCompletion
         )
 
@@ -147,11 +172,10 @@ class ServiceAppleTranslation {
         hostingController.view.frame = NSRect(x: 0, y: 0, width: 1, height: 1)
         hostingController.view.alphaValue = 0
 
-        // 添加到隐藏窗口
         window.contentView?.addSubview(hostingController.view)
 
-        // 超时保护：防止 translationTask 永远不触发
-        DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
+        // 超时保护（60 秒：允许语言包下载时间）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 60) {
             if !hasCompleted {
                 safeCompletion(.failure(TranslationError.translationFailed("Translation timed out")))
             }
@@ -202,8 +226,12 @@ class ServiceAppleTranslation {
 @available(macOS 15.0, *)
 private struct TranslationHostView: View {
     let text: String
-    let configuration: TranslationSession.Configuration
+    let targetConfig: TranslationSession.Configuration
     let completion: (Result<String, Error>) -> Void
+
+    // 【关键】@State 初始为 nil，onAppear 时赋值，触发 translationTask
+    // .translationTask 只在 configuration 从 nil 变为非 nil 时触发回调
+    @State private var configuration: TranslationSession.Configuration?
 
     var body: some View {
         Color.clear
@@ -219,6 +247,9 @@ private struct TranslationHostView: View {
                         completion(.failure(error))
                     }
                 }
+            }
+            .onAppear {
+                configuration = targetConfig
             }
     }
 }
