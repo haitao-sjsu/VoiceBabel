@@ -88,6 +88,61 @@ If build fails, debug and fix it yourself.
 **Important: Do NOT use `CONFIGURATION_BUILD_DIR=$(pwd)`** -- it generates intermediate files in the project directory.
 **Important: Always use `make` targets instead of raw `xcodebuild` commands.**
 
+## Git Commit & Push
+
+When the user asks to commit, follow this workflow:
+
+### 1. Analyze changes
+```bash
+git status                    # Overview of all changes
+git diff --stat               # Changed files summary
+git log --oneline -5          # Recent commit style reference
+```
+
+### 2. Group commits by logical unit
+
+Do NOT put everything into one commit. Group by purpose:
+
+| Category | Example |
+|----------|---------|
+| Docs (research/plan/review) | Research docs, plan files, code reviews |
+| Feature code | New service, controller changes, config |
+| Config/meta | CLAUDE.md updates, Makefile, Xcode project |
+| Tests | Unit tests |
+
+### 3. Stage and commit each group
+
+```bash
+git add <specific files>      # Stage by group, never use `git add -A`
+git commit -m "$(cat <<'EOF'
+Short summary (imperative mood)
+
+Optional body with details.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+### 4. Push only when explicitly asked
+
+```bash
+git push
+```
+
+### Commit message conventions
+- Imperative mood: "Add feature" not "Added feature"
+- First line under 72 chars
+- Body explains "why" not "what" (the diff shows "what")
+- Always include `Co-Authored-By` trailer
+- Follow existing commit style in `git log`
+
+### File naming conventions (for docs commits)
+- `.claude-research-tech/`: `01_topic_name.md` (sequential numbering)
+- `.claude-code-review/`: `01_review_name.md` (sequential numbering)
+- `.claude-plan/`: `01_plan_name.md` (sequential numbering)
+- When renumbering files (e.g., after deletion), keep all numbers sequential with no gaps
+
 ## Internationalization (i18n)
 
 - UI strings are localized via String Catalogs (`WhisperUtil/Localizable.xcstrings`), supporting 20 languages
