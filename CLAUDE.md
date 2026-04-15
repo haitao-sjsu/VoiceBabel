@@ -15,7 +15,7 @@ All three modes support transcription. Translation uses a two-step approach: fir
 ```
 main.swift -> AppDelegate (Composition Root)
                  |
-                 +-- Config/Config <-- Config/UserSettings (user preference defaults)
+                 +-- Config/Config <-- Config/SettingsDefaults (user preference defaults)
                  |                 <-- Config/EngineeringOptions (engineering switches/constants)
                  +-- Config/SettingsStore (UserDefaults + ObservableObject)
                  +-- Config/KeychainHelper (API Key secure storage)
@@ -36,16 +36,18 @@ main.swift -> AppDelegate (Composition Root)
 
 Components communicate via closures/callbacks, connected in `AppDelegate.setupComponents()`. Settings changes propagate in real-time via Combine publishers.
 
-## Directory Structure
+## Project Structure
+
+### Directories
 
 ```
-Root/                       — Entry, composition root, core logic, hotkey handling
 Config/                     — Configuration (user prefs, engineering options, Keychain, settings store)
 UI/                         — Menu bar controller, SwiftUI settings panel, settings window
 Services/                   — Transcription & translation backends (Cloud / Realtime / Local / Apple Translation / Text cleanup)
 Audio/                      — Audio capture and encoding
 Utilities/                  — Helpers (text input, network probe, logging, i18n locale manager)
 WhisperUtil/                — Resources (Assets, Storyboard, String Catalogs)
+WhisperUtilTests/           — Unit tests
 .claude-research-tech/      — Technical research documents
 .claude-research-commercial/— Commercial research documents
 .claude-plan/               — Implementation plans
@@ -53,6 +55,19 @@ WhisperUtil/                — Resources (Assets, Storyboard, String Catalogs)
 .human-learn/               — Learning notes (hand-written code reproductions)
 .human-devlog/              — Development log (daily work journal)
 ```
+
+### Root Files
+
+| File | Description |
+|------|-------------|
+| **main.swift** | App entry point, creates NSApplication and AppDelegate |
+| **AppDelegate.swift** | Composition root — initializes all components, connects callbacks, subscribes to settings changes via Combine |
+| **RecordingController.swift** | Core dispatcher — recording state machine, API mode routing, transcription/translation flows, auto-send logic, fallback |
+| **HotkeyManager.swift** | Option key gesture detection (push-to-talk, double-tap translate, single-tap cancel) |
+| **Makefile** | Build/run automation (`make dev`, `make build`, `make run`, `make release`, `make clean`) |
+| **whisperutil.log** | Runtime log file (auto-generated, not checked into git) |
+| **WhisperUtil.xcodeproj/** | Xcode project bundle (directory displayed as a file in Finder). Contains `project.pbxproj` (build targets, file references, settings) |
+| **CLAUDE.md** | This file — project guidelines for Claude |
 
 ## Background Mode
 
@@ -85,8 +100,17 @@ make help     # Show all targets
 
 If build fails, debug and fix it yourself.
 
-**Important: Do NOT use `CONFIGURATION_BUILD_DIR=$(pwd)`** -- it generates intermediate files in the project directory.
-**Important: Always use `make` targets instead of raw `xcodebuild` commands.**
+### When to restart the app
+
+- **Behavioral changes** (new features, bug fixes, changed logic, modified UI): use `make dev` to rebuild AND restart so the running app reflects the changes.
+- **Non-behavioral changes** (renames, comments, docs, CLAUDE.md, formatting, refactors that don't change behavior): `make build` is sufficient to verify compilation. No need to restart.
+
+## Keeping CLAUDE.md Files Up-to-Date
+
+CLAUDE.md files are distributed across the project — one in the root and one in each subdirectory (`Audio/`, `Config/`, `Services/`, `UI/`, `Utilities/`).
+
+- **Subdirectory CLAUDE.md**: When a subdirectory has significant changes (files added/deleted/renamed, major refactoring), update that subdirectory's CLAUDE.md to reflect the current state.
+- **Root CLAUDE.md**: When the overall architecture changes significantly (new modules, removed components, changed communication patterns), update the root CLAUDE.md accordingly.
 
 ## Git Commit & Push
 
