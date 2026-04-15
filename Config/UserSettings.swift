@@ -48,6 +48,19 @@ struct UserSettings {
     static let defaultApiMode = "cloud"
 
     // ============================================================
+    // MARK: - 优先级配置
+    // ============================================================
+
+    /// 转录模式优先级（有序数组，索引 0 = 最高优先级）
+    /// Realtime 模式独立，不参与优先级队列
+    static let transcriptionPriority = ["cloud", "local"]
+
+    /// 翻译引擎优先级（有序数组，索引 0 = 最高优先级）
+    /// - "apple"：Apple Translation（本地离线）
+    /// - "cloud"：Cloud GPT（gpt-4o-mini，需网络）
+    static let translationEnginePriority = ["apple", "cloud"]
+
+    // ============================================================
     // MARK: - 自动发送配置
     // ============================================================
 

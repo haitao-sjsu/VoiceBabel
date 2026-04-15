@@ -130,9 +130,9 @@ enum EngineeringOptions {
     /// - 超时后会断开 WebSocket 连接
     static let realtimeResultTimeout: TimeInterval = 10
 
-    /// 是否启用 Cloud → Local 网络回退
-    /// 关闭后网络 API 失败时直接报错，不回退到本地 WhisperKit
-    static let enableCloudFallback = true
+    /// 是否启用模式间自动回退（转录和翻译）
+    /// 关闭后失败时直接报错，不尝试优先级队列中的下一个模式
+    static let enableModeFallback = true
 
     /// Cloud API 回退后的健康探测间隔（秒）
     /// - 回退到本地后，每隔此时间探测一次 Cloud API 是否恢复
@@ -155,12 +155,6 @@ enum EngineeringOptions {
 
     /// Chat 翻译模型（用于两步翻译法的第二步）
     static let chatTranslationModel = "gpt-4o-mini"
-
-    /// 翻译引擎
-    /// - "auto": 优先 Apple Translation（本地），失败或不支持时 fallback 到 Cloud
-    /// - "apple": 强制使用 Apple Translation（离线可用，macOS 15.0+）
-    /// - "cloud": 强制使用 Cloud API（gpt-4o-mini，需网络）
-    static let translationEngine = "auto"
 
 
     // ============================================================

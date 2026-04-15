@@ -161,6 +161,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         recordingController.preferredApiMode = defaultMode
         recordingController.currentApiMode = defaultMode
+        recordingController.transcriptionPriority = settingsStore.transcriptionPriority
+        recordingController.translationEnginePriority = settingsStore.translationEnginePriority
 
         networkHealthMonitor = NetworkHealthMonitor(apiKey: config.openaiApiKey)
         networkHealthMonitor.onCloudRecovered = { [weak self] in
@@ -236,6 +238,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.networkHealthMonitor.stopMonitoring()
             self.statusBarController.setApiMode(mode)
             Log.i(lm.logLocalized("Settings: API mode changed to") + " \(modeString)")
+        }.store(in: &cancellables)
+
+        settingsStore.$transcriptionPriority.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] priority in
+            guard let self = self else { return }
+            self.recordingController.transcriptionPriority = priority
+            // Update currentApiMode to top priority if not in Realtime mode
+            if self.recordingController.preferredApiMode != .realtime, let top = priority.first {
+                let mode: StatusBarController.ApiMode = top == "local" ? .local : .cloud
+                self.recordingController.currentApiMode = mode
+                self.statusBarController.setApiMode(mode)
+            }
+            Log.i(lm.logLocalized("Settings: Transcription priority changed to") + " \(priority)")
+        }.store(in: &cancellables)
+
+        settingsStore.$translationEnginePriority.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] priority in
+            self?.recordingController.translationEnginePriority = priority
+            Log.i(lm.logLocalized("Settings: Translation engine priority changed to") + " \(priority)")
         }.store(in: &cancellables)
 
         settingsStore.$autoSendMode.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] modeString in

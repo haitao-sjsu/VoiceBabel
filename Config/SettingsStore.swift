@@ -47,6 +47,8 @@ final class SettingsStore: ObservableObject {
     // Keys
     private enum Keys {
         static let defaultApiMode = "defaultApiMode"
+        static let transcriptionPriority = "transcriptionPriority"
+        static let translationEnginePriority = "translationEnginePriority"
         static let whisperLanguage = "whisperLanguage"
         static let playSound = "playSound"
         static let autoSendMode = "autoSendMode"
@@ -58,6 +60,12 @@ final class SettingsStore: ObservableObject {
 
     @Published var defaultApiMode: String {
         didSet { defaults.set(defaultApiMode, forKey: Keys.defaultApiMode) }
+    }
+    @Published var transcriptionPriority: [String] {
+        didSet { defaults.set(transcriptionPriority, forKey: Keys.transcriptionPriority) }
+    }
+    @Published var translationEnginePriority: [String] {
+        didSet { defaults.set(translationEnginePriority, forKey: Keys.translationEnginePriority) }
     }
     @Published var whisperLanguage: String {
         didSet { defaults.set(whisperLanguage, forKey: Keys.whisperLanguage) }
@@ -94,6 +102,24 @@ final class SettingsStore: ObservableObject {
     private init() {
         // Load from UserDefaults, fall back to UserSettings defaults
         self.defaultApiMode = defaults.object(forKey: Keys.defaultApiMode) as? String ?? UserSettings.defaultApiMode
+
+        // Load priority arrays with migration from legacy defaultApiMode
+        if let saved = defaults.object(forKey: Keys.transcriptionPriority) as? [String], !saved.isEmpty {
+            self.transcriptionPriority = saved
+        } else {
+            // Migration: put user's previously selected mode first in priority
+            var priority = UserSettings.transcriptionPriority
+            let oldMode = defaults.object(forKey: Keys.defaultApiMode) as? String ?? UserSettings.defaultApiMode
+            // Only cloud and local participate in priority queue (not realtime)
+            if oldMode != "realtime", let idx = priority.firstIndex(of: oldMode), idx != 0 {
+                priority.remove(at: idx)
+                priority.insert(oldMode, at: 0)
+            }
+            self.transcriptionPriority = priority
+        }
+        self.translationEnginePriority = defaults.object(forKey: Keys.translationEnginePriority) as? [String]
+            ?? UserSettings.translationEnginePriority
+
         self.whisperLanguage = defaults.object(forKey: Keys.whisperLanguage) as? String ?? UserSettings.whisperLanguage
         self.playSound = defaults.object(forKey: Keys.playSound) as? Bool ?? UserSettings.playSound
         self.autoSendMode = defaults.object(forKey: Keys.autoSendMode) as? String ?? UserSettings.autoSendMode
