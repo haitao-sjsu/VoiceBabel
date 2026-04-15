@@ -157,12 +157,13 @@ class RecordingController {
     // MARK: - Public Methods
 
     /// Resolve the effective whisper language, mapping "ui" to the interface language code
+    /// and normalizing script variants (e.g., "zh-Hant" → "zh") since Whisper API only accepts base language codes
     private func effectiveWhisperLanguage() -> String {
         let lang = SettingsStore.shared.whisperLanguage
         if lang == "ui" {
             return LocaleManager.whisperCode(for: LocaleManager.shared.currentLocale.language.languageCode?.identifier ?? "en")
         }
-        return lang
+        return LocaleManager.whisperCode(for: lang)
     }
 
     func beginRecording(mode: RecordingMode) {

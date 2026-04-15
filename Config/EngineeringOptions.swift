@@ -143,9 +143,6 @@ enum EngineeringOptions {
     // MARK: - Post-processing
     // ============================================================
 
-    /// 是否启用繁体→简体中文转换
-    static let enableTraditionalToSimplified = true
-
     /// 是否启用特殊标签过滤（如 [MUSIC]、[BLANK_AUDIO]）
     static let enableTagFiltering = true
 

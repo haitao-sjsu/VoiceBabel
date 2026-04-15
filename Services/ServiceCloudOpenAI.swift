@@ -245,7 +245,7 @@ class ServiceCloudOpenAI {
                 let interfaceCode = LocaleManager.shared.currentLocale.language.languageCode?.identifier ?? "en"
                 effectiveLanguage = LocaleManager.whisperCode(for: interfaceCode)
             } else {
-                effectiveLanguage = language
+                effectiveLanguage = LocaleManager.whisperCode(for: language)
             }
             if let lang = effectiveLanguage {
                 body.append("--\(boundary)\r\n".data(using: .utf8)!)

@@ -17,7 +17,7 @@
 //
 // 依赖：
 //   - WhisperKit：CoreML 本地 Whisper 推理引擎
-//   - EngineeringOptions：localWhisperModel（模型名称）、enableTraditionalToSimplified、enableTagFiltering
+//   - EngineeringOptions：localWhisperModel（模型名称）、enableTagFiltering
 //
 // 架构角色：
 //   由 AppDelegate 创建并预加载模型，由 RecordingController 在 local 模式下调用。
@@ -123,7 +123,7 @@ class ServiceLocalWhisper {
         var options = DecodingOptions()
         options.task = .transcribe
         if !language.isEmpty {
-            options.language = language
+            options.language = LocaleManager.whisperCode(for: language)
         } else {
             // 语言未指定时启用自动检测（WhisperKit 默认英文，需显式开启检测）
             options.detectLanguage = true
@@ -171,13 +171,6 @@ class ServiceLocalWhisper {
         }
 
         text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // 繁体中文 → 简体中文转换
-        if EngineeringOptions.enableTraditionalToSimplified {
-            let mutableText = NSMutableString(string: text)
-            CFStringTransform(mutableText, nil, "Traditional-Simplified" as CFString, false)
-            text = mutableText as String
-        }
 
         if text.isEmpty {
             Log.i(lm.logLocalized("LocalWhisper: transcription result is empty"))

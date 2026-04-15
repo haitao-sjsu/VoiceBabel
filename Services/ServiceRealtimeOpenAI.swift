@@ -121,7 +121,7 @@ class ServiceRealtimeOpenAI: NSObject {
             "model": EngineeringOptions.whisperModel
         ]
         if !language.isEmpty {
-            transcriptionConfig["language"] = language
+            transcriptionConfig["language"] = LocaleManager.whisperCode(for: language)
         }
 
         // 启用服务器端语音活动检测（VAD）

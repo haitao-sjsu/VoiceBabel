@@ -23,7 +23,8 @@
 // 依赖：
 //   - CGEvent (Core Graphics)：模拟键盘事件
 //   - Carbon：虚拟键码常量（kVK_Return 等）
-//   - EngineeringOptions：enableTraditionalToSimplified, enableTagFiltering, clipboardPasteDelay, clipboardRestoreDelay
+//   - EngineeringOptions：enableTagFiltering, clipboardPasteDelay, clipboardRestoreDelay
+//   - SettingsStore：whisperLanguage, appLanguage（用于繁简转换方向判断）
 //
 // 架构角色：
 //   由 AppDelegate 创建，由 RecordingController 在转录/翻译完成后调用。
@@ -63,17 +64,11 @@ class TextInputter {
         rawInput(processed)
     }
 
-    /// 将文本输入，仅做繁转简，不做其他后处理（不 trim、不过滤标签）
+    /// 将文本输入，仅做繁简转换，不做其他后处理（不 trim、不过滤标签）
     /// 用于 Realtime API delta 等需要保留空格的场景
     func inputTextRaw(_ text: String) {
         guard !text.isEmpty else { return }
-        if EngineeringOptions.enableTraditionalToSimplified {
-            let mutableText = NSMutableString(string: text)
-            CFStringTransform(mutableText, nil, "Traditional-Simplified" as CFString, false)
-            rawInput(mutableText as String)
-        } else {
-            rawInput(text)
-        }
+        rawInput(Self.convertChineseScript(text))
     }
 
     /// 内部输入方法
@@ -86,7 +81,7 @@ class TextInputter {
         }
     }
 
-    /// 文本后处理：繁体转简体、过滤特殊标签
+    /// 文本后处理：过滤特殊标签、繁简转换
     /// 所有模式（本地/云端/实时/翻译）的输出都经过此处理
     private static func postProcess(_ text: String) -> String {
         var result = text
@@ -96,14 +91,54 @@ class TextInputter {
             result = result.replacingOccurrences(of: "\\[.*?\\]", with: "", options: .regularExpression)
         }
 
-        // 繁体中文 → 简体中文
-        if EngineeringOptions.enableTraditionalToSimplified {
-            let mutableText = NSMutableString(string: result)
-            CFStringTransform(mutableText, nil, "Traditional-Simplified" as CFString, false)
-            result = mutableText as String
-        }
+        // 根据用户语言设置进行繁简转换
+        result = convertChineseScript(result)
 
         return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// 根据用户的语言设置决定繁简转换方向
+    ///
+    /// - "zh"：用户指定简体中文 → 繁体转简体
+    /// - "zh-Hant"：用户指定繁体中文 → 简体转繁体
+    /// - "ui"：跟随界面语言（zh-Hans → 转简体，zh-Hant → 转繁体）
+    /// - 其他（含空字符串自动检测）：不转换，原样输出
+    private static func convertChineseScript(_ text: String) -> String {
+        let lang = SettingsStore.shared.whisperLanguage
+
+        // 解析用户的目标中文字形
+        let targetScript: String?  // "Hans" or "Hant" or nil
+        switch lang {
+        case "zh":
+            targetScript = "Hans"
+        case "zh-Hant":
+            targetScript = "Hant"
+        case "ui":
+            let appLang = SettingsStore.shared.appLanguage
+            if appLang == "system" {
+                let sysLangCode = Locale.current.language.languageCode?.identifier
+                if sysLangCode == "zh" {
+                    targetScript = Locale.current.language.script?.identifier == "Hant" ? "Hant" : "Hans"
+                } else {
+                    targetScript = nil
+                }
+            } else if appLang == "zh-Hans" {
+                targetScript = "Hans"
+            } else if appLang == "zh-Hant" {
+                targetScript = "Hant"
+            } else {
+                targetScript = nil
+            }
+        default:
+            targetScript = nil
+        }
+
+        guard let script = targetScript else { return text }
+
+        let mutable = NSMutableString(string: text)
+        // reverse=false: Traditional→Simplified; reverse=true: Simplified→Traditional
+        CFStringTransform(mutable, nil, "Traditional-Simplified" as CFString, script == "Hant")
+        return mutable as String
     }
 
     /// 使用键盘模拟逐字符输入文本
