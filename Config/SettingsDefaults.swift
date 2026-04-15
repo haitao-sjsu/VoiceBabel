@@ -1,4 +1,4 @@
-// UserSettings.swift
+// SettingsDefaults.swift
 // WhisperUtil - macOS 菜单栏语音转文字工具
 //
 // 用户偏好默认值注册表 —— 作为 SettingsStore（UserDefaults）的 fallback 默认值。
@@ -12,7 +12,7 @@
 //   本文件仅保留默认值定义，不再作为运行时配置的直接来源。
 //
 // 与 EngineeringOptions 的区别：
-//   - UserSettings：面向用户的偏好（语言、模式、提示音等），可在设置面板中调整
+//   - SettingsDefaults：面向用户的偏好（语言、模式、提示音等），可在设置面板中调整
 //   - EngineeringOptions：面向开发者的工程选项（API 密钥、管线开关等），不对用户暴露
 //
 // 依赖：无
@@ -22,7 +22,7 @@
 
 import Foundation
 
-struct UserSettings {
+struct SettingsDefaults {
 
     // ============================================================
     // MARK: - 语言配置
@@ -67,11 +67,11 @@ struct UserSettings {
     /// 自动发送模式
     /// - "off"：仅转写，不自动发送
     /// - "always"：转写后自动按 Enter 发送
-    /// - "smart"：智能模式，转写后倒计时，可取消或追加录音
+    /// - "delayed"：延迟发送模式，转写后倒计时，可取消或追加录音
     static let autoSendMode = "always"
 
-    /// 智能模式等待时间（秒）
-    static let smartModeWaitDuration: TimeInterval = 3.0
+    /// 延迟发送模式等待时间（秒）
+    static let delayedSendDuration: TimeInterval = 3.0
 
     // ============================================================
     // MARK: - 文本优化配置

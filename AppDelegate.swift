@@ -4,7 +4,7 @@
 // Composition Root — initializes all components and connects them via callbacks.
 //
 // Responsibilities:
-//   1. Load runtime config (Config.load() <- UserSettings + EngineeringOptions)
+//   1. Load runtime config (Config.load() <- SettingsDefaults + EngineeringOptions)
 //   2. Create and connect all components
 //   3. Subscribe to SettingsStore changes via Combine, propagate to components
 //   4. Async preload WhisperKit local model
@@ -174,7 +174,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         recordingController.autoSendMode = StatusBarController.AutoSendMode.from(config.autoSendMode)
-        recordingController.smartModeWaitDuration = config.smartModeWaitDuration
+        recordingController.delayedSendDuration = config.delayedSendDuration
         recordingController.textCleanupMode = TextCleanupMode.from(config.textCleanupMode)
 
         hotkeyManager = HotkeyManager()
@@ -262,8 +262,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Log.i(lm.logLocalized("Settings: Send mode changed to") + " \(modeString)")
         }.store(in: &cancellables)
 
-        settingsStore.$smartModeWaitDuration.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] duration in
-            self?.recordingController.smartModeWaitDuration = duration
+        settingsStore.$delayedSendDuration.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] duration in
+            self?.recordingController.delayedSendDuration = duration
             Log.i(lm.logLocalized("Settings: Delay changed to") + " \(Int(duration))s")
         }.store(in: &cancellables)
 

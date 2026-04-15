@@ -16,8 +16,8 @@
 //   所有字段均为 static let，编译期确定。
 //
 // 与其他配置文件的关系：
-//   - UserSettings：用户偏好默认值（由 SettingsStore 管理）
-//   - Config：从本文件和 UserSettings 组装的运行时配置快照
+//   - SettingsDefaults：用户偏好默认值（由 SettingsStore 管理）
+//   - Config：从本文件和 SettingsDefaults 组装的运行时配置快照
 //
 // 依赖：无
 //

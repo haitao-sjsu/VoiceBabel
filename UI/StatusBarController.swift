@@ -11,7 +11,7 @@
 //
 // Also defines two domain enums:
 //   - ApiMode: API mode (local/cloud/realtime)
-//   - AutoSendMode: auto-send mode (off/always/smart)
+//   - AutoSendMode: auto-send mode (off/always/delayed)
 //
 // Dependencies:
 //   - RecordingController.AppState
@@ -45,19 +45,19 @@ class StatusBarController {
     enum AutoSendMode: String {
         case off = "off"
         case always = "always"
-        case smart = "smart"
+        case delayed = "delayed"
 
         var displayName: String {
             let lm = LocaleManager.shared
             switch self {
             case .off: return lm.localized("Transcribe Only")
             case .always: return lm.localized("Transcribe + Auto Send")
-            case .smart: return lm.localized("Transcribe + Delayed Send")
+            case .delayed: return lm.localized("Transcribe + Delayed Send")
             }
         }
 
         static func from(_ string: String) -> AutoSendMode {
-            return AutoSendMode(rawValue: string) ?? .smart
+            return AutoSendMode(rawValue: string) ?? .delayed
         }
     }
 

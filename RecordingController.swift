@@ -8,7 +8,7 @@
 //   2. API mode routing: route to local/cloud/realtime transcription flows
 //   3. Translation: Whisper API direct + two-step (transcribe+GPT translate)
 //   4. Text cleanup pipeline: post-process via ServiceTextCleanup
-//   5. Auto-send logic: off/always/smart
+//   5. Auto-send logic: off/always/delayed
 //   6. Audio validation: min data size + RMS threshold
 //   7. Network fallback: Cloud API failure -> local WhisperKit
 //
@@ -64,13 +64,13 @@ class RecordingController {
     }
 
     private var currentMode: RecordingMode = .transcribe
-    var transcriptionPriority: [String] = UserSettings.transcriptionPriority
-    var translationEnginePriority: [String] = UserSettings.translationEnginePriority
+    var transcriptionPriority: [String] = SettingsDefaults.transcriptionPriority
+    var translationEnginePriority: [String] = SettingsDefaults.translationEnginePriority
     var preferredApiMode: StatusBarController.ApiMode = .cloud
     var currentApiMode: StatusBarController.ApiMode = .cloud
     private(set) var isInFallbackMode: Bool = false
-    var autoSendMode: StatusBarController.AutoSendMode = .smart
-    var smartModeWaitDuration: TimeInterval = UserSettings.smartModeWaitDuration
+    var autoSendMode: StatusBarController.AutoSendMode = .delayed
+    var delayedSendDuration: TimeInterval = SettingsDefaults.delayedSendDuration
     var textCleanupMode: TextCleanupMode = .off
     var playSound: Bool = true
     private var lastRecordingDuration: TimeInterval = 0
@@ -193,7 +193,7 @@ class RecordingController {
         case .processing:
             Log.i(lm.logLocalized("Processing in progress, please wait..."))
         case .waitingToSend:
-            cancelSmartMode()
+            cancelDelayedSend()
         case .error:
             currentState = .idle
         }
@@ -219,7 +219,7 @@ class RecordingController {
             currentState = .idle
 
         case .waitingToSend:
-            cancelSmartMode()
+            cancelDelayedSend()
 
         case .idle, .error:
             break
@@ -237,7 +237,7 @@ class RecordingController {
             return
         }
 
-        cancelSmartModeForNewRecording()
+        cancelDelayedSendForNewRecording()
 
         let modeText = currentMode == .transcribe ? lm.logLocalized("speech-to-text") : lm.logLocalized("speech translation")
         let apiModeText: String
@@ -964,45 +964,45 @@ class RecordingController {
                 Log.i(lm.logLocalized("Auto send: pressed Enter"))
             }
 
-        case .smart:
-            startSmartModeCountdown()
+        case .delayed:
+            startDelayedSendCountdown()
         }
     }
 
-    private func startSmartModeCountdown() {
+    private func startDelayedSendCountdown() {
         let lm = LocaleManager.shared
         currentState = .waitingToSend
-        Log.i(lm.logLocalized("Smart mode: starting") + " \(smartModeWaitDuration)s " + lm.logLocalized("countdown..."))
+        Log.i(lm.logLocalized("Delayed send: starting") + " \(delayedSendDuration)s " + lm.logLocalized("countdown..."))
 
         let timerWork = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
             if self.currentState == .waitingToSend {
                 self.textInputter.pressReturnKey()
-                Log.i(lm.logLocalized("Smart mode: countdown ended, auto sent"))
-                self.cleanupSmartMode()
+                Log.i(lm.logLocalized("Delayed send: countdown ended, auto sent"))
+                self.cleanupDelayedSend()
                 self.currentState = .idle
             }
         }
         pendingSendTimer = timerWork
-        DispatchQueue.main.asyncAfter(deadline: .now() + smartModeWaitDuration, execute: timerWork)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delayedSendDuration, execute: timerWork)
     }
 
-    private func cancelSmartMode() {
+    private func cancelDelayedSend() {
         let lm = LocaleManager.shared
-        cleanupSmartMode()
+        cleanupDelayedSend()
         currentState = .idle
-        Log.i(lm.logLocalized("Smart mode: user pressed hotkey to cancel send, text preserved"))
+        Log.i(lm.logLocalized("Delayed send: user pressed hotkey to cancel send, text preserved"))
     }
 
-    private func cancelSmartModeForNewRecording() {
+    private func cancelDelayedSendForNewRecording() {
         let lm = LocaleManager.shared
         if currentState == .waitingToSend {
-            Log.i(lm.logLocalized("Smart mode: user started new recording, cancelling send countdown"))
-            cleanupSmartMode()
+            Log.i(lm.logLocalized("Delayed send: user started new recording, cancelling send countdown"))
+            cleanupDelayedSend()
         }
     }
 
-    private func cleanupSmartMode() {
+    private func cleanupDelayedSend() {
         pendingSendTimer?.cancel()
         pendingSendTimer = nil
     }

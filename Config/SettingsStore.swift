@@ -12,18 +12,18 @@
 //   - defaultApiMode：API 模式（local/cloud/realtime）
 //   - whisperLanguage：语音识别语言
 //   - playSound：是否播放提示音
-//   - autoSendMode：自动发送模式（off/always/smart）
-//   - smartModeWaitDuration：智能模式等待时间
+//   - autoSendMode：自动发送模式（off/always/delayed）
+//   - delayedSendDuration：延迟发送模式等待时间
 //   - textCleanupMode：文本优化模式（off/neutral/formal/casual）
 //   - translationTargetLanguage：翻译目标语言
 //
 // 设计：
 //   - @MainActor 单例模式，确保线程安全
-//   - 初始化时从 UserDefaults 读取，fallback 到 UserSettings 硬编码默认值
+//   - 初始化时从 UserDefaults 读取，fallback 到 SettingsDefaults 硬编码默认值
 //   - @Published + didSet 模式：值变更时自动写入 UserDefaults 并通知订阅者
 //
 // 依赖：
-//   - UserSettings：提供 fallback 默认值
+//   - SettingsDefaults：提供 fallback 默认值
 //
 // 架构角色：
 //   - SwiftUI SettingsView 通过 @ObservedObject 绑定
@@ -52,7 +52,7 @@ final class SettingsStore: ObservableObject {
         static let whisperLanguage = "whisperLanguage"
         static let playSound = "playSound"
         static let autoSendMode = "autoSendMode"
-        static let smartModeWaitDuration = "smartModeWaitDuration"
+        static let delayedSendDuration = "delayedSendDuration"
         static let textCleanupMode = "textCleanupMode"
         static let translationTargetLanguage = "translationTargetLanguage"
         static let appLanguage = "appLanguage"
@@ -76,8 +76,8 @@ final class SettingsStore: ObservableObject {
     @Published var autoSendMode: String {
         didSet { defaults.set(autoSendMode, forKey: Keys.autoSendMode) }
     }
-    @Published var smartModeWaitDuration: TimeInterval {
-        didSet { defaults.set(smartModeWaitDuration, forKey: Keys.smartModeWaitDuration) }
+    @Published var delayedSendDuration: TimeInterval {
+        didSet { defaults.set(delayedSendDuration, forKey: Keys.delayedSendDuration) }
     }
     @Published var textCleanupMode: String {
         didSet { defaults.set(textCleanupMode, forKey: Keys.textCleanupMode) }
@@ -100,16 +100,16 @@ final class SettingsStore: ObservableObject {
     @Published var apiKeyVersion: Int = 0
 
     private init() {
-        // Load from UserDefaults, fall back to UserSettings defaults
-        self.defaultApiMode = defaults.object(forKey: Keys.defaultApiMode) as? String ?? UserSettings.defaultApiMode
+        // Load from UserDefaults, fall back to SettingsDefaults defaults
+        self.defaultApiMode = defaults.object(forKey: Keys.defaultApiMode) as? String ?? SettingsDefaults.defaultApiMode
 
         // Load priority arrays with migration from legacy defaultApiMode
         if let saved = defaults.object(forKey: Keys.transcriptionPriority) as? [String], !saved.isEmpty {
             self.transcriptionPriority = saved
         } else {
             // Migration: put user's previously selected mode first in priority
-            var priority = UserSettings.transcriptionPriority
-            let oldMode = defaults.object(forKey: Keys.defaultApiMode) as? String ?? UserSettings.defaultApiMode
+            var priority = SettingsDefaults.transcriptionPriority
+            let oldMode = defaults.object(forKey: Keys.defaultApiMode) as? String ?? SettingsDefaults.defaultApiMode
             // Only cloud and local participate in priority queue (not realtime)
             if oldMode != "realtime", let idx = priority.firstIndex(of: oldMode), idx != 0 {
                 priority.remove(at: idx)
@@ -118,13 +118,13 @@ final class SettingsStore: ObservableObject {
             self.transcriptionPriority = priority
         }
         self.translationEnginePriority = defaults.object(forKey: Keys.translationEnginePriority) as? [String]
-            ?? UserSettings.translationEnginePriority
+            ?? SettingsDefaults.translationEnginePriority
 
-        self.whisperLanguage = defaults.object(forKey: Keys.whisperLanguage) as? String ?? UserSettings.whisperLanguage
-        self.playSound = defaults.object(forKey: Keys.playSound) as? Bool ?? UserSettings.playSound
-        self.autoSendMode = defaults.object(forKey: Keys.autoSendMode) as? String ?? UserSettings.autoSendMode
-        self.smartModeWaitDuration = defaults.object(forKey: Keys.smartModeWaitDuration) as? TimeInterval ?? UserSettings.smartModeWaitDuration
-        self.textCleanupMode = defaults.object(forKey: Keys.textCleanupMode) as? String ?? UserSettings.textCleanupMode
+        self.whisperLanguage = defaults.object(forKey: Keys.whisperLanguage) as? String ?? SettingsDefaults.whisperLanguage
+        self.playSound = defaults.object(forKey: Keys.playSound) as? Bool ?? SettingsDefaults.playSound
+        self.autoSendMode = defaults.object(forKey: Keys.autoSendMode) as? String ?? SettingsDefaults.autoSendMode
+        self.delayedSendDuration = defaults.object(forKey: Keys.delayedSendDuration) as? TimeInterval ?? SettingsDefaults.delayedSendDuration
+        self.textCleanupMode = defaults.object(forKey: Keys.textCleanupMode) as? String ?? SettingsDefaults.textCleanupMode
         self.translationTargetLanguage = defaults.object(forKey: Keys.translationTargetLanguage) as? String ?? "en"
         self.appLanguage = defaults.object(forKey: Keys.appLanguage) as? String ?? "system"
 

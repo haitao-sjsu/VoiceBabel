@@ -1,10 +1,10 @@
 // Config.swift
 // WhisperUtil - macOS 菜单栏语音转文字工具
 //
-// 运行时配置结构体 —— 从 UserSettings 和 EngineeringOptions 两个来源组装。
+// 运行时配置结构体 —— 从 SettingsDefaults 和 EngineeringOptions 两个来源组装。
 //
 // 职责：
-//   作为配置抽象层，将 UserSettings（用户偏好默认值）和 EngineeringOptions（工程级选项）
+//   作为配置抽象层，将 SettingsDefaults（用户偏好默认值）和 EngineeringOptions（工程级选项）
 //   统一封装为一个结构体，供 AppDelegate 在启动时创建并传递给各组件初始化。
 //
 // 注意：
@@ -14,7 +14,7 @@
 //     由组件直接访问 EngineeringOptions
 //
 // 依赖：
-//   - UserSettings：用户偏好默认值
+//   - SettingsDefaults：用户偏好默认值
 //   - EngineeringOptions：工程级配置选项
 //
 // 架构角色：
@@ -32,17 +32,17 @@ struct Config {
     let inputMethod: String
     let typingDelay: TimeInterval
 
-    // MARK: - 用户设置（来自 UserSettings）
+    // MARK: - 用户设置（来自 SettingsDefaults）
 
     let whisperLanguage: String
     let defaultApiMode: String
     let autoSendMode: String
-    var smartModeWaitDuration: TimeInterval
+    var delayedSendDuration: TimeInterval
     let textCleanupMode: String
 
     // MARK: - 加载配置
 
-    /// 从 UserSettings 和 EngineeringOptions 加载配置
+    /// 从 SettingsDefaults 和 EngineeringOptions 加载配置
     static func load() -> Config {
         Log.d("Loading config...")
 
@@ -54,11 +54,11 @@ struct Config {
             inputMethod: EngineeringOptions.inputMethod,
             typingDelay: EngineeringOptions.typingDelay,
             // 用户设置
-            whisperLanguage: UserSettings.whisperLanguage,
-            defaultApiMode: UserSettings.defaultApiMode,
-            autoSendMode: UserSettings.autoSendMode,
-            smartModeWaitDuration: UserSettings.smartModeWaitDuration,
-            textCleanupMode: UserSettings.textCleanupMode
+            whisperLanguage: SettingsDefaults.whisperLanguage,
+            defaultApiMode: SettingsDefaults.defaultApiMode,
+            autoSendMode: SettingsDefaults.autoSendMode,
+            delayedSendDuration: SettingsDefaults.delayedSendDuration,
+            textCleanupMode: SettingsDefaults.textCleanupMode
         )
 
         Log.d("Config loaded")

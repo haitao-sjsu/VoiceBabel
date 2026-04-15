@@ -175,13 +175,13 @@ struct SettingsView: View {
                 Picker("Send Mode", selection: $store.autoSendMode) {
                     Text("Transcribe Only").tag("off")
                     Text("Transcribe + Auto Send").tag("always")
-                    Text("Transcribe + Delayed Send").tag("smart")
+                    Text("Transcribe + Delayed Send").tag("delayed")
                 }
 
-                if store.autoSendMode == "smart" {
+                if store.autoSendMode == "delayed" {
                     Stepper(
-                        "Delay: \(Int(store.smartModeWaitDuration)) seconds",
-                        value: $store.smartModeWaitDuration,
+                        "Delay: \(Int(store.delayedSendDuration)) seconds",
+                        value: $store.delayedSendDuration,
                         in: 2...15,
                         step: 1
                     )

@@ -173,7 +173,7 @@ final class EngineeringOptionsTests: XCTestCase {
 
     func testTranslationEnginePriorityValid() {
         let valid = Set(["apple", "cloud"])
-        let priority = UserSettings.translationEnginePriority
+        let priority = SettingsDefaults.translationEnginePriority
         XCTAssertFalse(priority.isEmpty)
         for engine in priority {
             XCTAssertTrue(valid.contains(engine), "Invalid engine: \(engine)")
