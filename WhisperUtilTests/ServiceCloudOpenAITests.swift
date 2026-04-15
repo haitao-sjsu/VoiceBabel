@@ -171,8 +171,12 @@ final class EngineeringOptionsTests: XCTestCase {
         XCTAssertNotNil(URL(string: EngineeringOptions.realtimeWebSocketURL))
     }
 
-    func testTranslationEngineValid() {
-        let valid = ["auto", "apple", "cloud"]
-        XCTAssertTrue(valid.contains(EngineeringOptions.translationEngine))
+    func testTranslationEnginePriorityValid() {
+        let valid = Set(["apple", "cloud"])
+        let priority = UserSettings.translationEnginePriority
+        XCTAssertFalse(priority.isEmpty)
+        for engine in priority {
+            XCTAssertTrue(valid.contains(engine), "Invalid engine: \(engine)")
+        }
     }
 }

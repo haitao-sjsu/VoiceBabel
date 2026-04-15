@@ -114,13 +114,20 @@ struct SettingsView: View {
             }
 
             // MARK: - Transcription
-            Section("Transcription") {
-                Picker("Default API Mode", selection: $store.defaultApiMode) {
-                    Text("Local (WhisperKit)").tag("local")
-                    Text("Cloud API").tag("cloud")
-                    Text("Realtime API").tag("realtime")
-                }
+            Section {
+                PriorityList(
+                    items: $store.transcriptionPriority,
+                    icon: transcriptionModeIcon,
+                    name: transcriptionModeName,
+                    description: transcriptionModeDescription
+                )
+            } header: {
+                Text("Transcription Priority")
+            } footer: {
+                Text("Drag to reorder. First item is preferred; others are fallback.")
+            }
 
+            Section("Text Processing") {
                 Picker("Text Cleanup", selection: $store.textCleanupMode) {
                     Text("Off").tag("off")
                     Text("Natural").tag("neutral")
@@ -130,6 +137,19 @@ struct SettingsView: View {
             }
 
             // MARK: - Translation
+            Section {
+                PriorityList(
+                    items: $store.translationEnginePriority,
+                    icon: translationEngineIcon,
+                    name: translationEngineName,
+                    description: translationEngineDescription
+                )
+            } header: {
+                Text("Translation Engine Priority")
+            } footer: {
+                Text("Drag to reorder. First engine is preferred; others are fallback.")
+            }
+
             Section("Translation") {
                 Picker("Output Language", selection: $store.translationTargetLanguage) {
                     Text("English").tag("en")
@@ -174,5 +194,100 @@ struct SettingsView: View {
         .frame(width: 440)
         .padding()
         .environment(\.locale, localeManager.currentLocale)
+    }
+
+    // MARK: - Priority Display Helpers
+
+    private func transcriptionModeIcon(_ mode: String) -> String {
+        switch mode {
+        case "cloud": return "cloud"
+        case "local": return "desktopcomputer"
+        default: return "questionmark"
+        }
+    }
+
+    private func transcriptionModeName(_ mode: String) -> LocalizedStringKey {
+        switch mode {
+        case "cloud": return "Cloud API"
+        case "local": return "Local (WhisperKit)"
+        default: return "Unknown"
+        }
+    }
+
+    private func transcriptionModeDescription(_ mode: String) -> LocalizedStringKey {
+        switch mode {
+        case "cloud": return "gpt-4o-transcribe, needs network"
+        case "local": return "On-device, offline"
+        default: return ""
+        }
+    }
+
+    private func translationEngineIcon(_ engine: String) -> String {
+        switch engine {
+        case "apple": return "apple.logo"
+        case "cloud": return "cloud"
+        default: return "questionmark"
+        }
+    }
+
+    private func translationEngineName(_ engine: String) -> LocalizedStringKey {
+        switch engine {
+        case "apple": return "Apple Translation"
+        case "cloud": return "Cloud GPT"
+        default: return "Unknown"
+        }
+    }
+
+    private func translationEngineDescription(_ engine: String) -> LocalizedStringKey {
+        switch engine {
+        case "apple": return "On-device, offline"
+        case "cloud": return "gpt-4o-mini, needs network"
+        default: return ""
+        }
+    }
+}
+
+// MARK: - Reusable Priority List
+
+private struct PriorityList: View {
+    @Binding var items: [String]
+    let icon: (String) -> String
+    let name: (String) -> LocalizedStringKey
+    let description: (String) -> LocalizedStringKey
+
+    var body: some View {
+        List {
+            ForEach(Array(items.enumerated()), id: \.element) { index, item in
+                HStack(spacing: 10) {
+                    Image(systemName: icon(item))
+                        .foregroundColor(.accentColor)
+                        .frame(width: 20)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(name(item))
+                            .font(.body)
+                        Text(description(item))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    if index == 0 {
+                        Text("Primary")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.secondary.opacity(0.12))
+                            .cornerRadius(4)
+                    }
+                }
+            }
+            .onMove { from, to in
+                items.move(fromOffsets: from, toOffset: to)
+            }
+        }
+        .frame(height: CGFloat(items.count * 44))
     }
 }

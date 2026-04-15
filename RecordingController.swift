@@ -64,6 +64,8 @@ class RecordingController {
     }
 
     private var currentMode: RecordingMode = .transcribe
+    var transcriptionPriority: [String] = UserSettings.transcriptionPriority
+    var translationEnginePriority: [String] = UserSettings.translationEnginePriority
     var preferredApiMode: StatusBarController.ApiMode = .cloud
     var currentApiMode: StatusBarController.ApiMode = .cloud
     private(set) var isInFallbackMode: Bool = false
@@ -252,10 +254,20 @@ class RecordingController {
             return
         }
 
-        if currentApiMode == .local && currentMode == .transcribe {
-            startLocalRecording()
-        } else if currentApiMode == .realtime && currentMode == .transcribe {
+        if currentApiMode == .realtime && currentMode == .transcribe {
             startRealtimeRecording()
+        } else if currentApiMode == .local && currentMode == .transcribe {
+            if localWhisperService.isReady() {
+                startNonStreamingRecording()
+            } else if EngineeringOptions.enableModeFallback,
+                      let nextMode = transcriptionPriority.first(where: { $0 != "local" }),
+                      nextMode == "cloud" {
+                // Start-time fallback: local not ready, try cloud
+                Log.w(lm.logLocalized("WhisperKit not ready, falling back to cloud for this recording"))
+                startNonStreamingRecording()
+            } else {
+                startLocalRecording() // will show error message
+            }
         } else {
             startNonStreamingRecording()
         }
@@ -399,57 +411,145 @@ class RecordingController {
         guard let recording = stopAndValidateRecording() else { return }
 
         currentState = .processing
-        Log.i(lm.logLocalized("Calling Whisper API (cloud transcription)..."))
-        whisperService.transcribe(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
-            switch result {
-            case .success:
-                self?.handleResult(result, action: lm.logLocalized("Cloud speech recognition"))
-            case .failure(let error):
-                if self?.shouldFallbackToLocal(error: error) == true {
-                    Log.w(lm.logLocalized("Cloud API failed, falling back to local WhisperKit:") + " \(error.localizedDescription)")
-                    DispatchQueue.main.async {
-                        self?.fallbackToLocalTranscription(samples: savedSamples)
-                    }
-                } else {
+        let startIndex = transcriptionPriority.firstIndex(of: "cloud") ?? 0
+        transcribeWithFallback(recording: recording, samples: savedSamples, audioDuration: audioDuration, priorityIndex: startIndex)
+    }
+
+    /// 按优先级队列尝试转录，失败时自动 fallback 到下一个模式
+    private func transcribeWithFallback(
+        recording: AudioRecorder.RecordingResult,
+        samples: [Float],
+        audioDuration: TimeInterval,
+        priorityIndex: Int
+    ) {
+        let lm = LocaleManager.shared
+        let priority = transcriptionPriority
+
+        guard priorityIndex < priority.count else {
+            handleError(String(localized: "All transcription modes failed"))
+            return
+        }
+
+        // 非首次尝试时检查 fallback 开关
+        if priorityIndex > 0 && !EngineeringOptions.enableModeFallback {
+            handleError(String(localized: "Transcription failed"))
+            return
+        }
+
+        let mode = priority[priorityIndex]
+        let tryNext: () -> Void = { [weak self] in
+            DispatchQueue.main.async {
+                self?.transcribeWithFallback(recording: recording, samples: samples, audioDuration: audioDuration, priorityIndex: priorityIndex + 1)
+            }
+        }
+
+        switch mode {
+        case "cloud":
+            Log.i(lm.logLocalized("Calling Whisper API (cloud transcription)..."))
+            whisperService.transcribe(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
+                switch result {
+                case .success:
                     self?.handleResult(result, action: lm.logLocalized("Cloud speech recognition"))
+                case .failure(let error):
+                    if let whisperError = error as? ServiceCloudOpenAI.WhisperError,
+                       case .networkError = whisperError {
+                        Log.w(lm.logLocalized("Cloud API failed, trying next priority:") + " \(error.localizedDescription)")
+                        self?.enterFallbackMode(mode: "cloud")
+                        tryNext()
+                    } else {
+                        self?.handleResult(result, action: lm.logLocalized("Cloud speech recognition"))
+                    }
+                }
+            }
+
+        case "local":
+            guard localWhisperService.isReady() else {
+                Log.w(lm.logLocalized("Local WhisperKit not ready, trying next priority"))
+                tryNext()
+                return
+            }
+            guard !samples.isEmpty else {
+                Log.w(lm.logLocalized("No audio samples for local transcription, trying next priority"))
+                tryNext()
+                return
+            }
+            Log.i(lm.logLocalized("Using local WhisperKit transcription..."))
+            localTranscribeWithFallback(samples: samples, recording: recording, audioDuration: audioDuration, priorityIndex: priorityIndex)
+
+        default:
+            tryNext()
+        }
+    }
+
+    /// 本地转录，失败时尝试下一个优先级
+    private func localTranscribeWithFallback(
+        samples: [Float],
+        recording: AudioRecorder.RecordingResult,
+        audioDuration: TimeInterval,
+        priorityIndex: Int
+    ) {
+        let lm = LocaleManager.shared
+        let sampleDuration = Double(samples.count) / EngineeringOptions.sampleRate
+        let minutes = sampleDuration / 60.0
+        let timeout = min(max(minutes * 10, EngineeringOptions.apiProcessingTimeoutMin), EngineeringOptions.apiProcessingTimeoutMax)
+        let action = lm.logLocalized("Local speech recognition")
+
+        Task {
+            do {
+                let text = try await withThrowingTaskGroup(of: String.self) { group in
+                    group.addTask {
+                        try await self.localWhisperService.transcribe(samples: samples)
+                    }
+                    group.addTask {
+                        try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                        throw CancellationError()
+                    }
+                    let result = try await group.next()!
+                    group.cancelAll()
+                    return result
+                }
+                await MainActor.run {
+                    let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if trimmedText.isEmpty {
+                        Log.i("\(action) " + lm.logLocalized("result is empty"))
+                        self.currentState = .idle
+                    } else {
+                        self.outputText(trimmedText, action: action)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    Log.e("\(action) " + lm.logLocalized("failed:") + " \(error)")
+                    if EngineeringOptions.enableModeFallback && priorityIndex + 1 < self.transcriptionPriority.count {
+                        Log.w(lm.logLocalized("Local transcription failed, trying next priority"))
+                        self.enterFallbackMode(mode: "local")
+                        self.transcribeWithFallback(recording: recording, samples: samples, audioDuration: audioDuration, priorityIndex: priorityIndex + 1)
+                    } else {
+                        self.handleError(String(localized: "\(action) failed: \(error.localizedDescription)"))
+                    }
                 }
             }
         }
     }
 
-    private func shouldFallbackToLocal(error: Error) -> Bool {
-        guard EngineeringOptions.enableCloudFallback else { return false }
-        guard localWhisperService.isReady() else { return false }
-
-        if let whisperError = error as? ServiceCloudOpenAI.WhisperError {
-            switch whisperError {
-            case .networkError:
-                return true
-            default:
-                return false
-            }
-        }
-        return false
-    }
-
-    private func fallbackToLocalTranscription(samples: [Float]) {
+    /// 进入 fallback 模式，更新 currentApiMode
+    private func enterFallbackMode(mode: String) {
         let lm = LocaleManager.shared
-        guard !samples.isEmpty else {
-            Log.w(lm.logLocalized("Fallback failed: no saved audio samples"))
-            handleError(String(localized: "Cloud API failed and cannot fall back to local transcription"))
-            return
-        }
-
-        Log.i(lm.logLocalized("Falling back to local WhisperKit, sample count:") + " \(samples.count)")
-
         if !isInFallbackMode {
             isInFallbackMode = true
-            currentApiMode = .local
-            Log.i(lm.logLocalized("Entered network fallback mode, subsequent transcriptions will use local WhisperKit"))
+            Log.i(lm.logLocalized("Entered fallback mode, original mode:") + " \(mode)")
         }
-
-        onError?(String(localized: "Cloud API timed out, automatically switched to local recognition"))
-        localTranscribeWithTimeout(samples: samples, action: lm.logLocalized("Local fallback speech recognition"))
+        // 更新 currentApiMode 为下一个可用模式
+        let nextIndex = (transcriptionPriority.firstIndex(of: mode) ?? -1) + 1
+        if nextIndex < transcriptionPriority.count {
+            let nextMode = transcriptionPriority[nextIndex]
+            switch nextMode {
+            case "cloud": currentApiMode = .cloud
+            case "local": currentApiMode = .local
+            default: break
+            }
+        }
+        onError?(String(localized: "Switched to fallback transcription mode"))
     }
 
     private func stopTranslationRecording() {
@@ -465,9 +565,11 @@ class RecordingController {
         let lm = LocaleManager.shared
         let samples = audioRecorder.getAudioSamples()
         let averageRMS = audioRecorder.getLastRecordingAverageRMS()
-        lastRecordingDuration = audioRecorder.getCurrentRecordingDuration()
+        let audioDuration = audioRecorder.getCurrentRecordingDuration()
+        lastRecordingDuration = audioDuration
 
-        _ = audioRecorder.stopRecording()
+        // Get encoded recording for potential cloud fallback
+        let recording = audioRecorder.stopRecording()
 
         Log.i(lm.logLocalized("Local mode recording ended, sample count:") + " \(samples.count), " + lm.logLocalized("avg volume:") + " \(averageRMS)")
 
@@ -486,7 +588,14 @@ class RecordingController {
         }
 
         currentState = .processing
-        localTranscribeWithTimeout(samples: samples, action: lm.logLocalized("Local speech recognition"))
+
+        if let recording = recording {
+            let startIndex = transcriptionPriority.firstIndex(of: "local") ?? 0
+            localTranscribeWithFallback(samples: samples, recording: recording, audioDuration: audioDuration, priorityIndex: startIndex)
+        } else {
+            // No encoded data, can only try local (no cloud fallback possible)
+            localTranscribeWithTimeout(samples: samples, action: lm.logLocalized("Local speech recognition"))
+        }
     }
 
     private func localTranscribeWithTimeout(samples: [Float], action: String) {
@@ -597,39 +706,70 @@ class RecordingController {
         // 保存转录结果到 last transcription（即使翻译失败也可恢复）
         onTranscriptionResult?(trimmed)
 
-        let engine = EngineeringOptions.translationEngine
+        translateTextWithFallback(trimmed, targetLanguage: targetLanguage, engineIndex: 0)
+    }
+
+    /// 按优先级队列尝试翻译引擎，失败时自动 fallback 到下一个
+    private func translateTextWithFallback(_ text: String, targetLanguage: String, engineIndex: Int) {
+        let lm = LocaleManager.shared
+        let engines = translationEnginePriority
+
+        guard engineIndex < engines.count else {
+            handleError(String(localized: "All translation engines failed"))
+            return
+        }
+
+        if engineIndex > 0 && !EngineeringOptions.enableModeFallback {
+            handleError(String(localized: "Translation failed"))
+            return
+        }
+
+        let engine = engines[engineIndex]
+        let tryNext: () -> Void = { [weak self] in
+            self?.translateTextWithFallback(text, targetLanguage: targetLanguage, engineIndex: engineIndex + 1)
+        }
 
         switch engine {
         case "apple":
-            translateTextViaApple(trimmed, targetLanguage: targetLanguage, fallbackToCloud: false)
+            translateTextViaApple(text, targetLanguage: targetLanguage, onFailure: tryNext)
         case "cloud":
-            translateTextViaCloud(trimmed, targetLanguage: targetLanguage)
-        default: // "auto"
-            translateTextViaApple(trimmed, targetLanguage: targetLanguage, fallbackToCloud: true)
+            translateTextViaCloud(text, targetLanguage: targetLanguage, onFailure: tryNext)
+        default:
+            tryNext()
         }
     }
 
     /// Cloud GPT 翻译
-    private func translateTextViaCloud(_ text: String, targetLanguage: String) {
+    private func translateTextViaCloud(_ text: String, targetLanguage: String, onFailure: (() -> Void)? = nil) {
         let lm = LocaleManager.shared
         Log.i(lm.logLocalized("Calling GPT translation (cloud)..."))
         whisperService.chatTranslate(text: text, targetLanguage: targetLanguage) { [weak self] result in
             DispatchQueue.main.async {
-                self?.handleTranslationResult(result, transcribedText: text)
+                switch result {
+                case .success:
+                    self?.handleTranslationResult(result, transcribedText: text)
+                case .failure(let error):
+                    if let onFailure = onFailure {
+                        Log.w(lm.logLocalized("Cloud GPT translation failed, trying next engine:") + " \(error.localizedDescription)")
+                        onFailure()
+                    } else {
+                        self?.handleTranslationResult(result, transcribedText: text)
+                    }
+                }
             }
         }
     }
 
     /// Apple Translation 本地翻译
-    private func translateTextViaApple(_ text: String, targetLanguage: String, fallbackToCloud: Bool) {
+    private func translateTextViaApple(_ text: String, targetLanguage: String, onFailure: (() -> Void)? = nil) {
         let lm = LocaleManager.shared
 
         #if canImport(Translation)
         guard #available(macOS 15.0, *),
               let service = appleTranslationService as? ServiceAppleTranslation else {
-            if fallbackToCloud {
-                Log.i(lm.logLocalized("Apple Translation unavailable, falling back to Cloud API"))
-                translateTextViaCloud(text, targetLanguage: targetLanguage)
+            if let onFailure = onFailure {
+                Log.i(lm.logLocalized("Apple Translation unavailable, trying next engine"))
+                onFailure()
             } else {
                 handleError(String(localized: "Apple Translation requires macOS 15.0 or later"))
             }
@@ -649,9 +789,9 @@ class RecordingController {
                 case .success:
                     self.handleTranslationResult(result, transcribedText: text)
                 case .failure(let error):
-                    if fallbackToCloud {
-                        Log.w(lm.logLocalized("Apple Translation failed, falling back to Cloud API:") + " \(error.localizedDescription)")
-                        self.translateTextViaCloud(text, targetLanguage: targetLanguage)
+                    if let onFailure = onFailure {
+                        Log.w(lm.logLocalized("Apple Translation failed, trying next engine:") + " \(error.localizedDescription)")
+                        onFailure()
                     } else {
                         self.handleTranslationResult(result, transcribedText: text)
                     }
@@ -659,9 +799,9 @@ class RecordingController {
             }
         }
         #else
-        if fallbackToCloud {
-            Log.i(lm.logLocalized("Translation framework not available, falling back to Cloud API"))
-            translateTextViaCloud(text, targetLanguage: targetLanguage)
+        if let onFailure = onFailure {
+            Log.i(lm.logLocalized("Translation framework not available, trying next engine"))
+            onFailure()
         } else {
             handleError(String(localized: "Apple Translation is not available on this system"))
         }
@@ -742,8 +882,19 @@ class RecordingController {
         let lm = LocaleManager.shared
         guard isInFallbackMode else { return }
         isInFallbackMode = false
-        currentApiMode = preferredApiMode
-        Log.i(lm.logLocalized("Network recovered, switching back to") + " \(preferredApiMode.rawValue) " + lm.logLocalized("mode"))
+        // Restore to top priority mode (or preferredApiMode if Realtime)
+        if preferredApiMode == .realtime {
+            currentApiMode = .realtime
+        } else if let topMode = transcriptionPriority.first {
+            switch topMode {
+            case "cloud": currentApiMode = .cloud
+            case "local": currentApiMode = .local
+            default: currentApiMode = preferredApiMode
+            }
+        } else {
+            currentApiMode = preferredApiMode
+        }
+        Log.i(lm.logLocalized("Network recovered, switching back to") + " \(currentApiMode.rawValue) " + lm.logLocalized("mode"))
     }
 
     // MARK: - Helpers
