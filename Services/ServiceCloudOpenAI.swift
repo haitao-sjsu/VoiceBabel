@@ -235,18 +235,26 @@ class ServiceCloudOpenAI {
         body.append("text\r\n".data(using: .utf8)!)
 
         // 添加语言参数（如果需要）
-        // 优先使用用户指定的识别语言；若为空或 "ui"，则从界面语言推导
+        // 用户明确指定语言时发送；为空则不发送，让模型自动检测
+        // "ui" 表示跟随界面语言，从 LocaleManager 推导
         if includeLanguage {
-            let effectiveLanguage: String
-            if language.isEmpty || language == "ui" {
+            let effectiveLanguage: String?
+            if language.isEmpty {
+                effectiveLanguage = nil  // 不发送 language 参数，让模型自动检测
+            } else if language == "ui" {
                 let interfaceCode = LocaleManager.shared.currentLocale.language.languageCode?.identifier ?? "en"
                 effectiveLanguage = LocaleManager.whisperCode(for: interfaceCode)
             } else {
                 effectiveLanguage = language
             }
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(effectiveLanguage)\r\n".data(using: .utf8)!)
+            if let lang = effectiveLanguage {
+                body.append("--\(boundary)\r\n".data(using: .utf8)!)
+                body.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
+                body.append("\(lang)\r\n".data(using: .utf8)!)
+                Log.d("Whisper API language: \(lang)")
+            } else {
+                Log.d("Whisper API language: auto-detect (not sent)")
+            }
         }
 
         // 添加 prompt 参数（如果指定）
