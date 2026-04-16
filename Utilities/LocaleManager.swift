@@ -92,8 +92,10 @@ final class LocaleManager: ObservableObject {
     }
 
     private static func bundle(for languageCode: String) -> Bundle {
-        // Try exact match first (e.g., "zh-Hans"), then base (e.g., "zh")
-        let candidates = [languageCode, String(languageCode.prefix(2))]
+        // Candidate lookup: exact match, common expansions (bare "zh" has no lproj on disk — Xcode emits zh-Hans/zh-Hant), then base prefix
+        var candidates = [languageCode]
+        if languageCode == "zh" { candidates.append("zh-Hans") }
+        candidates.append(String(languageCode.prefix(2)))
         for code in candidates {
             if let path = Bundle.main.path(forResource: code, ofType: "lproj"),
                let bundle = Bundle(path: path) {
