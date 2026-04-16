@@ -259,56 +259,6 @@
         "ko": { "stringUnit": { "state": "translated", "value": "클라우드 API" } }
       }
     },
-    "Text Cleanup": {
-      "localizations": {
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "文本优化" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "文字優化" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "テキスト最適化" } },
-        "ko": { "stringUnit": { "state": "translated", "value": "텍스트 정리" } },
-        "es": { "stringUnit": { "state": "translated", "value": "Limpieza de texto" } },
-        "fr": { "stringUnit": { "state": "translated", "value": "Nettoyage du texte" } },
-        "de": { "stringUnit": { "state": "translated", "value": "Textbereinigung" } },
-        "pt": { "stringUnit": { "state": "translated", "value": "Limpeza de texto" } },
-        "ru": { "stringUnit": { "state": "translated", "value": "Очистка текста" } }
-      }
-    },
-    "Off": {
-      "localizations": {
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "关闭" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "關閉" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "オフ" } },
-        "ko": { "stringUnit": { "state": "translated", "value": "끄기" } },
-        "es": { "stringUnit": { "state": "translated", "value": "Desactivado" } },
-        "fr": { "stringUnit": { "state": "translated", "value": "Désactivé" } },
-        "de": { "stringUnit": { "state": "translated", "value": "Aus" } },
-        "pt": { "stringUnit": { "state": "translated", "value": "Desativado" } },
-        "ru": { "stringUnit": { "state": "translated", "value": "Выкл" } }
-      }
-    },
-    "Natural": {
-      "localizations": {
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "自然润色" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "自然潤色" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "ナチュラル" } },
-        "ko": { "stringUnit": { "state": "translated", "value": "자연스럽게" } }
-      }
-    },
-    "Formal": {
-      "localizations": {
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正式风格" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正式風格" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "フォーマル" } },
-        "ko": { "stringUnit": { "state": "translated", "value": "격식체" } }
-      }
-    },
-    "Casual": {
-      "localizations": {
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "口语风格" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "口語風格" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "カジュアル" } },
-        "ko": { "stringUnit": { "state": "translated", "value": "구어체" } }
-      }
-    },
     "Translation": {
       "localizations": {
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "翻译" } },

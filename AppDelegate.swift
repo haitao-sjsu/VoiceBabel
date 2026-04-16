@@ -31,7 +31,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var textInputter: TextInputter!
     private var hotkeyManager: HotkeyManager!
     private var config: Config!
-    private var textCleanupService: TextCleanupService!
     private var networkHealthMonitor: NetworkHealthMonitor!
     private var settingsStore: SettingsStore!
     private var settingsWindowController: SettingsWindowController!
@@ -122,16 +121,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             language: config.whisperLanguage
         )
 
-        textCleanupService = TextCleanupService(
-            apiKey: config.openaiApiKey
-        )
-
         recordingController = RecordingController(
             audioRecorder: audioRecorder,
             cloudOpenAIService: cloudOpenAIService,
             localWhisperService: localWhisperService,
             textInputter: textInputter,
-            textCleanupService: textCleanupService,
             config: config
         )
 
@@ -166,7 +160,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         recordingController.autoSendManager.autoSendMode = StatusBarController.AutoSendMode.from(config.autoSendMode)
         recordingController.autoSendManager.delayedSendDuration = config.delayedSendDuration
-        recordingController.textCleanupMode = TextCleanupMode.from(config.textCleanupMode)
 
         hotkeyManager = HotkeyManager()
         hotkeyManager.onPushToTalkStart = { [weak self] in
@@ -257,11 +250,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Log.i(lm.logLocalized("Settings: Delay changed to") + " \(Int(duration))s")
         }.store(in: &cancellables)
 
-        settingsStore.$textCleanupMode.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] modeString in
-            self?.recordingController.textCleanupMode = TextCleanupMode(rawValue: modeString) ?? .off
-            Log.i(lm.logLocalized("Settings: Text cleanup changed to") + " \(modeString)")
-        }.store(in: &cancellables)
-
         settingsStore.$playSound.receive(on: DispatchQueue.main).sink { [weak self] value in
             self?.recordingController.playSound = value
             Log.i(lm.logLocalized("Settings: Sound effects") + " \(value ? "on" : "off")")
@@ -333,12 +321,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             model: config.whisperModel,
             language: settingsStore.whisperLanguage
         )
-        textCleanupService = TextCleanupService(apiKey: newKey)
         networkHealthMonitor = NetworkHealthMonitor(apiKey: newKey)
 
         recordingController.updateServices(
-            cloudOpenAIService: cloudOpenAIService,
-            textCleanupService: textCleanupService
+            cloudOpenAIService: cloudOpenAIService
         )
 
         let preferredMode: StatusBarController.ApiMode

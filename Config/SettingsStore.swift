@@ -14,7 +14,6 @@
 //   - playSound：是否播放提示音
 //   - autoSendMode：自动发送模式（off/always/delayed）
 //   - delayedSendDuration：延迟发送模式等待时间
-//   - textCleanupMode：文本优化模式（off/neutral/formal/casual）
 //   - translationTargetLanguage：翻译目标语言
 //
 // 设计：
@@ -53,7 +52,6 @@ final class SettingsStore: ObservableObject {
         static let playSound = "playSound"
         static let autoSendMode = "autoSendMode"
         static let delayedSendDuration = "delayedSendDuration"
-        static let textCleanupMode = "textCleanupMode"
         static let translationTargetLanguage = "translationTargetLanguage"
         static let appLanguage = "appLanguage"
     }
@@ -78,9 +76,6 @@ final class SettingsStore: ObservableObject {
     }
     @Published var delayedSendDuration: TimeInterval {
         didSet { defaults.set(delayedSendDuration, forKey: Keys.delayedSendDuration) }
-    }
-    @Published var textCleanupMode: String {
-        didSet { defaults.set(textCleanupMode, forKey: Keys.textCleanupMode) }
     }
     @Published var translationTargetLanguage: String {
         didSet { defaults.set(translationTargetLanguage, forKey: Keys.translationTargetLanguage) }
@@ -124,7 +119,6 @@ final class SettingsStore: ObservableObject {
         self.playSound = defaults.object(forKey: Keys.playSound) as? Bool ?? SettingsDefaults.playSound
         self.autoSendMode = defaults.object(forKey: Keys.autoSendMode) as? String ?? SettingsDefaults.autoSendMode
         self.delayedSendDuration = defaults.object(forKey: Keys.delayedSendDuration) as? TimeInterval ?? SettingsDefaults.delayedSendDuration
-        self.textCleanupMode = defaults.object(forKey: Keys.textCleanupMode) as? String ?? SettingsDefaults.textCleanupMode
         self.translationTargetLanguage = defaults.object(forKey: Keys.translationTargetLanguage) as? String ?? "en"
         self.appLanguage = defaults.object(forKey: Keys.appLanguage) as? String ?? "system"
 

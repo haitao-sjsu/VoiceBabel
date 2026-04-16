@@ -38,7 +38,6 @@ struct Config {
     let defaultApiMode: String
     let autoSendMode: String
     var delayedSendDuration: TimeInterval
-    let textCleanupMode: String
 
     // MARK: - 加载配置
 
@@ -57,8 +56,7 @@ struct Config {
             whisperLanguage: SettingsDefaults.whisperLanguage,
             defaultApiMode: SettingsDefaults.defaultApiMode,
             autoSendMode: SettingsDefaults.autoSendMode,
-            delayedSendDuration: SettingsDefaults.delayedSendDuration,
-            textCleanupMode: SettingsDefaults.textCleanupMode
+            delayedSendDuration: SettingsDefaults.delayedSendDuration
         )
 
         Log.d("Config loaded")

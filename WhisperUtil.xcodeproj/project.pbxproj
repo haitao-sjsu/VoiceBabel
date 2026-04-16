@@ -24,7 +24,6 @@
 		D69A0EE32F21D61C00CD1DC0 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = D69A0ED82F21D61C00CD1DC0 /* main.swift */; };
 		D6A1B0012F5A000100000001 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6A1B0002F5A000100000001 /* Log.swift */; };
 		D69A0EF12F21D61C00CD1DC0 /* NetworkHealthMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D69A0EF02F21D61C00CD1DC0 /* NetworkHealthMonitor.swift */; };
-		D6C1A0012F7100010000C001 /* TextCleanupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6C1A0002F7100010000C001 /* TextCleanupService.swift */; };
 		D6D1A0012F8A000100000001 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D1A0002F8A000100000001 /* SettingsStore.swift */; };
 		D6D1A0032F8A000100000003 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D1A0022F8A000100000003 /* SettingsView.swift */; };
 		D6D1A0052F8A000100000005 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D1A0042F8A000100000005 /* SettingsWindowController.swift */; };
@@ -59,7 +58,6 @@
 		D69A0EDB2F21D61C00CD1DC0 /* CloudOpenAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudOpenAIService.swift; sourceTree = "<group>"; };
 		D6A1B0002F5A000100000001 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		D69A0EF02F21D61C00CD1DC0 /* NetworkHealthMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkHealthMonitor.swift; sourceTree = "<group>"; };
-		D6C1A0002F7100010000C001 /* TextCleanupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextCleanupService.swift; sourceTree = "<group>"; };
 		D6D1A0002F8A000100000001 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		D6D1A0022F8A000100000003 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D6D1A0042F8A000100000005 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
@@ -133,7 +131,6 @@
 			children = (
 				D69A0EDB2F21D61C00CD1DC0 /* CloudOpenAIService.swift */,
 				D646E6772F3E4D6100376E45 /* LocalWhisperService.swift */,
-				D6C1A0002F7100010000C001 /* TextCleanupService.swift */,
 				D6AT00002FC000010000A001 /* LocalAppleTranslationService.swift */,
 			);
 			path = Services;
@@ -342,7 +339,6 @@
 				D69A0EE32F21D61C00CD1DC0 /* main.swift in Sources */,
 				D646E6782F3E4D6100376E45 /* LocalWhisperService.swift in Sources */,
 				D6A1B0012F5A000100000001 /* Log.swift in Sources */,
-				D6C1A0012F7100010000C001 /* TextCleanupService.swift in Sources */,
 				D6D1A0012F8A000100000001 /* SettingsStore.swift in Sources */,
 				D6D1A0032F8A000100000003 /* SettingsView.swift in Sources */,
 				D6D1A0052F8A000100000005 /* SettingsWindowController.swift in Sources */,

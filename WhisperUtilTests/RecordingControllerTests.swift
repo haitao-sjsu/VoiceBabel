@@ -36,7 +36,6 @@
 // 【当前测什么？】
 // - 初始状态正确性
 // - 无 API Key 时的错误处理
-// - TextCleanupMode 枚举（RecordingController 使用的共享类型）
 
 import XCTest
 @testable import WhisperUtil
@@ -47,36 +46,6 @@ import XCTest
 // 在测试环境中析构时会触发 malloc 错误。
 // 这正是为什么需要 Protocol Mock 重构——目前跳过这些测试。
 // 未来重构后可以用 MockAudioRecorder 避免这个问题。
-
-// MARK: - TextCleanupMode 测试
-
-final class TextCleanupModeTests: XCTestCase {
-
-    func testValidMappings() {
-        XCTAssertEqual(TextCleanupMode.from("off"), .off)
-        XCTAssertEqual(TextCleanupMode.from("neutral"), .neutral)
-        XCTAssertEqual(TextCleanupMode.from("formal"), .formal)
-        XCTAssertEqual(TextCleanupMode.from("casual"), .casual)
-    }
-
-    func testInvalidStrings_defaultToOff() {
-        XCTAssertEqual(TextCleanupMode.from(""), .off)
-        XCTAssertEqual(TextCleanupMode.from("invalid"), .off)
-        XCTAssertEqual(TextCleanupMode.from("OFF"), .off)
-    }
-
-    func testRawValueRoundTrip() {
-        for mode: TextCleanupMode in [.off, .neutral, .formal, .casual] {
-            XCTAssertEqual(TextCleanupMode(rawValue: mode.rawValue), mode)
-        }
-    }
-
-    func testDisplayNames_nonEmpty() {
-        for mode: TextCleanupMode in [.off, .neutral, .formal, .casual] {
-            XCTAssertFalse(mode.displayName.isEmpty, "\(mode.rawValue) 应有显示名称")
-        }
-    }
-}
 
 // MARK: - AppState 枚举测试
 

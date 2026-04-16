@@ -28,7 +28,6 @@ main.swift -> AppDelegate (Composition Root)
                  |       +-- Services/CloudOpenAIService (HTTP transcription + GPT translation)
                  |       +-- Services/LocalWhisperService (WhisperKit local)
                  |       +-- Services/LocalAppleTranslationService (Apple Translation local, macOS 15.0+)
-                 |       +-- Services/TextCleanupService (GPT-4o-mini text cleanup)
                  |       +-- Utilities/TextInputter (text output to active window)
                  |       +-- Utilities/TextPostProcessor (tag filtering, Chinese script conversion)
                  +-- Utilities/LocaleManager (i18n locale management)
@@ -45,7 +44,7 @@ Components communicate via closures/callbacks, connected in `AppDelegate.setupCo
 Core/                       — Core logic (recording state machine, hotkey detection, auto-send, translation pipeline)
 Config/                     — Configuration (user prefs, engineering options, Keychain, settings store)
 UI/                         — Menu bar controller, SwiftUI settings panel, settings window
-Services/                   — Transcription & translation backends (Cloud / Local / Apple Translation / Text cleanup)
+Services/                   — Transcription & translation backends (Cloud / Local / Apple Translation)
 Audio/                      — Audio capture and encoding
 Utilities/                  — Helpers (text input, text post-processing, network probe, logging, i18n locale manager)
 WhisperUtil/                — Resources (Assets, Storyboard, String Catalogs)

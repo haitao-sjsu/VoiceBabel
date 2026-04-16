@@ -7,14 +7,13 @@
 //   1. State machine: idle -> recording -> processing -> (waitingToSend ->) idle, error 3s auto-recovery
 //   2. API mode routing: route to local/cloud transcription flows
 //   3. Translation: Whisper API direct + two-step (transcribe+GPT translate)
-//   4. Text cleanup pipeline: post-process via TextCleanupService
-//   5. Auto-send logic: off/always/delayed
-//   6. Audio validation: min data size + RMS threshold
-//   7. Network fallback: Cloud API failure -> local WhisperKit
+//   4. Auto-send logic: off/always/delayed
+//   5. Audio validation: min data size + RMS threshold
+//   6. Network fallback: Cloud API failure -> local WhisperKit
 //
 // Dependencies:
 //   - AudioRecorder, CloudOpenAIService, LocalWhisperService
-//   - TextCleanupService, TextInputter, Config, EngineeringOptions, LocaleManager
+//   - TextInputter, Config, EngineeringOptions, LocaleManager
 
 import Cocoa
 
@@ -48,7 +47,6 @@ class RecordingController {
     private var cloudOpenAIService: CloudOpenAIService
     private let localWhisperService: LocalWhisperService
     private let textInputter: TextInputter
-    private var textCleanupService: TextCleanupService
     private let config: Config
     #if canImport(Translation)
     private var localAppleTranslationService: Any?  // LocalAppleTranslationService, type-erased for availability
@@ -69,7 +67,6 @@ class RecordingController {
     var currentApiMode: StatusBarController.ApiMode = .cloud
     private(set) var isInFallbackMode: Bool = false
     let autoSendManager: AutoSendManager
-    var textCleanupMode: TextCleanupMode = .off
     var playSound: Bool = true
     private var lastRecordingDuration: TimeInterval = 0
 
@@ -80,14 +77,12 @@ class RecordingController {
         cloudOpenAIService: CloudOpenAIService,
         localWhisperService: LocalWhisperService,
         textInputter: TextInputter,
-        textCleanupService: TextCleanupService,
         config: Config
     ) {
         self.audioRecorder = audioRecorder
         self.cloudOpenAIService = cloudOpenAIService
         self.localWhisperService = localWhisperService
         self.textInputter = textInputter
-        self.textCleanupService = textCleanupService
         self.config = config
         self.autoSendManager = AutoSendManager(textInputter: textInputter)
         self.translationPipeline = TranslationPipeline(
@@ -125,8 +120,7 @@ class RecordingController {
     #endif
 
     func updateServices(
-        cloudOpenAIService: CloudOpenAIService,
-        textCleanupService: TextCleanupService
+        cloudOpenAIService: CloudOpenAIService
     ) {
         let lm = LocaleManager.shared
         guard currentState == .idle || currentState == .error else {
@@ -134,7 +128,6 @@ class RecordingController {
             return
         }
         self.cloudOpenAIService = cloudOpenAIService
-        self.textCleanupService = textCleanupService
         self.translationPipeline.cloudOpenAIService = cloudOpenAIService
         setupCallbacks()
     }
@@ -649,39 +642,11 @@ class RecordingController {
     private func outputText(_ text: String, action: String) {
         let lm = LocaleManager.shared
         let processed = TextPostProcessor.process(text)
-        guard textCleanupMode != .off && currentMode != .translate else {
-            Log.i("\(action) " + lm.logLocalized("result:") + " \(processed)")
-            onTranscriptionResult?(processed)
-            textInputter.inputText(processed)
-            currentState = .idle
-            autoSendManager.handleAutoSend()
-            return
-        }
-
-        Log.i("\(action) " + lm.logLocalized("result (before cleanup):") + " \(processed)")
-        textCleanupService.cleanup(text: processed, mode: textCleanupMode, audioDuration: lastRecordingDuration) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                let finalText: String
-                switch result {
-                case .success(let cleanedText):
-                    if cleanedText.isEmpty {
-                        Log.w(lm.logLocalized("Text cleanup returned empty result, using original text"))
-                        finalText = processed
-                    } else {
-                        finalText = cleanedText
-                    }
-                case .failure(let error):
-                    Log.w(lm.logLocalized("Text cleanup failed, using original text:") + " \(error.localizedDescription)")
-                    finalText = processed
-                }
-                Log.i("\(action) " + lm.logLocalized("result (final):") + " \(finalText)")
-                self.onTranscriptionResult?(finalText)
-                self.textInputter.inputText(finalText)
-                self.currentState = .idle
-                self.autoSendManager.handleAutoSend()
-            }
-        }
+        Log.i("\(action) " + lm.logLocalized("result:") + " \(processed)")
+        onTranscriptionResult?(processed)
+        textInputter.inputText(processed)
+        currentState = .idle
+        autoSendManager.handleAutoSend()
     }
 
 }

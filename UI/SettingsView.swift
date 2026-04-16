@@ -8,11 +8,11 @@
 //   @ObservedObject, changes are instantly persisted to UserDefaults and propagated
 //   via Combine to AppDelegate.
 //
-// Panel layout (5 Sections):
+// Panel layout (4 Sections):
 //   1. API Key: OpenAI API Key input and validation
 //   2. Language: Recognition language selection
-//   3. Transcription: Default API mode, text cleanup mode
-//   4. Translation: Output language selection
+//   3. Transcription: Priority list
+//   4. Translation: Engine priority list + output language selection
 //   5. General: Interface language, send mode, delay stepper, sound toggle
 //
 // Dependencies:
@@ -125,15 +125,6 @@ struct SettingsView: View {
                 Text("Transcription Priority")
             } footer: {
                 Text("Drag to reorder. First item is preferred; others are fallback.")
-            }
-
-            Section("Text Processing") {
-                Picker("Text Cleanup", selection: $store.textCleanupMode) {
-                    Text("Off").tag("off")
-                    Text("Natural").tag("neutral")
-                    Text("Formal").tag("formal")
-                    Text("Casual").tag("casual")
-                }
             }
 
             // MARK: - Translation
