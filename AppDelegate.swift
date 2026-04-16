@@ -142,7 +142,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             (settingsStore.transcriptionPriority.first == "local") ? .local : .cloud
         recordingController.preferredApiMode = defaultMode
         recordingController.currentApiMode = defaultMode
-        recordingController.transcriptionPriority = settingsStore.transcriptionPriority
+        recordingController.transcriptionPipeline.priority = settingsStore.transcriptionPriority
         recordingController.translationPipeline.translationEnginePriority = settingsStore.translationEnginePriority
 
         networkHealthMonitor = NetworkHealthMonitor(apiKey: apiKeys.openaiApiKey)
@@ -208,7 +208,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Combine subscriptions for settings changes
         settingsStore.$transcriptionPriority.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] priority in
             guard let self = self else { return }
-            self.recordingController.transcriptionPriority = priority
+            self.recordingController.transcriptionPipeline.priority = priority
             // Update currentApiMode to top priority
             if let top = priority.first {
                 let mode: StatusBarController.ApiMode = top == "local" ? .local : .cloud

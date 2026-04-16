@@ -62,11 +62,6 @@ class RecordingController {
     }
 
     private var currentMode: RecordingMode = .transcribe
-    var transcriptionPriority: [String] = SettingsDefaults.transcriptionPriority {
-        didSet {
-            transcriptionPipeline.priority = transcriptionPriority
-        }
-    }
     let transcriptionPipeline: TranscriptionPipeline
     let translationPipeline: TranslationPipeline
     var preferredApiMode: StatusBarController.ApiMode = .cloud
@@ -98,8 +93,6 @@ class RecordingController {
             textInputter: textInputter
         )
 
-        // Sync priority config into pipeline (didSet doesn't fire during init)
-        self.transcriptionPipeline.priority = self.transcriptionPriority
 
         // Wire callbacks after all stored properties are initialized
         self.autoSendManager.onStateChange = { [weak self] state in self?.currentState = state }
@@ -244,7 +237,7 @@ class RecordingController {
             if localWhisperService.isReady() {
                 startNonStreamingRecording()
             } else if EngineeringOptions.enableModeFallback,
-                      let nextMode = transcriptionPriority.first(where: { $0 != "local" }),
+                      let nextMode = transcriptionPipeline.priority.first(where: { $0 != "local" }),
                       nextMode == "cloud" {
                 // Start-time fallback: local not ready, try cloud
                 Log.w(lm.logLocalized("WhisperKit not ready, falling back to cloud for this recording"))
@@ -375,9 +368,9 @@ class RecordingController {
             Log.i(lm.logLocalized("Entered fallback mode, original mode:") + " \(mode)")
         }
         // 更新 currentApiMode 为下一个可用模式
-        let nextIndex = (transcriptionPriority.firstIndex(of: mode) ?? -1) + 1
-        if nextIndex < transcriptionPriority.count {
-            let nextMode = transcriptionPriority[nextIndex]
+        let nextIndex = (transcriptionPipeline.priority.firstIndex(of: mode) ?? -1) + 1
+        if nextIndex < transcriptionPipeline.priority.count {
+            let nextMode = transcriptionPipeline.priority[nextIndex]
             switch nextMode {
             case "cloud": currentApiMode = .cloud
             case "local": currentApiMode = .local
@@ -463,7 +456,7 @@ class RecordingController {
         guard isInFallbackMode else { return }
         isInFallbackMode = false
         // Restore to top priority mode
-        if let topMode = transcriptionPriority.first {
+        if let topMode = transcriptionPipeline.priority.first {
             switch topMode {
             case "cloud": currentApiMode = .cloud
             case "local": currentApiMode = .local
