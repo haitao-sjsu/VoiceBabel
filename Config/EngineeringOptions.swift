@@ -17,7 +17,7 @@
 //
 // 与其他配置文件的关系：
 //   - SettingsDefaults：用户偏好默认值（由 SettingsStore 管理）
-//   - Config：从本文件和 SettingsDefaults 组装的运行时配置快照
+//   - Config：从本文件和 Keychain 组装的 API Key 启动快照
 //
 // 依赖：无
 //
@@ -31,14 +31,29 @@ import Foundation
 enum EngineeringOptions {
 
     // ============================================================
-    // MARK: - API Endpoints
+    // MARK: - OpenAI API
+    // ============================================================
+    // Cloud 功能通过两个 OpenAI 端点实现：
+    //   1. /v1/audio/transcriptions — 语音转文字（Whisper 系列模型）
+    //   2. /v1/chat/completions — 文本翻译（GPT 系列模型）
+    // 每个端点需要配对一个模型名，在请求体中作为 "model" 参数发送。
+
+    /// 语音转录端点 URL
+    static let whisperTranscribeURL = "https://api.openai.com/v1/audio/transcriptions"
+    /// 语音转录模型（与 whisperTranscribeURL 配对使用）
+    static let whisperModel = "gpt-4o-transcribe"
+
+    /// Chat Completions 端点 URL（用于文本翻译）
+    static let chatCompletionsURL = "https://api.openai.com/v1/chat/completions"
+    /// 翻译模型（与 chatCompletionsURL 配对使用）
+    static let chatTranslationModel = "gpt-4o-mini"
+
+    // ============================================================
+    // MARK: - Local models
     // ============================================================
 
-    /// Whisper 转录 API 端点
-    static let whisperTranscribeURL = "https://api.openai.com/v1/audio/transcriptions"
-
-    /// Chat Completions API 端点（用于翻译和文本优化）
-    static let chatCompletionsURL = "https://api.openai.com/v1/chat/completions"
+    /// 本地 WhisperKit 模型标识
+    static let localWhisperModel = "openai_whisper-large-v3-v20240930_626MB"
 
     // ============================================================
     // MARK: - Audio capture
@@ -86,19 +101,6 @@ enum EngineeringOptions {
     /// - 64000 (64 kbps)：高质量语音
     static let aacBitRate: Int = 24000
 
-    /// AAC 编码每帧采样数
-    static let aacFramesPerPacket: UInt32 = 1024
-
-    // ============================================================
-    // MARK: - Transcription models
-    // ============================================================
-
-    /// 云端 Whisper 语音识别模型（用于网络 API 模式和翻译功能）
-    static let whisperModel = "gpt-4o-transcribe"
-
-    /// 本地 WhisperKit 模型标识
-    static let localWhisperModel = "openai_whisper-large-v3-v20240930_626MB"
-
     // ============================================================
     // MARK: - Network
     // ============================================================
@@ -126,14 +128,6 @@ enum EngineeringOptions {
 
     /// 是否启用特殊标签过滤（如 [MUSIC]、[BLANK_AUDIO]）
     static let enableTagFiltering = true
-
-    // ============================================================
-    // MARK: - Translation
-    // ============================================================
-
-    /// Chat 翻译模型（用于两步翻译法的第二步）
-    static let chatTranslationModel = "gpt-4o-mini"
-
 
     // ============================================================
     // MARK: - Text output

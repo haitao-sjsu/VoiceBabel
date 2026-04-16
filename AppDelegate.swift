@@ -57,7 +57,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settingsStore = SettingsStore.shared
 
         config = Config.load()
-        Log.i(lm.logLocalized("Config:") + " model=\(config.whisperModel), hotkey=Option gesture")
+        Log.i(lm.logLocalized("Config:") + " model=\(EngineeringOptions.whisperModel), hotkey=Option gesture")
 
         setupComponents()
 
@@ -66,7 +66,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case "local": apiModeDescription = "Local (WhisperKit)"
         default:      apiModeDescription = "Cloud API (gpt-4o-transcribe)"
         }
-        Log.i(lm.logLocalized("WhisperUtil started") + " — API mode: \(apiModeDescription), send mode: \(StatusBarController.AutoSendMode.from(config.autoSendMode).displayName)")
+        Log.i(lm.logLocalized("WhisperUtil started") + " — API mode: \(apiModeDescription), send mode: \(StatusBarController.AutoSendMode.from(settingsStore.autoSendMode).displayName)")
 
         // Async preload WhisperKit model
         statusBarController.showNotification(title: "WhisperKit", message: String(localized: "Loading speech recognition model, first use requires download..."))
@@ -113,20 +113,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         cloudOpenAIService = CloudOpenAIService(
             apiKey: config.openaiApiKey,
-            model: config.whisperModel,
-            language: config.whisperLanguage
+            model: EngineeringOptions.whisperModel,
+            language: settingsStore.whisperLanguage
         )
 
         localWhisperService = LocalWhisperService(
-            language: config.whisperLanguage
+            language: settingsStore.whisperLanguage
         )
 
         recordingController = RecordingController(
             audioRecorder: audioRecorder,
             cloudOpenAIService: cloudOpenAIService,
             localWhisperService: localWhisperService,
-            textInputter: textInputter,
-            config: config
+            textInputter: textInputter
         )
 
         // Apple Translation service (macOS 14.4+)
@@ -155,8 +154,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.statusBarController.showNotification(title: "WhisperUtil", message: String(localized: "Network recovered, switched back to Cloud API"))
         }
 
-        recordingController.autoSendManager.autoSendMode = StatusBarController.AutoSendMode.from(config.autoSendMode)
-        recordingController.autoSendManager.delayedSendDuration = config.delayedSendDuration
+        recordingController.autoSendManager.autoSendMode = StatusBarController.AutoSendMode.from(settingsStore.autoSendMode)
+        recordingController.autoSendManager.delayedSendDuration = settingsStore.delayedSendDuration
 
         hotkeyManager = HotkeyManager()
         hotkeyManager.onPushToTalkStart = { [weak self] in
@@ -302,7 +301,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         cloudOpenAIService = CloudOpenAIService(
             apiKey: newKey,
-            model: config.whisperModel,
+            model: EngineeringOptions.whisperModel,
             language: settingsStore.whisperLanguage
         )
         networkHealthMonitor = NetworkHealthMonitor(apiKey: newKey)

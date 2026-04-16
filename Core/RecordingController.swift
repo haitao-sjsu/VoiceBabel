@@ -47,7 +47,6 @@ class RecordingController {
     private var cloudOpenAIService: CloudOpenAIService
     private let localWhisperService: LocalWhisperService
     private let textInputter: TextInputter
-    private let config: Config
     #if canImport(Translation)
     private var localAppleTranslationService: Any?  // LocalAppleTranslationService, type-erased for availability
     #endif
@@ -76,14 +75,12 @@ class RecordingController {
         audioRecorder: AudioRecorder,
         cloudOpenAIService: CloudOpenAIService,
         localWhisperService: LocalWhisperService,
-        textInputter: TextInputter,
-        config: Config
+        textInputter: TextInputter
     ) {
         self.audioRecorder = audioRecorder
         self.cloudOpenAIService = cloudOpenAIService
         self.localWhisperService = localWhisperService
         self.textInputter = textInputter
-        self.config = config
         self.autoSendManager = AutoSendManager(textInputter: textInputter)
         self.translationPipeline = TranslationPipeline(
             cloudOpenAIService: cloudOpenAIService,
@@ -248,7 +245,7 @@ class RecordingController {
 
         do {
             try audioRecorder.startRecording(
-                maxDuration: config.maxRecordingDuration
+                maxDuration: EngineeringOptions.maxRecordingDuration
             )
         } catch {
             Log.e(lm.logLocalized("Recording start failed:") + " \(error)")
