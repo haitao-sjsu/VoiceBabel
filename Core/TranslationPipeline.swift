@@ -9,8 +9,8 @@
 //   3. Engine fallback: try next engine in priority list on failure
 //
 // Dependencies:
-//   - CloudOpenAIService (cloud transcription + GPT translation)
-//   - LocalWhisperService (local transcription)
+//   - TranscriptionPipeline (Step 1: audio → text, shared with RecordingController)
+//   - CloudOpenAIService (Step 2: GPT text translation via chatTranslate)
 //   - LocalAppleTranslationService (Apple Translation, macOS 15.0+, conditional)
 //   - TextPostProcessor (post-processing translation output)
 //   - TextInputter (text output to active window)
@@ -19,6 +19,8 @@
 // Architecture role:
 //   Extracted from RecordingController. Owned by RecordingController, communicates
 //   results back via callbacks (onTranslationResult, onTranscriptionResult, etc.).
+//   Step 1 transcription is delegated to TranscriptionPipeline — the same instance
+//   used by RecordingController — so fallback and timeout behavior is unified.
 
 import Foundation
 
@@ -26,8 +28,8 @@ class TranslationPipeline {
 
     // MARK: - Dependencies
 
+    let transcriptionPipeline: TranscriptionPipeline
     var cloudOpenAIService: CloudOpenAIService
-    let localWhisperService: LocalWhisperService
     let textInputter: TextInputter
     #if canImport(Translation)
     var localAppleTranslationService: Any?  // LocalAppleTranslationService, type-erased for availability
@@ -47,18 +49,23 @@ class TranslationPipeline {
     // MARK: - Init
 
     init(
+        transcriptionPipeline: TranscriptionPipeline,
         cloudOpenAIService: CloudOpenAIService,
-        localWhisperService: LocalWhisperService,
         textInputter: TextInputter
     ) {
+        self.transcriptionPipeline = transcriptionPipeline
         self.cloudOpenAIService = cloudOpenAIService
-        self.localWhisperService = localWhisperService
         self.textInputter = textInputter
     }
 
     // MARK: - Public
 
-    /// Start two-step translation: transcribe audio, then translate text
+    /// Start two-step translation: transcribe audio via TranscriptionPipeline, then
+    /// translate the resulting text.
+    ///
+    /// - Parameter useLocalTranscription: whether the user's current API mode is local;
+    ///   maps to the starting engine for the transcription pipeline. Pipeline still
+    ///   applies fallback per priority list if the starting engine fails.
     func translate(
         recording: AudioRecorder.RecordingResult,
         samples: [Float],
@@ -74,37 +81,27 @@ class TranslationPipeline {
         } else {
             targetLang = storedLang
         }
+        let startingEngine = useLocalTranscription ? "local" : "cloud"
 
         Log.i(lm.logLocalized("Starting two-step translation: transcribe then translate to") + " \(targetLang)")
 
-        // Step 1: Transcribe
-        if useLocalTranscription && localWhisperService.isReady() {
-            Task {
-                do {
-                    let text = try await localWhisperService.transcribe(samples: samples)
-                    await MainActor.run {
-                        self.translateStep2(transcribedText: text, targetLanguage: targetLang)
-                    }
-                } catch {
-                    await MainActor.run {
-                        Log.e(lm.logLocalized("Transcription (step 1) failed:") + " \(error.localizedDescription)")
-                        self.onError?(String(localized: "Transcription failed: \(error.localizedDescription)"))
-                    }
-                }
-            }
-        } else {
-            cloudOpenAIService.transcribe(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let text):
-                        self?.translateStep2(transcribedText: text, targetLanguage: targetLang)
-                    case .failure(let error):
-                        Log.e(LocaleManager.shared.logLocalized("Transcription (step 1) failed:") + " \(error.localizedDescription)")
-                        self?.onError?(String(localized: "Transcription failed: \(error.localizedDescription)"))
-                    }
-                }
-            }
+        // Reset callbacks before handing off to the shared pipeline — RecordingController
+        // sets its own handlers in transcription mode, so per-call reset avoids stale closures.
+        // onFallbackEntered stays wired to RecordingController (fallback state is controller-owned).
+        transcriptionPipeline.onResult = { [weak self] text, _ in
+            self?.translateStep2(transcribedText: text, targetLanguage: targetLang)
         }
+        transcriptionPipeline.onError = { [weak self] message in
+            Log.e(lm.logLocalized("Transcription (step 1) failed:") + " \(message)")
+            self?.onError?(String(localized: "Transcription failed: \(message)"))
+        }
+
+        transcriptionPipeline.transcribe(
+            recording: recording,
+            samples: samples,
+            audioDuration: audioDuration,
+            startingEngine: startingEngine
+        )
     }
 
     // MARK: - Private

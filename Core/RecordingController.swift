@@ -1,19 +1,22 @@
 // RecordingController.swift
 // WhisperUtil - macOS menu bar speech-to-text tool
 //
-// Core dispatcher — central controller managing recording state machine and all transcription backends.
+// Core dispatcher — recording state machine and audio lifecycle. Transcription
+// orchestration is delegated to TranscriptionPipeline; translation orchestration
+// to TranslationPipeline.
 //
 // Responsibilities:
 //   1. State machine: idle -> recording -> processing -> (waitingToSend ->) idle, error 3s auto-recovery
-//   2. API mode routing: route to local/cloud transcription flows
-//   3. Translation: Whisper API direct + two-step (transcribe+GPT translate)
-//   4. Auto-send logic: off/always/delayed
-//   5. Audio validation: min data size + RMS threshold
-//   6. Network fallback: Cloud API failure -> local WhisperKit
+//   2. Recording lifecycle: begin / stop / cancel
+//   3. Audio validation: min data size + RMS threshold
+//   4. Network fallback state: owns isInFallbackMode / currentApiMode, updated via
+//      TranscriptionPipeline's onFallbackEntered callback
+//   5. Result output: trim, post-process, input text to active window, trigger auto-send
 //
 // Dependencies:
-//   - AudioRecorder, CloudOpenAIService, LocalWhisperService
-//   - TextInputter, Config, EngineeringOptions, LocaleManager
+//   - AudioRecorder, TextInputter, AutoSendManager
+//   - TranscriptionPipeline, TranslationPipeline (owned, created here)
+//   - Config, EngineeringOptions, LocaleManager
 
 import Cocoa
 
@@ -44,7 +47,6 @@ class RecordingController {
     // MARK: - Dependencies
 
     private let audioRecorder: AudioRecorder
-    private var cloudOpenAIService: CloudOpenAIService
     private let localWhisperService: LocalWhisperService
     private let textInputter: TextInputter
     #if canImport(Translation)
@@ -60,7 +62,12 @@ class RecordingController {
     }
 
     private var currentMode: RecordingMode = .transcribe
-    var transcriptionPriority: [String] = SettingsDefaults.transcriptionPriority
+    var transcriptionPriority: [String] = SettingsDefaults.transcriptionPriority {
+        didSet {
+            transcriptionPipeline.priority = transcriptionPriority
+        }
+    }
+    let transcriptionPipeline: TranscriptionPipeline
     let translationPipeline: TranslationPipeline
     var preferredApiMode: StatusBarController.ApiMode = .cloud
     var currentApiMode: StatusBarController.ApiMode = .cloud
@@ -78,18 +85,30 @@ class RecordingController {
         textInputter: TextInputter
     ) {
         self.audioRecorder = audioRecorder
-        self.cloudOpenAIService = cloudOpenAIService
         self.localWhisperService = localWhisperService
         self.textInputter = textInputter
         self.autoSendManager = AutoSendManager(textInputter: textInputter)
-        self.translationPipeline = TranslationPipeline(
+        self.transcriptionPipeline = TranscriptionPipeline(
             cloudOpenAIService: cloudOpenAIService,
-            localWhisperService: localWhisperService,
+            localWhisperService: localWhisperService
+        )
+        self.translationPipeline = TranslationPipeline(
+            transcriptionPipeline: self.transcriptionPipeline,
+            cloudOpenAIService: cloudOpenAIService,
             textInputter: textInputter
         )
 
+        // Sync priority config into pipeline (didSet doesn't fire during init)
+        self.transcriptionPipeline.priority = self.transcriptionPriority
+
         // Wire callbacks after all stored properties are initialized
         self.autoSendManager.onStateChange = { [weak self] state in self?.currentState = state }
+        // Fallback handler is wired once and shared between transcription/translation callers —
+        // fallback state (isInFallbackMode / currentApiMode) is controller-owned, so this path
+        // is uniform regardless of who invoked the pipeline.
+        self.transcriptionPipeline.onFallbackEntered = { [weak self] mode in
+            self?.enterFallbackMode(mode: mode)
+        }
         self.translationPipeline.onTranslationResult = { [weak self] text in
             self?.onTranslationResult?(text)
         }
@@ -124,7 +143,7 @@ class RecordingController {
             Log.w(lm.logLocalized("RecordingController: current state") + " \(currentState) " + lm.logLocalized("does not allow service update"))
             return
         }
-        self.cloudOpenAIService = cloudOpenAIService
+        self.transcriptionPipeline.cloudOpenAIService = cloudOpenAIService
         self.translationPipeline.cloudOpenAIService = cloudOpenAIService
         setupCallbacks()
     }
@@ -313,7 +332,6 @@ class RecordingController {
     }
 
     private func stopCloudRecording() {
-        let lm = LocaleManager.shared
         let savedSamples = audioRecorder.getAudioSamples()
         let audioDuration = audioRecorder.getCurrentRecordingDuration()
         lastRecordingDuration = audioDuration
@@ -321,125 +339,32 @@ class RecordingController {
         guard let recording = stopAndValidateRecording() else { return }
 
         currentState = .processing
-        let startIndex = transcriptionPriority.firstIndex(of: "cloud") ?? 0
-        transcribeWithFallback(recording: recording, samples: savedSamples, audioDuration: audioDuration, priorityIndex: startIndex)
+        startTranscription(recording: recording, samples: savedSamples, audioDuration: audioDuration, startingEngine: "cloud")
     }
 
-    /// 按优先级队列尝试转录，失败时自动 fallback 到下一个模式
-    private func transcribeWithFallback(
-        recording: AudioRecorder.RecordingResult,
+    /// 设置 pipeline 的一次性回调并启动转录。回调每次调用前重置，避免与 TranslationPipeline 串线。
+    private func startTranscription(
+        recording: AudioRecorder.RecordingResult?,
         samples: [Float],
         audioDuration: TimeInterval,
-        priorityIndex: Int
+        startingEngine: String
     ) {
         let lm = LocaleManager.shared
-        let priority = transcriptionPriority
 
-        guard priorityIndex < priority.count else {
-            handleError(String(localized: "All transcription modes failed"))
-            return
+        transcriptionPipeline.onResult = { [weak self] text, engine in
+            let actionKey = engine == "cloud" ? "Cloud speech recognition" : "Local speech recognition"
+            self?.outputText(text, action: lm.logLocalized(actionKey))
+        }
+        transcriptionPipeline.onError = { [weak self] message in
+            self?.handleError(message)
         }
 
-        // 非首次尝试时检查 fallback 开关
-        if priorityIndex > 0 && !EngineeringOptions.enableModeFallback {
-            handleError(String(localized: "Transcription failed"))
-            return
-        }
-
-        let mode = priority[priorityIndex]
-        let tryNext: () -> Void = { [weak self] in
-            DispatchQueue.main.async {
-                self?.transcribeWithFallback(recording: recording, samples: samples, audioDuration: audioDuration, priorityIndex: priorityIndex + 1)
-            }
-        }
-
-        switch mode {
-        case "cloud":
-            Log.i(lm.logLocalized("Calling Whisper API (cloud transcription)..."))
-            cloudOpenAIService.transcribe(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
-                switch result {
-                case .success:
-                    self?.handleResult(result, action: lm.logLocalized("Cloud speech recognition"))
-                case .failure(let error):
-                    if let whisperError = error as? CloudOpenAIService.WhisperError,
-                       case .networkError = whisperError {
-                        Log.w(lm.logLocalized("Cloud API failed, trying next priority:") + " \(error.localizedDescription)")
-                        self?.enterFallbackMode(mode: "cloud")
-                        tryNext()
-                    } else {
-                        self?.handleResult(result, action: lm.logLocalized("Cloud speech recognition"))
-                    }
-                }
-            }
-
-        case "local":
-            guard localWhisperService.isReady() else {
-                Log.w(lm.logLocalized("Local WhisperKit not ready, trying next priority"))
-                tryNext()
-                return
-            }
-            guard !samples.isEmpty else {
-                Log.w(lm.logLocalized("No audio samples for local transcription, trying next priority"))
-                tryNext()
-                return
-            }
-            Log.i(lm.logLocalized("Using local WhisperKit transcription..."))
-            localTranscribeWithFallback(samples: samples, recording: recording, audioDuration: audioDuration, priorityIndex: priorityIndex)
-
-        default:
-            tryNext()
-        }
-    }
-
-    /// 本地转录，失败时尝试下一个优先级
-    private func localTranscribeWithFallback(
-        samples: [Float],
-        recording: AudioRecorder.RecordingResult,
-        audioDuration: TimeInterval,
-        priorityIndex: Int
-    ) {
-        let lm = LocaleManager.shared
-        let sampleDuration = Double(samples.count) / EngineeringOptions.sampleRate
-        let minutes = sampleDuration / 60.0
-        let timeout = min(max(minutes * 10, EngineeringOptions.apiProcessingTimeoutMin), EngineeringOptions.apiProcessingTimeoutMax)
-        let action = lm.logLocalized("Local speech recognition")
-
-        Task {
-            do {
-                let text = try await withThrowingTaskGroup(of: String.self) { group in
-                    group.addTask {
-                        try await self.localWhisperService.transcribe(samples: samples)
-                    }
-                    group.addTask {
-                        try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                        throw CancellationError()
-                    }
-                    let result = try await group.next()!
-                    group.cancelAll()
-                    return result
-                }
-                await MainActor.run {
-                    let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if trimmedText.isEmpty {
-                        Log.i("\(action) " + lm.logLocalized("result is empty"))
-                        self.currentState = .idle
-                    } else {
-                        self.outputText(trimmedText, action: action)
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    Log.e("\(action) " + lm.logLocalized("failed:") + " \(error)")
-                    if EngineeringOptions.enableModeFallback && priorityIndex + 1 < self.transcriptionPriority.count {
-                        Log.w(lm.logLocalized("Local transcription failed, trying next priority"))
-                        self.enterFallbackMode(mode: "local")
-                        self.transcribeWithFallback(recording: recording, samples: samples, audioDuration: audioDuration, priorityIndex: priorityIndex + 1)
-                    } else {
-                        self.handleError(String(localized: "\(action) failed: \(error.localizedDescription)"))
-                    }
-                }
-            }
-        }
+        transcriptionPipeline.transcribe(
+            recording: recording,
+            samples: samples,
+            audioDuration: audioDuration,
+            startingEngine: startingEngine
+        )
     }
 
     /// 进入 fallback 模式，更新 currentApiMode
@@ -484,7 +409,8 @@ class RecordingController {
         let audioDuration = audioRecorder.getCurrentRecordingDuration()
         lastRecordingDuration = audioDuration
 
-        // Get encoded recording for potential cloud fallback
+        // Get encoded recording for potential cloud fallback (may be nil if encoding failed —
+        // pipeline will skip cloud engines in that case)
         let recording = audioRecorder.stopRecording()
 
         Log.i(lm.logLocalized("Local mode recording ended, sample count:") + " \(samples.count), " + lm.logLocalized("avg volume:") + " \(averageRMS)")
@@ -504,78 +430,7 @@ class RecordingController {
         }
 
         currentState = .processing
-
-        if let recording = recording {
-            let startIndex = transcriptionPriority.firstIndex(of: "local") ?? 0
-            localTranscribeWithFallback(samples: samples, recording: recording, audioDuration: audioDuration, priorityIndex: startIndex)
-        } else {
-            // No encoded data, can only try local (no cloud fallback possible)
-            localTranscribeWithTimeout(samples: samples, action: lm.logLocalized("Local speech recognition"))
-        }
-    }
-
-    private func localTranscribeWithTimeout(samples: [Float], action: String) {
-        let lm = LocaleManager.shared
-        let audioDuration = Double(samples.count) / EngineeringOptions.sampleRate
-        let minutes = audioDuration / 60.0
-        let timeout = min(max(minutes * 10, EngineeringOptions.apiProcessingTimeoutMin), EngineeringOptions.apiProcessingTimeoutMax)
-        Log.i("\(action): " + lm.logLocalized("audio duration") + " \(String(format: "%.1f", audioDuration))s, " + lm.logLocalized("local processing timeout") + " \(String(format: "%.0f", timeout))s")
-
-        Task {
-            do {
-                let text = try await withThrowingTaskGroup(of: String.self) { group in
-                    group.addTask {
-                        try await self.localWhisperService.transcribe(samples: samples)
-                    }
-                    group.addTask {
-                        try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                        throw CancellationError()
-                    }
-                    let result = try await group.next()!
-                    group.cancelAll()
-                    return result
-                }
-                await MainActor.run {
-                    let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if trimmedText.isEmpty {
-                        Log.i("\(action) " + lm.logLocalized("result is empty"))
-                        self.currentState = .idle
-                    } else {
-                        self.outputText(trimmedText, action: action)
-                    }
-                }
-            } catch is CancellationError {
-                await MainActor.run {
-                    Log.e("\(action) " + lm.logLocalized("timed out") + " (\(String(format: "%.0f", timeout))s)")
-                    self.handleError(String(localized: "\(action) timed out, try shorter recordings"))
-                }
-            } catch {
-                await MainActor.run {
-                    Log.e("\(action) " + lm.logLocalized("failed:") + " \(error)")
-                    self.handleError(String(localized: "\(action) failed: \(error.localizedDescription)"))
-                }
-            }
-        }
-    }
-
-    private func handleResult(_ result: Result<String, Error>, action: String) {
-        let lm = LocaleManager.shared
-        DispatchQueue.main.async { [weak self] in
-            switch result {
-            case .success(let text):
-                let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                if trimmedText.isEmpty {
-                    Log.i("\(action) " + lm.logLocalized("result is empty"))
-                    self?.currentState = .idle
-                } else {
-                    self?.outputText(trimmedText, action: action)
-                }
-
-            case .failure(let error):
-                Log.i("\(action) " + lm.logLocalized("failed:") + " \(error)")
-                self?.handleError(String(localized: "\(action) failed: \(error.localizedDescription)"))
-            }
-        }
+        startTranscription(recording: recording, samples: samples, audioDuration: audioDuration, startingEngine: "local")
     }
 
     // MARK: - Error Handling
@@ -638,7 +493,13 @@ class RecordingController {
 
     private func outputText(_ text: String, action: String) {
         let lm = LocaleManager.shared
-        let processed = TextPostProcessor.process(text)
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            Log.i("\(action) " + lm.logLocalized("result is empty"))
+            currentState = .idle
+            return
+        }
+        let processed = TextPostProcessor.process(trimmed)
         Log.i("\(action) " + lm.logLocalized("result:") + " \(processed)")
         onTranscriptionResult?(processed)
         textInputter.inputText(processed)
