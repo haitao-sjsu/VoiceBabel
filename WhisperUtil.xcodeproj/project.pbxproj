@@ -36,6 +36,9 @@
 		D6TF00052FD400010000TF06 /* RecordingControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00042FD400010000TF05 /* RecordingControllerTests.swift */; };
 		D6TF00072FD400010000TF08 /* ServiceLocalWhisperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00062FD400010000TF07 /* ServiceLocalWhisperTests.swift */; };
 		D6TF00092FD400010000TF10 /* ServiceAppleTranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00082FD400010000TF09 /* ServiceAppleTranslationTests.swift */; };
+		AA00000000000000000000B1 /* TextPostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000A1 /* TextPostProcessor.swift */; };
+		AA00000000000000000000B2 /* AutoSendManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000A2 /* AutoSendManager.swift */; };
+		AA00000000000000000000B3 /* TranslationPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000A3 /* TranslationPipeline.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -70,6 +73,9 @@
 		D6TF00042FD400010000TF05 /* RecordingControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingControllerTests.swift; sourceTree = "<group>"; };
 		D6TF00062FD400010000TF07 /* ServiceLocalWhisperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLocalWhisperTests.swift; sourceTree = "<group>"; };
 		D6TF00082FD400010000TF09 /* ServiceAppleTranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceAppleTranslationTests.swift; sourceTree = "<group>"; };
+		AA00000000000000000000A1 /* TextPostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPostProcessor.swift; sourceTree = "<group>"; };
+		AA00000000000000000000A2 /* AutoSendManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSendManager.swift; sourceTree = "<group>"; };
+		AA00000000000000000000A3 /* TranslationPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationPipeline.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -103,12 +109,11 @@
 			children = (
 				D69A0ED82F21D61C00CD1DC0 /* main.swift */,
 				D69A0ED42F21D61C00CD1DC0 /* AppDelegate.swift */,
-				D64B583A2F334121003BEA1A /* RecordingController.swift */,
-				D69A0ED72F21D61C00CD1DC0 /* HotkeyManager.swift */,
 				D6B0A0052F6A000100000005 /* Config */,
 				D6B0A0012F6A000100000001 /* Services */,
 				D6B0A0042F6A000100000004 /* UI */,
 				D6B0A0022F6A000100000002 /* Audio */,
+				AA00000000000000000000C1 /* Core */,
 				D6B0A0032F6A000100000003 /* Utilities */,
 				D69A0EC52F21D5B700CD1DC0 /* WhisperUtil */,
 				D6TS00092FD400010000TS10 /* WhisperUtilTests */,
@@ -153,8 +158,20 @@
 				D69A0EF02F21D61C00CD1DC0 /* NetworkHealthMonitor.swift */,
 				D6A1B0002F5A000100000001 /* Log.swift */,
 				D6L0C0002FB400010000L001 /* LocaleManager.swift */,
+				AA00000000000000000000A1 /* TextPostProcessor.swift */,
 			);
 			path = Utilities;
+			sourceTree = "<group>";
+		};
+		AA00000000000000000000C1 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				D64B583A2F334121003BEA1A /* RecordingController.swift */,
+				D69A0ED72F21D61C00CD1DC0 /* HotkeyManager.swift */,
+				AA00000000000000000000A2 /* AutoSendManager.swift */,
+				AA00000000000000000000A3 /* TranslationPipeline.swift */,
+			);
+			path = Core;
 			sourceTree = "<group>";
 		};
 		D6B0A0042F6A000100000004 /* UI */ = {
@@ -337,6 +354,9 @@
 				D6F1A0032FA300010000F003 /* ApiKeyValidator.swift in Sources */,
 				D6L0C0012FB400010000L001 /* LocaleManager.swift in Sources */,
 				D6AT00012FC000010000A001 /* ServiceAppleTranslation.swift in Sources */,
+				AA00000000000000000000B1 /* TextPostProcessor.swift in Sources */,
+				AA00000000000000000000B2 /* AutoSendManager.swift in Sources */,
+				AA00000000000000000000B3 /* TranslationPipeline.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

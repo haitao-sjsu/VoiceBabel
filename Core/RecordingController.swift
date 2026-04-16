@@ -65,16 +65,14 @@ class RecordingController {
 
     private var currentMode: RecordingMode = .transcribe
     var transcriptionPriority: [String] = SettingsDefaults.transcriptionPriority
-    var translationEnginePriority: [String] = SettingsDefaults.translationEnginePriority
+    let translationPipeline: TranslationPipeline
     var preferredApiMode: StatusBarController.ApiMode = .cloud
     var currentApiMode: StatusBarController.ApiMode = .cloud
     private(set) var isInFallbackMode: Bool = false
-    var autoSendMode: StatusBarController.AutoSendMode = .delayed
-    var delayedSendDuration: TimeInterval = SettingsDefaults.delayedSendDuration
+    let autoSendManager: AutoSendManager
     var textCleanupMode: TextCleanupMode = .off
     var playSound: Bool = true
     private var lastRecordingDuration: TimeInterval = 0
-    private var pendingSendTimer: DispatchWorkItem?
 
     // MARK: - Init
 
@@ -94,6 +92,29 @@ class RecordingController {
         self.textInputter = textInputter
         self.textCleanupService = textCleanupService
         self.config = config
+        self.autoSendManager = AutoSendManager(textInputter: textInputter)
+        self.translationPipeline = TranslationPipeline(
+            whisperService: whisperService,
+            localWhisperService: localWhisperService,
+            textInputter: textInputter
+        )
+
+        // Wire callbacks after all stored properties are initialized
+        self.autoSendManager.onStateChange = { [weak self] state in self?.currentState = state }
+        self.translationPipeline.onTranslationResult = { [weak self] text in
+            self?.onTranslationResult?(text)
+        }
+        self.translationPipeline.onTranscriptionResult = { [weak self] text in
+            self?.onTranscriptionResult?(text)
+        }
+        self.translationPipeline.onComplete = { [weak self] in
+            guard let self = self else { return }
+            self.currentState = .idle
+            self.autoSendManager.handleAutoSend()
+        }
+        self.translationPipeline.onError = { [weak self] message in
+            self?.handleError(message)
+        }
 
         setupCallbacks()
     }
@@ -102,6 +123,7 @@ class RecordingController {
     @available(macOS 15.0, *)
     func setAppleTranslationService(_ service: ServiceAppleTranslation) {
         self.appleTranslationService = service
+        self.translationPipeline.appleTranslationService = service
     }
     #endif
 
@@ -118,6 +140,7 @@ class RecordingController {
         self.whisperService = whisperService
         self.realtimeService = realtimeService
         self.textCleanupService = textCleanupService
+        self.translationPipeline.whisperService = whisperService
         setupCallbacks()
     }
 
@@ -134,7 +157,7 @@ class RecordingController {
             guard let self = self else { return }
             guard EngineeringOptions.realtimeDeltaMode else { return }
             if self.textCleanupMode == .off {
-                self.textInputter.inputText(self.convertChineseScript(delta))
+                self.textInputter.inputText(TextPostProcessor.convertChineseScript(delta))
             }
         }
         realtimeService.onTranscriptionComplete = { [weak self] (text: String) in
@@ -155,75 +178,6 @@ class RecordingController {
     }
 
     // MARK: - Public Methods
-
-    /// Resolve the effective whisper language, mapping "ui" to the interface language code
-    /// and normalizing script variants (e.g., "zh-Hant" → "zh") since Whisper API only accepts base language codes
-    private func effectiveWhisperLanguage() -> String {
-        let lang = SettingsStore.shared.whisperLanguage
-        if lang == "ui" {
-            return LocaleManager.whisperCode(for: LocaleManager.shared.currentLocale.language.languageCode?.identifier ?? "en")
-        }
-        return LocaleManager.whisperCode(for: lang)
-    }
-
-    // MARK: - Text Post-processing
-
-    /// 转录/翻译文本后处理：过滤特殊标签、繁简转换、去除首尾空白
-    private func postProcess(_ text: String) -> String {
-        var result = text
-
-        // 过滤 Whisper 输出的特殊标签（如 [MUSIC]、[BLANK_AUDIO] 等）
-        if EngineeringOptions.enableTagFiltering {
-            result = result.replacingOccurrences(of: "\\[.*?\\]", with: "", options: .regularExpression)
-        }
-
-        result = convertChineseScript(result)
-
-        return result.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    /// 根据用户的语言设置决定繁简转换方向
-    ///
-    /// - "zh"：用户指定简体中文 → 繁体转简体
-    /// - "zh-Hant"：用户指定繁体中文 → 简体转繁体
-    /// - "ui"：跟随界面语言（zh-Hans → 转简体，zh-Hant → 转繁体）
-    /// - 其他（含空字符串自动检测）：不转换，原样输出
-    private func convertChineseScript(_ text: String) -> String {
-        let lang = SettingsStore.shared.whisperLanguage
-
-        let targetScript: String?  // "Hans" or "Hant" or nil
-        switch lang {
-        case "zh":
-            targetScript = "Hans"
-        case "zh-Hant":
-            targetScript = "Hant"
-        case "ui":
-            let appLang = SettingsStore.shared.appLanguage
-            if appLang == "system" {
-                let sysLangCode = Locale.current.language.languageCode?.identifier
-                if sysLangCode == "zh" {
-                    targetScript = Locale.current.language.script?.identifier == "Hant" ? "Hant" : "Hans"
-                } else {
-                    targetScript = nil
-                }
-            } else if appLang == "zh-Hans" {
-                targetScript = "Hans"
-            } else if appLang == "zh-Hant" {
-                targetScript = "Hant"
-            } else {
-                targetScript = nil
-            }
-        default:
-            targetScript = nil
-        }
-
-        guard let script = targetScript else { return text }
-
-        let mutable = NSMutableString(string: text)
-        // reverse=false: Traditional→Simplified; reverse=true: Simplified→Traditional
-        CFStringTransform(mutable, nil, "Traditional-Simplified" as CFString, script == "Hant")
-        return mutable as String
-    }
 
     func beginRecording(mode: RecordingMode) {
         guard currentState == .idle || currentState == .error || currentState == .waitingToSend else {
@@ -253,7 +207,7 @@ class RecordingController {
         case .processing:
             Log.i(lm.logLocalized("Processing in progress, please wait..."))
         case .waitingToSend:
-            cancelDelayedSend()
+            autoSendManager.cancelDelayedSend()
         case .error:
             currentState = .idle
         }
@@ -279,7 +233,7 @@ class RecordingController {
             currentState = .idle
 
         case .waitingToSend:
-            cancelDelayedSend()
+            autoSendManager.cancelDelayedSend()
 
         case .idle, .error:
             break
@@ -297,7 +251,7 @@ class RecordingController {
             return
         }
 
-        cancelDelayedSendForNewRecording()
+        autoSendManager.cancelDelayedSendForNewRecording()
 
         let modeText = currentMode == .transcribe ? lm.logLocalized("speech-to-text") : lm.logLocalized("speech translation")
         let apiModeText: String
@@ -614,11 +568,17 @@ class RecordingController {
 
     private func stopTranslationRecording() {
         let audioDuration = audioRecorder.getCurrentRecordingDuration()
+        let savedSamples = audioRecorder.getAudioSamples()
         lastRecordingDuration = audioDuration
         guard let recording = stopAndValidateRecording() else { return }
 
         currentState = .processing
-        translateAudio(recording, audioDuration: audioDuration)
+        translationPipeline.translate(
+            recording: recording,
+            samples: savedSamples,
+            audioDuration: audioDuration,
+            useLocalTranscription: currentApiMode == .local
+        )
     }
 
     private func stopLocalRecording() {
@@ -707,191 +667,7 @@ class RecordingController {
         audioRecorder.onAudioChunk = nil
         realtimeService.disconnect()
         currentState = .idle
-        handleAutoSend()
-    }
-
-    // MARK: - Audio Processing
-
-    /// 翻译音频：统一入口，两步法（先转录再翻译）
-    /// Step 1: 转录（使用当前 API 模式）
-    /// Step 2: 翻译（根据 translationEngine 选择 Apple Translation 或 Cloud GPT）
-    private func translateAudio(_ recording: AudioRecorder.RecordingResult, audioDuration: TimeInterval) {
-        let lm = LocaleManager.shared
-        let targetLang = SettingsStore.shared.translationTargetLanguage
-        let savedSamples = audioRecorder.getAudioSamples()
-
-        Log.i(lm.logLocalized("Starting two-step translation: transcribe then translate to") + " \(targetLang)")
-
-        // Step 1: 转录
-        if currentApiMode == .local && localWhisperService.isReady() {
-            Task {
-                do {
-                    let text = try await localWhisperService.transcribe(samples: savedSamples)
-                    await MainActor.run {
-                        self.translateStep2(transcribedText: text, targetLanguage: targetLang, recording: recording, audioDuration: audioDuration)
-                    }
-                } catch {
-                    await MainActor.run {
-                        Log.e(lm.logLocalized("Transcription (step 1) failed:") + " \(error.localizedDescription)")
-                        self.handleError(String(localized: "Transcription failed: \(error.localizedDescription)"))
-                    }
-                }
-            }
-        } else {
-            whisperService.transcribe(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let text):
-                        self?.translateStep2(transcribedText: text, targetLanguage: targetLang, recording: recording, audioDuration: audioDuration)
-                    case .failure(let error):
-                        Log.e(LocaleManager.shared.logLocalized("Transcription (step 1) failed:") + " \(error.localizedDescription)")
-                        self?.handleError(String(localized: "Transcription failed: \(error.localizedDescription)"))
-                    }
-                }
-            }
-        }
-    }
-
-    /// Step 2: 翻译已转录的文本
-    private func translateStep2(transcribedText: String, targetLanguage: String, recording: AudioRecorder.RecordingResult, audioDuration: TimeInterval) {
-        let lm = LocaleManager.shared
-        let trimmed = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            Log.i(lm.logLocalized("Transcription result is empty, skipping translation"))
-            currentState = .idle
-            return
-        }
-
-        Log.i(lm.logLocalized("Two-step translation Step 1 complete, transcription result:") + " \(trimmed)")
-        // 保存转录结果到 last transcription（即使翻译失败也可恢复）
-        onTranscriptionResult?(trimmed)
-
-        translateTextWithFallback(trimmed, targetLanguage: targetLanguage, engineIndex: 0)
-    }
-
-    /// 按优先级队列尝试翻译引擎，失败时自动 fallback 到下一个
-    private func translateTextWithFallback(_ text: String, targetLanguage: String, engineIndex: Int) {
-        let lm = LocaleManager.shared
-        let engines = translationEnginePriority
-
-        guard engineIndex < engines.count else {
-            handleError(String(localized: "All translation engines failed"))
-            return
-        }
-
-        if engineIndex > 0 && !EngineeringOptions.enableModeFallback {
-            handleError(String(localized: "Translation failed"))
-            return
-        }
-
-        let engine = engines[engineIndex]
-        let tryNext: () -> Void = { [weak self] in
-            self?.translateTextWithFallback(text, targetLanguage: targetLanguage, engineIndex: engineIndex + 1)
-        }
-
-        switch engine {
-        case "apple":
-            translateTextViaApple(text, targetLanguage: targetLanguage, onFailure: tryNext)
-        case "cloud":
-            translateTextViaCloud(text, targetLanguage: targetLanguage, onFailure: tryNext)
-        default:
-            tryNext()
-        }
-    }
-
-    /// Cloud GPT 翻译
-    private func translateTextViaCloud(_ text: String, targetLanguage: String, onFailure: (() -> Void)? = nil) {
-        let lm = LocaleManager.shared
-        Log.i(lm.logLocalized("Calling GPT translation (cloud)..."))
-        whisperService.chatTranslate(text: text, targetLanguage: targetLanguage) { [weak self] result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    self?.handleTranslationResult(result, transcribedText: text)
-                case .failure(let error):
-                    if let onFailure = onFailure {
-                        Log.w(lm.logLocalized("Cloud GPT translation failed, trying next engine:") + " \(error.localizedDescription)")
-                        onFailure()
-                    } else {
-                        self?.handleTranslationResult(result, transcribedText: text)
-                    }
-                }
-            }
-        }
-    }
-
-    /// Apple Translation 本地翻译
-    private func translateTextViaApple(_ text: String, targetLanguage: String, onFailure: (() -> Void)? = nil) {
-        let lm = LocaleManager.shared
-
-        #if canImport(Translation)
-        guard #available(macOS 15.0, *),
-              let service = appleTranslationService as? ServiceAppleTranslation else {
-            if let onFailure = onFailure {
-                Log.i(lm.logLocalized("Apple Translation unavailable, trying next engine"))
-                onFailure()
-            } else {
-                handleError(String(localized: "Apple Translation requires macOS 15.0 or later"))
-            }
-            return
-        }
-
-        Log.i(lm.logLocalized("Calling Apple Translation (local)..."))
-        let sourceLang = effectiveWhisperLanguage()
-        service.translate(
-            text: text,
-            sourceLanguage: sourceLang.isEmpty ? nil : sourceLang,
-            targetLanguage: targetLanguage
-        ) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                switch result {
-                case .success:
-                    self.handleTranslationResult(result, transcribedText: text)
-                case .failure(let error):
-                    if let onFailure = onFailure {
-                        Log.w(lm.logLocalized("Apple Translation failed, trying next engine:") + " \(error.localizedDescription)")
-                        onFailure()
-                    } else {
-                        self.handleTranslationResult(result, transcribedText: text)
-                    }
-                }
-            }
-        }
-        #else
-        if let onFailure = onFailure {
-            Log.i(lm.logLocalized("Translation framework not available, trying next engine"))
-            onFailure()
-        } else {
-            handleError(String(localized: "Apple Translation is not available on this system"))
-        }
-        #endif
-    }
-
-    /// 处理翻译结果：成功时输出翻译文本，失败时保留转录文本到 last transcription
-    private func handleTranslationResult(_ result: Result<String, Error>, transcribedText: String) {
-        let lm = LocaleManager.shared
-        switch result {
-        case .success(let translatedText):
-            let trimmed = translatedText.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.isEmpty {
-                Log.i(lm.logLocalized("Translation result is empty"))
-                currentState = .idle
-            } else {
-                Log.i(lm.logLocalized("Translation result:") + " \(trimmed)")
-                let processed = postProcess(trimmed)
-                onTranslationResult?(processed)
-                onTranscriptionResult?(transcribedText)
-                textInputter.inputText(processed)
-                currentState = .idle
-                handleAutoSend()
-            }
-        case .failure(let error):
-            Log.e(lm.logLocalized("Translation (step 2) failed:") + " \(error.localizedDescription)")
-            // 翻译失败，但转录结果已保存到 last transcription
-            Log.i(lm.logLocalized("Transcription preserved in menu bar"))
-            handleError(String(localized: "Translation failed: \(error.localizedDescription). Transcription preserved in menu bar."))
-        }
+        autoSendManager.handleAutoSend()
     }
 
     private func handleResult(_ result: Result<String, Error>, action: String) {
@@ -976,13 +752,13 @@ class RecordingController {
 
     private func outputText(_ text: String, action: String) {
         let lm = LocaleManager.shared
-        let processed = postProcess(text)
+        let processed = TextPostProcessor.process(text)
         guard textCleanupMode != .off && currentMode != .translate else {
             Log.i("\(action) " + lm.logLocalized("result:") + " \(processed)")
             onTranscriptionResult?(processed)
             textInputter.inputText(processed)
             currentState = .idle
-            handleAutoSend()
+            autoSendManager.handleAutoSend()
             return
         }
 
@@ -1007,66 +783,9 @@ class RecordingController {
                 self.onTranscriptionResult?(finalText)
                 self.textInputter.inputText(finalText)
                 self.currentState = .idle
-                self.handleAutoSend()
+                self.autoSendManager.handleAutoSend()
             }
         }
-    }
-
-    // MARK: - Auto Send
-
-    private func handleAutoSend() {
-        let lm = LocaleManager.shared
-        switch autoSendMode {
-        case .off:
-            break
-
-        case .always:
-            DispatchQueue.main.asyncAfter(deadline: .now() + EngineeringOptions.autoSendDelay) { [weak self] in
-                self?.textInputter.pressReturnKey()
-                Log.i(lm.logLocalized("Auto send: pressed Enter"))
-            }
-
-        case .delayed:
-            startDelayedSendCountdown()
-        }
-    }
-
-    private func startDelayedSendCountdown() {
-        let lm = LocaleManager.shared
-        currentState = .waitingToSend
-        Log.i(lm.logLocalized("Delayed send: starting") + " \(delayedSendDuration)s " + lm.logLocalized("countdown..."))
-
-        let timerWork = DispatchWorkItem { [weak self] in
-            guard let self = self else { return }
-            if self.currentState == .waitingToSend {
-                self.textInputter.pressReturnKey()
-                Log.i(lm.logLocalized("Delayed send: countdown ended, auto sent"))
-                self.cleanupDelayedSend()
-                self.currentState = .idle
-            }
-        }
-        pendingSendTimer = timerWork
-        DispatchQueue.main.asyncAfter(deadline: .now() + delayedSendDuration, execute: timerWork)
-    }
-
-    private func cancelDelayedSend() {
-        let lm = LocaleManager.shared
-        cleanupDelayedSend()
-        currentState = .idle
-        Log.i(lm.logLocalized("Delayed send: user pressed hotkey to cancel send, text preserved"))
-    }
-
-    private func cancelDelayedSendForNewRecording() {
-        let lm = LocaleManager.shared
-        if currentState == .waitingToSend {
-            Log.i(lm.logLocalized("Delayed send: user started new recording, cancelling send countdown"))
-            cleanupDelayedSend()
-        }
-    }
-
-    private func cleanupDelayedSend() {
-        pendingSendTimer?.cancel()
-        pendingSendTimer = nil
     }
 
 }

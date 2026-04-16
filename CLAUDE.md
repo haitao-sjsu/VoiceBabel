@@ -21,8 +21,10 @@ main.swift -> AppDelegate (Composition Root)
                  +-- Config/KeychainHelper (API Key secure storage)
                  +-- UI/StatusBarController (menu bar UI)
                  +-- UI/SettingsWindowController -> UI/SettingsView (SwiftUI settings panel)
-                 +-- HotkeyManager (Option key gesture detection)
-                 +-- RecordingController (state machine / core dispatcher)
+                 +-- Core/HotkeyManager (Option key gesture detection)
+                 +-- Core/RecordingController (state machine / core dispatcher)
+                 |       +-- Core/AutoSendManager (delayed send logic)
+                 |       +-- Core/TranslationPipeline (two-step translation flow)
                  |       +-- Audio/AudioRecorder -> Audio/AudioEncoder
                  |       +-- Services/ServiceCloudOpenAI (HTTP transcription + GPT translation)
                  |       +-- Services/ServiceRealtimeOpenAI (WebSocket streaming)
@@ -30,6 +32,7 @@ main.swift -> AppDelegate (Composition Root)
                  |       +-- Services/ServiceAppleTranslation (Apple Translation local, macOS 15.0+)
                  |       +-- Services/ServiceTextCleanup (GPT-4o-mini text cleanup)
                  |       +-- Utilities/TextInputter (text output to active window)
+                 |       +-- Utilities/TextPostProcessor (tag filtering, Chinese script conversion)
                  +-- Utilities/LocaleManager (i18n locale management)
                  +-- Utilities/NetworkHealthMonitor (network recovery probe)
 ```
@@ -41,11 +44,12 @@ Components communicate via closures/callbacks, connected in `AppDelegate.setupCo
 ### Directories
 
 ```
+Core/                       — Core logic (recording state machine, hotkey detection, auto-send, translation pipeline)
 Config/                     — Configuration (user prefs, engineering options, Keychain, settings store)
 UI/                         — Menu bar controller, SwiftUI settings panel, settings window
 Services/                   — Transcription & translation backends (Cloud / Realtime / Local / Apple Translation / Text cleanup)
 Audio/                      — Audio capture and encoding
-Utilities/                  — Helpers (text input, network probe, logging, i18n locale manager)
+Utilities/                  — Helpers (text input, text post-processing, network probe, logging, i18n locale manager)
 WhisperUtil/                — Resources (Assets, Storyboard, String Catalogs)
 WhisperUtilTests/           — Unit tests
 .claude-research-tech/      — Technical research documents
@@ -62,8 +66,6 @@ WhisperUtilTests/           — Unit tests
 |------|-------------|
 | **main.swift** | App entry point, creates NSApplication and AppDelegate |
 | **AppDelegate.swift** | Composition root — initializes all components, connects callbacks, subscribes to settings changes via Combine |
-| **RecordingController.swift** | Core dispatcher — recording state machine, API mode routing, transcription/translation flows, auto-send logic, fallback |
-| **HotkeyManager.swift** | Option key gesture detection (push-to-talk, double-tap translate, single-tap cancel) |
 | **Makefile** | Build/run automation (`make dev`, `make build`, `make run`, `make release`, `make clean`) |
 | **whisperutil.log** | Runtime log file (auto-generated, not checked into git) |
 | **WhisperUtil.xcodeproj/** | Xcode project bundle (directory displayed as a file in Finder). Contains `project.pbxproj` (build targets, file references, settings) |

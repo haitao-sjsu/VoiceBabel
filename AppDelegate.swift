@@ -162,7 +162,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         recordingController.preferredApiMode = defaultMode
         recordingController.currentApiMode = defaultMode
         recordingController.transcriptionPriority = settingsStore.transcriptionPriority
-        recordingController.translationEnginePriority = settingsStore.translationEnginePriority
+        recordingController.translationPipeline.translationEnginePriority = settingsStore.translationEnginePriority
 
         networkHealthMonitor = NetworkHealthMonitor(apiKey: config.openaiApiKey)
         networkHealthMonitor.onCloudRecovered = { [weak self] in
@@ -173,8 +173,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.statusBarController.showNotification(title: "WhisperUtil", message: String(localized: "Network recovered, switched back to Cloud API"))
         }
 
-        recordingController.autoSendMode = StatusBarController.AutoSendMode.from(config.autoSendMode)
-        recordingController.delayedSendDuration = config.delayedSendDuration
+        recordingController.autoSendManager.autoSendMode = StatusBarController.AutoSendMode.from(config.autoSendMode)
+        recordingController.autoSendManager.delayedSendDuration = config.delayedSendDuration
         recordingController.textCleanupMode = TextCleanupMode.from(config.textCleanupMode)
 
         hotkeyManager = HotkeyManager()
@@ -253,17 +253,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }.store(in: &cancellables)
 
         settingsStore.$translationEnginePriority.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] priority in
-            self?.recordingController.translationEnginePriority = priority
+            self?.recordingController.translationPipeline.translationEnginePriority = priority
             Log.i(lm.logLocalized("Settings: Translation engine priority changed to") + " \(priority)")
         }.store(in: &cancellables)
 
         settingsStore.$autoSendMode.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] modeString in
-            self?.recordingController.autoSendMode = StatusBarController.AutoSendMode.from(modeString)
+            self?.recordingController.autoSendManager.autoSendMode = StatusBarController.AutoSendMode.from(modeString)
             Log.i(lm.logLocalized("Settings: Send mode changed to") + " \(modeString)")
         }.store(in: &cancellables)
 
         settingsStore.$delayedSendDuration.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] duration in
-            self?.recordingController.delayedSendDuration = duration
+            self?.recordingController.autoSendManager.delayedSendDuration = duration
             Log.i(lm.logLocalized("Settings: Delay changed to") + " \(Int(duration))s")
         }.store(in: &cancellables)
 
