@@ -176,8 +176,8 @@ enum EngineeringOptions {
     // MARK: - Logging
     // ============================================================
 
-    /// Log message language: "en" or "zh"
-    static let logLanguage = "zh"
+    /// Log message language: "en" or "zh-Hans"
+    static let logLanguage = "zh-Hans"
 
     // ============================================================
     // MARK: - Internal timing
