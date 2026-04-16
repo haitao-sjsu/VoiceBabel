@@ -109,7 +109,7 @@ If build fails, debug and fix it yourself.
 
 ## Keeping CLAUDE.md Files Up-to-Date
 
-CLAUDE.md files are distributed across the project — one in the root and one in each subdirectory (`Audio/`, `Config/`, `Services/`, `UI/`, `Utilities/`).
+CLAUDE.md files are distributed across the project — one in the root and one in each subdirectory (`Audio/`, `Config/`, `Core/`, `Services/`, `UI/`, `Utilities/`).
 
 - **Subdirectory CLAUDE.md**: When a subdirectory has significant changes (files added/deleted/renamed, major refactoring), update that subdirectory's CLAUDE.md to reflect the current state.
 - **Root CLAUDE.md**: When the overall architecture changes significantly (new modules, removed components, changed communication patterns), update the root CLAUDE.md accordingly.
