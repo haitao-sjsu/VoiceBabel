@@ -1,4 +1,4 @@
-// ServiceTextCleanup.swift
+// TextCleanupService.swift
 // WhisperUtil - macOS 菜单栏语音转文字工具
 //
 // GPT-4o-mini 文本优化服务 —— 对语音转录结果进行润色和清理。
@@ -48,7 +48,7 @@ enum TextCleanupMode: String {
 
 // MARK: - 文本优化服务
 
-class ServiceTextCleanup {
+class TextCleanupService {
 
     // MARK: - 配置
 
@@ -111,8 +111,8 @@ class ServiceTextCleanup {
             return
         }
 
-        let systemPrompt = ServiceTextCleanup.sharedPreamble + "\n" +
-            (ServiceTextCleanup.modeInstructions[mode] ?? "")
+        let systemPrompt = TextCleanupService.sharedPreamble + "\n" +
+            (TextCleanupService.modeInstructions[mode] ?? "")
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"

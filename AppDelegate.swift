@@ -26,18 +26,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusBarController: StatusBarController!
     private var recordingController: RecordingController!
     private var audioRecorder: AudioRecorder!
-    private var whisperService: ServiceCloudOpenAI!
-    private var realtimeService: ServiceRealtimeOpenAI!
-    private var localWhisperService: ServiceLocalWhisper!
+    private var cloudOpenAIService: CloudOpenAIService!
+    private var realtimeService: RealtimeOpenAIService!
+    private var localWhisperService: LocalWhisperService!
     private var textInputter: TextInputter!
     private var hotkeyManager: HotkeyManager!
     private var config: Config!
-    private var textCleanupService: ServiceTextCleanup!
+    private var textCleanupService: TextCleanupService!
     private var networkHealthMonitor: NetworkHealthMonitor!
     private var settingsStore: SettingsStore!
     private var settingsWindowController: SettingsWindowController!
     #if canImport(Translation)
-    private var appleTranslationService: Any?  // ServiceAppleTranslation, type-erased for availability
+    private var localAppleTranslationService: Any?  // LocalAppleTranslationService, type-erased for availability
     #endif
     private var cancellables = Set<AnyCancellable>()
 
@@ -114,28 +114,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         audioRecorder = AudioRecorder()
         textInputter = TextInputter()
 
-        whisperService = ServiceCloudOpenAI(
+        cloudOpenAIService = CloudOpenAIService(
             apiKey: config.openaiApiKey,
             model: config.whisperModel,
             language: config.whisperLanguage
         )
 
-        realtimeService = ServiceRealtimeOpenAI(
+        realtimeService = RealtimeOpenAIService(
             apiKey: config.openaiApiKey,
             language: config.whisperLanguage
         )
 
-        localWhisperService = ServiceLocalWhisper(
+        localWhisperService = LocalWhisperService(
             language: config.whisperLanguage
         )
 
-        textCleanupService = ServiceTextCleanup(
+        textCleanupService = TextCleanupService(
             apiKey: config.openaiApiKey
         )
 
         recordingController = RecordingController(
             audioRecorder: audioRecorder,
-            whisperService: whisperService,
+            cloudOpenAIService: cloudOpenAIService,
             realtimeService: realtimeService,
             localWhisperService: localWhisperService,
             textInputter: textInputter,
@@ -146,9 +146,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Apple Translation service (macOS 14.4+)
         #if canImport(Translation)
         if #available(macOS 15.0, *) {
-            let service = ServiceAppleTranslation()
-            self.appleTranslationService = service
-            recordingController.setAppleTranslationService(service)
+            let service = LocalAppleTranslationService()
+            self.localAppleTranslationService = service
+            recordingController.setLocalAppleTranslationService(service)
             Log.i(lm.logLocalized("Apple Translation service initialized"))
         }
         #endif
@@ -315,7 +315,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Language Change
 
     private func updateServicesLanguage(_ lang: String) {
-        whisperService.language = lang
+        cloudOpenAIService.language = lang
         realtimeService.language = lang
         localWhisperService.language = lang
     }
@@ -339,20 +339,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        whisperService = ServiceCloudOpenAI(
+        cloudOpenAIService = CloudOpenAIService(
             apiKey: newKey,
             model: config.whisperModel,
             language: settingsStore.whisperLanguage
         )
-        realtimeService = ServiceRealtimeOpenAI(
+        realtimeService = RealtimeOpenAIService(
             apiKey: newKey,
             language: settingsStore.whisperLanguage
         )
-        textCleanupService = ServiceTextCleanup(apiKey: newKey)
+        textCleanupService = TextCleanupService(apiKey: newKey)
         networkHealthMonitor = NetworkHealthMonitor(apiKey: newKey)
 
         recordingController.updateServices(
-            whisperService: whisperService,
+            cloudOpenAIService: cloudOpenAIService,
             realtimeService: realtimeService,
             textCleanupService: textCleanupService
         )

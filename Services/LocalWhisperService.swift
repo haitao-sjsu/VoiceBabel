@@ -1,4 +1,4 @@
-// ServiceLocalWhisper.swift
+// LocalWhisperService.swift
 // WhisperUtil - macOS 菜单栏语音转文字工具
 //
 // WhisperKit 本地转写服务 —— 基于 CoreML 的离线语音识别。
@@ -24,12 +24,12 @@
 //   也作为 Cloud API 网络回退的后备方案。
 //
 // 限制：
-//   仅支持转录，不支持翻译（翻译模式自动使用 ServiceCloudOpenAI）。
+//   仅支持转录，不支持翻译（翻译模式自动使用 CloudOpenAIService）。
 
 import Foundation
 import WhisperKit
 
-class ServiceLocalWhisper {
+class LocalWhisperService {
 
     // MARK: - 状态
 

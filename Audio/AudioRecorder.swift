@@ -16,7 +16,7 @@
 //   麦克风 → AVAudioEngine.inputNode → installTap → processAudioBuffer()
 //     → AVAudioConverter（采样率转换）→ audioBuffer（Float32 内存缓冲）
 //       → 标准模式：stopRecording() → AudioEncoder.encodeToM4A/WAV → RecordingResult
-//       → 流式模式：convertToPCM16() → onAudioChunk 回调 → ServiceRealtimeOpenAI
+//       → 流式模式：convertToPCM16() → onAudioChunk 回调 → RealtimeOpenAIService
 //
 // 依赖：
 //   - AVFoundation：AVAudioEngine, AVAudioConverter, AVCaptureDevice（权限检查）
@@ -26,8 +26,8 @@
 //
 // 架构角色：
 //   由 AppDelegate 创建，由 RecordingController 控制其启停。
-//   标准模式产出的 RecordingResult 传递给 ServiceCloudOpenAI。
-//   流式模式的 onAudioChunk 由 RecordingController 连接到 ServiceRealtimeOpenAI。
+//   标准模式产出的 RecordingResult 传递给 CloudOpenAIService。
+//   流式模式的 onAudioChunk 由 RecordingController 连接到 RealtimeOpenAIService。
 
 import AVFoundation
 import Cocoa

@@ -7,14 +7,14 @@
 //   1. State machine: idle -> recording -> processing -> (waitingToSend ->) idle, error 3s auto-recovery
 //   2. API mode routing: route to local/cloud/realtime transcription flows
 //   3. Translation: Whisper API direct + two-step (transcribe+GPT translate)
-//   4. Text cleanup pipeline: post-process via ServiceTextCleanup
+//   4. Text cleanup pipeline: post-process via TextCleanupService
 //   5. Auto-send logic: off/always/delayed
 //   6. Audio validation: min data size + RMS threshold
 //   7. Network fallback: Cloud API failure -> local WhisperKit
 //
 // Dependencies:
-//   - AudioRecorder, ServiceCloudOpenAI, ServiceRealtimeOpenAI, ServiceLocalWhisper
-//   - ServiceTextCleanup, TextInputter, Config, EngineeringOptions, LocaleManager
+//   - AudioRecorder, CloudOpenAIService, RealtimeOpenAIService, LocalWhisperService
+//   - TextCleanupService, TextInputter, Config, EngineeringOptions, LocaleManager
 
 import Cocoa
 
@@ -45,14 +45,14 @@ class RecordingController {
     // MARK: - Dependencies
 
     private let audioRecorder: AudioRecorder
-    private var whisperService: ServiceCloudOpenAI
-    private var realtimeService: ServiceRealtimeOpenAI
-    private let localWhisperService: ServiceLocalWhisper
+    private var cloudOpenAIService: CloudOpenAIService
+    private var realtimeService: RealtimeOpenAIService
+    private let localWhisperService: LocalWhisperService
     private let textInputter: TextInputter
-    private var textCleanupService: ServiceTextCleanup
+    private var textCleanupService: TextCleanupService
     private let config: Config
     #if canImport(Translation)
-    private var appleTranslationService: Any?  // ServiceAppleTranslation, type-erased for availability
+    private var localAppleTranslationService: Any?  // LocalAppleTranslationService, type-erased for availability
     #endif
 
     // MARK: - State
@@ -78,15 +78,15 @@ class RecordingController {
 
     init(
         audioRecorder: AudioRecorder,
-        whisperService: ServiceCloudOpenAI,
-        realtimeService: ServiceRealtimeOpenAI,
-        localWhisperService: ServiceLocalWhisper,
+        cloudOpenAIService: CloudOpenAIService,
+        realtimeService: RealtimeOpenAIService,
+        localWhisperService: LocalWhisperService,
         textInputter: TextInputter,
-        textCleanupService: ServiceTextCleanup,
+        textCleanupService: TextCleanupService,
         config: Config
     ) {
         self.audioRecorder = audioRecorder
-        self.whisperService = whisperService
+        self.cloudOpenAIService = cloudOpenAIService
         self.realtimeService = realtimeService
         self.localWhisperService = localWhisperService
         self.textInputter = textInputter
@@ -94,7 +94,7 @@ class RecordingController {
         self.config = config
         self.autoSendManager = AutoSendManager(textInputter: textInputter)
         self.translationPipeline = TranslationPipeline(
-            whisperService: whisperService,
+            cloudOpenAIService: cloudOpenAIService,
             localWhisperService: localWhisperService,
             textInputter: textInputter
         )
@@ -121,26 +121,26 @@ class RecordingController {
 
     #if canImport(Translation)
     @available(macOS 15.0, *)
-    func setAppleTranslationService(_ service: ServiceAppleTranslation) {
-        self.appleTranslationService = service
-        self.translationPipeline.appleTranslationService = service
+    func setLocalAppleTranslationService(_ service: LocalAppleTranslationService) {
+        self.localAppleTranslationService = service
+        self.translationPipeline.localAppleTranslationService = service
     }
     #endif
 
     func updateServices(
-        whisperService: ServiceCloudOpenAI,
-        realtimeService: ServiceRealtimeOpenAI,
-        textCleanupService: ServiceTextCleanup
+        cloudOpenAIService: CloudOpenAIService,
+        realtimeService: RealtimeOpenAIService,
+        textCleanupService: TextCleanupService
     ) {
         let lm = LocaleManager.shared
         guard currentState == .idle || currentState == .error else {
             Log.w(lm.logLocalized("RecordingController: current state") + " \(currentState) " + lm.logLocalized("does not allow service update"))
             return
         }
-        self.whisperService = whisperService
+        self.cloudOpenAIService = cloudOpenAIService
         self.realtimeService = realtimeService
         self.textCleanupService = textCleanupService
-        self.translationPipeline.whisperService = whisperService
+        self.translationPipeline.cloudOpenAIService = cloudOpenAIService
         setupCallbacks()
     }
 
@@ -460,12 +460,12 @@ class RecordingController {
         switch mode {
         case "cloud":
             Log.i(lm.logLocalized("Calling Whisper API (cloud transcription)..."))
-            whisperService.transcribe(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
+            cloudOpenAIService.transcribe(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
                 switch result {
                 case .success:
                     self?.handleResult(result, action: lm.logLocalized("Cloud speech recognition"))
                 case .failure(let error):
-                    if let whisperError = error as? ServiceCloudOpenAI.WhisperError,
+                    if let whisperError = error as? CloudOpenAIService.WhisperError,
                        case .networkError = whisperError {
                         Log.w(lm.logLocalized("Cloud API failed, trying next priority:") + " \(error.localizedDescription)")
                         self?.enterFallbackMode(mode: "cloud")

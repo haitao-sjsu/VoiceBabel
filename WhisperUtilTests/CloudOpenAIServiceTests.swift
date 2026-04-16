@@ -1,7 +1,7 @@
-// ServiceCloudOpenAITests.swift
+// CloudOpenAIServiceTests.swift
 // WhisperUtilTests
 //
-// 测试 ServiceCloudOpenAI 的纯逻辑部分：超时计算、语言映射、错误类型。
+// 测试 CloudOpenAIService 的纯逻辑部分：超时计算、语言映射、错误类型。
 // 不测试网络请求。
 //
 // 【给你的讲解】
@@ -19,7 +19,7 @@ final class TimeoutCalculationTests: XCTestCase {
 
     // 【讲解】这里创建一个真实的 service 实例，但不会调用任何网络 API。
     // apiKey 和 model 传空值就行——我们只用它的 calculateProcessingTimeout 方法。
-    let service = ServiceCloudOpenAI(apiKey: "", model: "", language: "")
+    let service = CloudOpenAIService(apiKey: "", model: "", language: "")
 
     func testTimeout_zeroAudio_returnsMinimum() {
         XCTAssertEqual(
@@ -84,18 +84,18 @@ final class LanguageDisplayNameTests: XCTestCase {
     // 翻译结果就全错了。
 
     func testKnownLanguages() {
-        XCTAssertEqual(ServiceCloudOpenAI.languageDisplayName(for: "en"), "English")
-        XCTAssertEqual(ServiceCloudOpenAI.languageDisplayName(for: "zh"), "Simplified Chinese")
-        XCTAssertEqual(ServiceCloudOpenAI.languageDisplayName(for: "zh-Hant"), "Traditional Chinese")
-        XCTAssertEqual(ServiceCloudOpenAI.languageDisplayName(for: "ja"), "Japanese")
-        XCTAssertEqual(ServiceCloudOpenAI.languageDisplayName(for: "ko"), "Korean")
-        XCTAssertEqual(ServiceCloudOpenAI.languageDisplayName(for: "fr"), "French")
-        XCTAssertEqual(ServiceCloudOpenAI.languageDisplayName(for: "de"), "German")
-        XCTAssertEqual(ServiceCloudOpenAI.languageDisplayName(for: "es"), "Spanish")
+        XCTAssertEqual(CloudOpenAIService.languageDisplayName(for: "en"), "English")
+        XCTAssertEqual(CloudOpenAIService.languageDisplayName(for: "zh"), "Simplified Chinese")
+        XCTAssertEqual(CloudOpenAIService.languageDisplayName(for: "zh-Hant"), "Traditional Chinese")
+        XCTAssertEqual(CloudOpenAIService.languageDisplayName(for: "ja"), "Japanese")
+        XCTAssertEqual(CloudOpenAIService.languageDisplayName(for: "ko"), "Korean")
+        XCTAssertEqual(CloudOpenAIService.languageDisplayName(for: "fr"), "French")
+        XCTAssertEqual(CloudOpenAIService.languageDisplayName(for: "de"), "German")
+        XCTAssertEqual(CloudOpenAIService.languageDisplayName(for: "es"), "Spanish")
     }
 
     func testUnknownLanguage_returnsNonEmpty() {
-        let name = ServiceCloudOpenAI.languageDisplayName(for: "sv")
+        let name = CloudOpenAIService.languageDisplayName(for: "sv")
         XCTAssertFalse(name.isEmpty, "未知语言不应返回空字符串")
         XCTAssertNotEqual(name, "sv", "不应原样返回语言代码")
     }
@@ -106,7 +106,7 @@ final class LanguageDisplayNameTests: XCTestCase {
 final class WhisperErrorTests: XCTestCase {
 
     func testAllCasesHaveDescriptions() {
-        let cases: [ServiceCloudOpenAI.WhisperError] = [
+        let cases: [CloudOpenAIService.WhisperError] = [
             .networkError("test"),
             .invalidResponse,
             .noData,
@@ -120,12 +120,12 @@ final class WhisperErrorTests: XCTestCase {
     }
 
     func testNetworkError_carriesMessage() {
-        let error = ServiceCloudOpenAI.WhisperError.networkError("connection refused")
+        let error = CloudOpenAIService.WhisperError.networkError("connection refused")
         XCTAssertTrue(error.errorDescription?.contains("connection refused") ?? false)
     }
 
     func testApiError_carriesStatusCode() {
-        let error = ServiceCloudOpenAI.WhisperError.apiError(429, "rate limited")
+        let error = CloudOpenAIService.WhisperError.apiError(429, "rate limited")
         XCTAssertTrue(error.errorDescription?.contains("429") ?? false)
     }
 }

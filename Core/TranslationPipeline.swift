@@ -9,9 +9,9 @@
 //   3. Engine fallback: try next engine in priority list on failure
 //
 // Dependencies:
-//   - ServiceCloudOpenAI (cloud transcription + GPT translation)
-//   - ServiceLocalWhisper (local transcription)
-//   - ServiceAppleTranslation (Apple Translation, macOS 15.0+, conditional)
+//   - CloudOpenAIService (cloud transcription + GPT translation)
+//   - LocalWhisperService (local transcription)
+//   - LocalAppleTranslationService (Apple Translation, macOS 15.0+, conditional)
 //   - TextPostProcessor (post-processing translation output)
 //   - TextInputter (text output to active window)
 //   - SettingsStore, EngineeringOptions, LocaleManager
@@ -26,11 +26,11 @@ class TranslationPipeline {
 
     // MARK: - Dependencies
 
-    var whisperService: ServiceCloudOpenAI
-    let localWhisperService: ServiceLocalWhisper
+    var cloudOpenAIService: CloudOpenAIService
+    let localWhisperService: LocalWhisperService
     let textInputter: TextInputter
     #if canImport(Translation)
-    var appleTranslationService: Any?  // ServiceAppleTranslation, type-erased for availability
+    var localAppleTranslationService: Any?  // LocalAppleTranslationService, type-erased for availability
     #endif
 
     // MARK: - Configuration
@@ -47,11 +47,11 @@ class TranslationPipeline {
     // MARK: - Init
 
     init(
-        whisperService: ServiceCloudOpenAI,
-        localWhisperService: ServiceLocalWhisper,
+        cloudOpenAIService: CloudOpenAIService,
+        localWhisperService: LocalWhisperService,
         textInputter: TextInputter
     ) {
-        self.whisperService = whisperService
+        self.cloudOpenAIService = cloudOpenAIService
         self.localWhisperService = localWhisperService
         self.textInputter = textInputter
     }
@@ -86,7 +86,7 @@ class TranslationPipeline {
                 }
             }
         } else {
-            whisperService.transcribe(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
+            cloudOpenAIService.transcribe(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success(let text):
@@ -152,7 +152,7 @@ class TranslationPipeline {
     private func translateTextViaCloud(_ text: String, targetLanguage: String, onFailure: (() -> Void)? = nil) {
         let lm = LocaleManager.shared
         Log.i(lm.logLocalized("Calling GPT translation (cloud)..."))
-        whisperService.chatTranslate(text: text, targetLanguage: targetLanguage) { [weak self] result in
+        cloudOpenAIService.chatTranslate(text: text, targetLanguage: targetLanguage) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
                 case .success:
@@ -175,7 +175,7 @@ class TranslationPipeline {
 
         #if canImport(Translation)
         guard #available(macOS 15.0, *),
-              let service = appleTranslationService as? ServiceAppleTranslation else {
+              let service = localAppleTranslationService as? LocalAppleTranslationService else {
             if let onFailure = onFailure {
                 Log.i(lm.logLocalized("Apple Translation unavailable, trying next engine"))
                 onFailure()

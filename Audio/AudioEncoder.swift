@@ -16,14 +16,14 @@
 // 设计：
 //   使用 caseless enum 作为纯命名空间，所有方法均为 static。
 //   同时定义了 AudioFormat 枚举和 EncodingResult 结构体，
-//   被 AudioRecorder.RecordingResult 和 ServiceCloudOpenAI 共用。
+//   被 AudioRecorder.RecordingResult 和 CloudOpenAIService 共用。
 //
 // 依赖：
 //   - AVFoundation：AVAudioFile, AVAudioPCMBuffer, AVAudioFormat
 //   - EngineeringOptions：sampleRate（16kHz）、aacBitRate（24kbps）
 //
 // 架构角色：
-//   由 AudioRecorder.stopRecording() 调用，产出的数据传递给 ServiceCloudOpenAI。
+//   由 AudioRecorder.stopRecording() 调用，产出的数据传递给 CloudOpenAIService。
 
 import AVFoundation
 

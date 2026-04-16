@@ -1,4 +1,4 @@
-// ServiceAppleTranslationTests.swift
+// LocalAppleTranslationServiceTests.swift
 // WhisperUtilTests
 //
 // Apple Translation 的功能测试（真实翻译）无法在 XCTest 中运行：
@@ -17,7 +17,7 @@ final class AppleTranslationErrorTests: XCTestCase {
 
     func testErrorDescriptions_nonEmpty() {
         if #available(macOS 15.0, *) {
-            let errors: [ServiceAppleTranslation.TranslationError] = [
+            let errors: [LocalAppleTranslationService.TranslationError] = [
                 .unsupportedLanguagePair,
                 .translationFailed("test"),
                 .sessionCreationFailed,
@@ -31,7 +31,7 @@ final class AppleTranslationErrorTests: XCTestCase {
 
     func testAvailabilityStatusValues() {
         if #available(macOS 15.0, *) {
-            let statuses: [ServiceAppleTranslation.LanguageAvailabilityStatus] = [
+            let statuses: [LocalAppleTranslationService.LanguageAvailabilityStatus] = [
                 .installed, .needsDownload, .unsupported,
             ]
             XCTAssertEqual(statuses.count, 3)

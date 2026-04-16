@@ -1,4 +1,4 @@
-// ServiceRealtimeOpenAI.swift
+// RealtimeOpenAIService.swift
 // WhisperUtil - macOS 菜单栏语音转文字工具
 //
 // OpenAI Realtime WebSocket 流式转写服务 —— 边录边转的实时语音识别。
@@ -39,7 +39,7 @@ enum RealtimeConnectionState: Sendable, Equatable {
     case configured
 }
 
-class ServiceRealtimeOpenAI: NSObject {
+class RealtimeOpenAIService: NSObject {
 
     // MARK: - 回调
 
@@ -356,7 +356,7 @@ class ServiceRealtimeOpenAI: NSObject {
 
 // MARK: - URLSessionWebSocketDelegate
 
-extension ServiceRealtimeOpenAI: URLSessionWebSocketDelegate {
+extension RealtimeOpenAIService: URLSessionWebSocketDelegate {
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
         Log.i(LocaleManager.shared.logLocalized("Realtime: WebSocket connection established"))

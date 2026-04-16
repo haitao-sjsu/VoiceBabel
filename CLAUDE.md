@@ -26,11 +26,11 @@ main.swift -> AppDelegate (Composition Root)
                  |       +-- Core/AutoSendManager (delayed send logic)
                  |       +-- Core/TranslationPipeline (two-step translation flow)
                  |       +-- Audio/AudioRecorder -> Audio/AudioEncoder
-                 |       +-- Services/ServiceCloudOpenAI (HTTP transcription + GPT translation)
-                 |       +-- Services/ServiceRealtimeOpenAI (WebSocket streaming)
-                 |       +-- Services/ServiceLocalWhisper (WhisperKit local)
-                 |       +-- Services/ServiceAppleTranslation (Apple Translation local, macOS 15.0+)
-                 |       +-- Services/ServiceTextCleanup (GPT-4o-mini text cleanup)
+                 |       +-- Services/CloudOpenAIService (HTTP transcription + GPT translation)
+                 |       +-- Services/RealtimeOpenAIService (WebSocket streaming)
+                 |       +-- Services/LocalWhisperService (WhisperKit local)
+                 |       +-- Services/LocalAppleTranslationService (Apple Translation local, macOS 15.0+)
+                 |       +-- Services/TextCleanupService (GPT-4o-mini text cleanup)
                  |       +-- Utilities/TextInputter (text output to active window)
                  |       +-- Utilities/TextPostProcessor (tag filtering, Chinese script conversion)
                  +-- Utilities/LocaleManager (i18n locale management)
@@ -109,7 +109,7 @@ If build fails, debug and fix it yourself.
 
 ## Keeping CLAUDE.md Files Up-to-Date
 
-CLAUDE.md files are distributed across the project — one in the root and one in each subdirectory (`Audio/`, `Config/`, `Core/`, `Services/`, `UI/`, `Utilities/`).
+CLAUDE.md files are distributed across the project — one in the root and one in each subdirectory.
 
 - **Subdirectory CLAUDE.md**: When a subdirectory has significant changes (files added/deleted/renamed, major refactoring), update that subdirectory's CLAUDE.md to reflect the current state.
 - **Root CLAUDE.md**: When the overall architecture changes significantly (new modules, removed components, changed communication patterns), update the root CLAUDE.md accordingly.

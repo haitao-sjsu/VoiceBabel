@@ -1,4 +1,4 @@
-// ServiceCloudOpenAI.swift
+// CloudOpenAIService.swift
 // WhisperUtil - macOS 菜单栏语音转文字工具
 //
 // OpenAI Whisper HTTP 客户端 —— 提供云端语音转写和翻译能力。
@@ -26,7 +26,7 @@
 
 import Foundation
 
-class ServiceCloudOpenAI {
+class CloudOpenAIService {
 
     // MARK: - 配置
 

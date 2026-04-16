@@ -1,4 +1,4 @@
-// ServiceAppleTranslation.swift
+// LocalAppleTranslationService.swift
 // WhisperUtil - macOS 菜单栏语音转文字工具
 //
 // Apple Translation Framework 本地翻译服务 —— 离线翻译能力。
@@ -20,7 +20,7 @@
 //
 // 架构角色：
 //   由 AppDelegate 创建（@available 条件编译），由 RecordingController 在
-//   Apple Translation 翻译路径下调用。与 ServiceCloudOpenAI.chatTranslate() 职责对应。
+//   Apple Translation 翻译路径下调用。与 CloudOpenAIService.chatTranslate() 职责对应。
 
 import Foundation
 
@@ -30,7 +30,7 @@ import SwiftUI
 import AppKit
 
 @available(macOS 15.0, *)
-class ServiceAppleTranslation {
+class LocalAppleTranslationService {
 
     // MARK: - 隐藏窗口宿主
 
