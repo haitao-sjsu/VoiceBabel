@@ -16,7 +16,6 @@
 		D64B583C2F334121003BEA1A /* AudioEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B58392F334121003BEA1A /* AudioEncoder.swift */; };
 		D69A0EDC2F21D61C00CD1DC0 /* TextInputter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D69A0EDA2F21D61C00CD1DC0 /* TextInputter.swift */; };
 		D69A0EDD2F21D61C00CD1DC0 /* CloudOpenAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D69A0EDB2F21D61C00CD1DC0 /* CloudOpenAIService.swift */; };
-		D69A0EDE2F21D61C00CD1DC0 /* ApiKeyLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D69A0ED62F21D61C00CD1DC0 /* ApiKeyLoader.swift */; };
 		D69A0EDF2F21D61C00CD1DC0 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D69A0ED72F21D61C00CD1DC0 /* HotkeyManager.swift */; };
 		D69A0EE02F21D61C00CD1DC0 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D69A0ED92F21D61C00CD1DC0 /* StatusBarController.swift */; };
 		D69A0EE12F21D61C00CD1DC0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D69A0ED42F21D61C00CD1DC0 /* AppDelegate.swift */; };
@@ -51,7 +50,6 @@
 		D69A0EC32F21D5B700CD1DC0 /* WhisperUtil.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WhisperUtil.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D69A0ED42F21D61C00CD1DC0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D69A0ED52F21D61C00CD1DC0 /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
-		D69A0ED62F21D61C00CD1DC0 /* ApiKeyLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiKeyLoader.swift; sourceTree = "<group>"; };
 		D69A0ED72F21D61C00CD1DC0 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
 		D69A0ED82F21D61C00CD1DC0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		D69A0ED92F21D61C00CD1DC0 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
@@ -184,7 +182,6 @@
 		D6B0A0052F6A000100000005 /* Config */ = {
 			isa = PBXGroup;
 			children = (
-				D69A0ED62F21D61C00CD1DC0 /* ApiKeyLoader.swift */,
 				D64B58372F333841003BEA1A /* SettingsDefaults.swift */,
 				D6E0A0002F8400010000E001 /* EngineeringOptions.swift */,
 				D6D1A0002F8A000100000001 /* SettingsStore.swift */,
@@ -330,7 +327,6 @@
 				D69A0EDC2F21D61C00CD1DC0 /* TextInputter.swift in Sources */,
 				D69A0EDD2F21D61C00CD1DC0 /* CloudOpenAIService.swift in Sources */,
 				D69A0EF12F21D61C00CD1DC0 /* NetworkHealthMonitor.swift in Sources */,
-				D69A0EDE2F21D61C00CD1DC0 /* ApiKeyLoader.swift in Sources */,
 				D64B58382F333841003BEA1A /* SettingsDefaults.swift in Sources */,
 				D6E0A0012F8400010000E001 /* EngineeringOptions.swift in Sources */,
 				D69A0EDF2F21D61C00CD1DC0 /* HotkeyManager.swift in Sources */,

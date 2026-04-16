@@ -17,7 +17,7 @@
 //
 // 与其他配置文件的关系：
 //   - SettingsDefaults：用户偏好默认值（由 SettingsStore 管理）
-//   - ApiKeyLoader：从 Keychain 加载 API Key
+//   - KeychainHelper：从 Keychain 加载 API Key
 //
 // 依赖：无
 //

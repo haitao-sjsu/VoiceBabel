@@ -22,14 +22,14 @@ import Security
 enum KeychainHelper {
 
     private static let service = "com.whisperutil.api"
-    private static let account = "openai-api-key"
+    private static let defaultAccount = "openai-api-key"
 
     /// 保存 API Key 到 Keychain
-    static func save(apiKey: String) -> Bool {
+    static func save(apiKey: String, for account: String = defaultAccount) -> Bool {
         guard let data = apiKey.data(using: .utf8) else { return false }
 
         // 先尝试删除已有条目（避免 errSecDuplicateItem）
-        delete()
+        delete(for: account)
 
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -47,7 +47,7 @@ enum KeychainHelper {
     }
 
     /// 从 Keychain 读取 API Key
-    static func load() -> String? {
+    static func load(for account: String = defaultAccount) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -70,7 +70,7 @@ enum KeychainHelper {
 
     /// 从 Keychain 删除 API Key
     @discardableResult
-    static func delete() -> Bool {
+    static func delete(for account: String = defaultAccount) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -82,7 +82,7 @@ enum KeychainHelper {
     }
 
     /// 检查 Keychain 中是否存在 API Key
-    static func exists() -> Bool {
-        return load() != nil
+    static func exists(for account: String = defaultAccount) -> Bool {
+        return load(for: account) != nil
     }
 }
