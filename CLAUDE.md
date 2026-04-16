@@ -24,6 +24,7 @@ main.swift -> AppDelegate (Composition Root)
                  +-- Core/HotkeyManager (Option key gesture detection)
                  +-- Core/RecordingController (state machine / core dispatcher)
                  |       +-- Core/AutoSendManager (delayed send logic)
+                 |       +-- Core/TranscriptionPipeline (audio → text, priority + fallback, shared)
                  |       +-- Core/TranslationPipeline (two-step translation flow)
                  |       +-- Audio/AudioRecorder -> Audio/AudioEncoder
                  |       +-- Services/CloudOpenAIService (HTTP transcription + GPT translation)
