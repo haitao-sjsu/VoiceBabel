@@ -4,14 +4,14 @@
 // Composition Root — initializes all components and connects them via callbacks.
 //
 // Responsibilities:
-//   1. Load runtime config (Config.load() <- SettingsDefaults + EngineeringOptions)
+//   1. Load API keys (ApiKeyLoader.load() <- Keychain)
 //   2. Create and connect all components
 //   3. Subscribe to SettingsStore changes via Combine, propagate to components
 //   4. Async preload WhisperKit local model
 //   5. Manage app lifecycle (graceful quit: wait for recording/processing to finish)
 //
 // Dependencies:
-//   - Config, SettingsStore, LocaleManager
+//   - ApiKeyLoader, SettingsStore, LocaleManager
 //   - AudioRecorder, Services, RecordingController
 //   - StatusBarController, SettingsWindowController
 //   - HotkeyManager, NetworkHealthMonitor, TextInputter
@@ -30,7 +30,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var localWhisperService: LocalWhisperService!
     private var textInputter: TextInputter!
     private var hotkeyManager: HotkeyManager!
-    private var config: Config!
+    private var apiKeys: ApiKeyLoader!
     private var networkHealthMonitor: NetworkHealthMonitor!
     private var settingsStore: SettingsStore!
     private var settingsWindowController: SettingsWindowController!
@@ -56,8 +56,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         settingsStore = SettingsStore.shared
 
-        config = Config.load()
-        Log.i(lm.logLocalized("Config:") + " model=\(EngineeringOptions.whisperModel), hotkey=Option gesture")
+        apiKeys = ApiKeyLoader.load()
+        Log.i(lm.logLocalized("Config:") + " model=\(EngineeringOptions.whisperModel), hotkey=Option key")
 
         setupComponents()
 
@@ -112,7 +112,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         textInputter = TextInputter()
 
         cloudOpenAIService = CloudOpenAIService(
-            apiKey: config.openaiApiKey,
+            apiKey: apiKeys.openaiApiKey,
             model: EngineeringOptions.whisperModel,
             language: settingsStore.whisperLanguage
         )
@@ -145,7 +145,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         recordingController.transcriptionPriority = settingsStore.transcriptionPriority
         recordingController.translationPipeline.translationEnginePriority = settingsStore.translationEnginePriority
 
-        networkHealthMonitor = NetworkHealthMonitor(apiKey: config.openaiApiKey)
+        networkHealthMonitor = NetworkHealthMonitor(apiKey: apiKeys.openaiApiKey)
         networkHealthMonitor.onCloudRecovered = { [weak self] in
             guard let self = self else { return }
             self.recordingController.recoverFromFallback()

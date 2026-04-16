@@ -14,8 +14,9 @@ Both modes support transcription. Translation uses a two-step approach: first tr
 ```
 main.swift -> AppDelegate (Composition Root)
                  |
-                 +-- Config/Config <-- Config/SettingsDefaults (user preference defaults)
-                 |                 <-- Config/EngineeringOptions (engineering switches/constants)
+                 +-- Config/ApiKeyLoader (API Key from Keychain)
+                 +-- Config/SettingsDefaults (user preference defaults)
+                 +-- Config/EngineeringOptions (engineering switches/constants)
                  +-- Config/SettingsStore (UserDefaults + ObservableObject)
                  +-- Config/KeychainHelper (API Key secure storage)
                  +-- UI/StatusBarController (menu bar UI)
