@@ -68,6 +68,16 @@ WhisperUtilTests/           — Unit tests
 | **WhisperUtil.xcodeproj/** | Xcode project bundle (directory displayed as a file in Finder). Contains `project.pbxproj` (build targets, file references, settings) |
 | **CLAUDE.md** | This file — project guidelines for Claude |
 
+## Coding Principles
+
+These three principles apply to all code in this repository. Subdirectory `CLAUDE.md` files may add stricter, domain-specific rules (e.g. `Services/CLAUDE.md`), but must not contradict these.
+
+1. **Log generously.** Use `Log.i` / `Log.w` / `Log.e` at decision points and boundaries — transcription/translation inputs and outputs, mode switches, fallback triggers, network failures, user-visible state changes. Favor one log line too many over one too few. Past bugs (silent language fallback, translation hang) were traceable only because logs existed; silent paths are the hardest to debug after the fact.
+
+2. **Defensive, but not paranoid.** This is production code — validate at boundaries where bad input is plausible (user preferences, network responses, framework callbacks). Don't validate what internal code already guarantees. Never catch-and-silently-ignore errors or substitute fabricated defaults to "keep things running" — surface the error (via `Log.e` + propagate `Result.failure` / throw). A loud failure is a fixable bug; a quiet wrong-answer bug ships.
+
+3. **Good craftsmanship, not over-engineering.** Follow Swift conventions, clear naming, small focused types. But: don't add abstractions for hypothetical second callers, don't build configuration knobs nobody asked for, don't wrap single-use logic in protocols. Three similar lines beat a premature generic. YAGNI applies — if the feature/flexibility isn't requested today, don't ship it today.
+
 ## Background Mode
 
 All tasks should run in the background by default. Only report to the user in these cases:
