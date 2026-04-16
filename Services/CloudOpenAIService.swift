@@ -75,7 +75,7 @@ class CloudOpenAIService {
     ///   - text: 待翻译文本
     ///   - targetLanguage: 目标语言代码（如 "en", "zh", "ja"）
     ///   - completion: 完成回调
-    func chatTranslate(text: String, targetLanguage: String = "en", completion: @escaping (Result<String, Error>) -> Void) {
+    func chatTranslate(text: String, targetLanguage: String, completion: @escaping (Result<String, Error>) -> Void) {
         let languageName = Self.languageDisplayName(for: targetLanguage)
         Log.i(LocaleManager.shared.logLocalized("GPT translation: translating to") + " \(languageName)")
 
@@ -242,8 +242,14 @@ class CloudOpenAIService {
             if language.isEmpty {
                 effectiveLanguage = nil  // 不发送 language 参数，让模型自动检测
             } else if language == "ui" {
-                let interfaceCode = LocaleManager.shared.currentLocale.language.languageCode?.identifier ?? "en"
-                effectiveLanguage = LocaleManager.whisperCode(for: interfaceCode)
+                // "ui" 跟随界面语言；无法解析时 fall through 到自动检测
+                // 不能硬编码 "en" 兜底 —— 那样用户说中文会得到英文转录
+                if let interfaceCode = LocaleManager.shared.currentLocale.language.languageCode?.identifier {
+                    effectiveLanguage = LocaleManager.whisperCode(for: interfaceCode)
+                } else {
+                    Log.w("UI language code unresolvable, falling back to auto-detect")
+                    effectiveLanguage = nil
+                }
             } else {
                 effectiveLanguage = LocaleManager.whisperCode(for: language)
             }

@@ -28,15 +28,6 @@ final class AppleTranslationErrorTests: XCTestCase {
             }
         }
     }
-
-    func testAvailabilityStatusValues() {
-        if #available(macOS 15.0, *) {
-            let statuses: [LocalAppleTranslationService.LanguageAvailabilityStatus] = [
-                .installed, .needsDownload, .unsupported,
-            ]
-            XCTAssertEqual(statuses.count, 3)
-        }
-    }
 }
 
 #endif

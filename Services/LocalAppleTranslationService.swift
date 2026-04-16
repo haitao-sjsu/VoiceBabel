@@ -6,7 +6,7 @@
 // 职责：
 //   1. 利用 Apple Translation Framework 进行设备端本地翻译
 //   2. 通过隐藏 SwiftUI View 桥接获取 TranslationSession（macOS 14.4+ 限制）
-//   3. 提供语言可用性检查（installed/supported/unsupported）
+//   3. 源语言自动识别（NLLanguageRecognizer）+ 语言包可用性预检查
 //   4. 语言代码映射（WhisperUtil 代码 → Apple Locale.Language）
 //
 // 关键设计：
@@ -28,6 +28,7 @@ import Foundation
 import Translation
 import SwiftUI
 import AppKit
+import NaturalLanguage
 
 @available(macOS 15.0, *)
 class LocalAppleTranslationService {
@@ -80,53 +81,35 @@ class LocalAppleTranslationService {
             return
         }
 
-        // 先检查语言包状态，给用户明确提示
-        Task {
-            let availability = LanguageAvailability()
-            let sourceLang = source ?? Locale.Language(identifier: "en")
-            let status = await availability.status(from: sourceLang, to: target)
+        // 源语言未指定(Auto Detect)时用 NLLanguageRecognizer 预先识别，
+        // 避免把识别责任推给 TranslationSession —— 后者在缺语言包时可能挂起而非抛错。
+        let resolvedSource = source ?? Self.detectSourceLanguage(from: text)
 
-            await MainActor.run { [weak self] in
+        Task {
+            // 已知具体源语言 → 预检查语言包状态，未安装/不支持快速失败
+            if let resolvedSource = resolvedSource {
+                let availability = LanguageAvailability()
+                let status = await availability.status(from: resolvedSource, to: target)
+
                 switch status {
                 case .installed:
                     break
                 case .supported:
-                    Log.i("[AppleTranslation] Language pack not installed (\(sourceLanguage ?? "auto")→\(targetLanguage)), system will prompt for download")
+                    Log.i("[AppleTranslation] Language pack not installed (\(resolvedSource.languageCode?.identifier ?? "?")→\(targetLanguage)), failing fast to let pipeline fallback")
+                    await MainActor.run { completion(.failure(TranslationError.unsupportedLanguagePair)) }
+                    return
                 case .unsupported:
-                    completion(.failure(TranslationError.unsupportedLanguagePair))
+                    await MainActor.run { completion(.failure(TranslationError.unsupportedLanguagePair)) }
                     return
                 @unknown default:
-                    completion(.failure(TranslationError.unsupportedLanguagePair))
+                    await MainActor.run { completion(.failure(TranslationError.unsupportedLanguagePair)) }
                     return
                 }
-                // installed 和 supported 都继续翻译
-                // supported 时 session.translate() 会自动弹出系统下载对话框
-                self?.performTranslation(text: text, source: source, target: target, completion: completion)
             }
-        }
-    }
 
-    /// 检查语言对是否可用
-    func checkAvailability(
-        source: String?,
-        target: String
-    ) async -> LanguageAvailabilityStatus {
-        let availability = LanguageAvailability()
-        let sourceLang = source.flatMap { mapToLocaleLanguage($0) }
-            ?? Locale.Language(identifier: "zh-Hans")
-        guard let targetLang = mapToLocaleLanguage(target) else {
-            return .unsupported
-        }
-
-        let status = await availability.status(
-            from: sourceLang,
-            to: targetLang
-        )
-        switch status {
-        case .installed: return .installed
-        case .supported: return .needsDownload
-        case .unsupported: return .unsupported
-        @unknown default: return .unsupported
+            await MainActor.run { [weak self] in
+                self?.performTranslation(text: text, source: resolvedSource, target: target, completion: completion)
+            }
         }
     }
 
@@ -182,6 +165,18 @@ class LocalAppleTranslationService {
         }
     }
 
+    // MARK: - 源语言检测
+
+    /// 用 NLLanguageRecognizer 从文本识别源语言，返回 Locale.Language 或 nil。
+    /// 在 Apple Translation 之前自己识别，避免 TranslationSession 内部的自动检测
+    /// 在语言包缺失时挂起(而非抛错)。
+    private static func detectSourceLanguage(from text: String) -> Locale.Language? {
+        let recognizer = NLLanguageRecognizer()
+        recognizer.processString(text)
+        guard let lang = recognizer.dominantLanguage else { return nil }
+        return Locale.Language(identifier: lang.rawValue)
+    }
+
     // MARK: - 语言代码映射
 
     /// 将 WhisperUtil 的语言代码映射到 Apple Locale.Language
@@ -196,12 +191,6 @@ class LocalAppleTranslationService {
     }
 
     // MARK: - 类型定义
-
-    enum LanguageAvailabilityStatus {
-        case installed      // 已安装，可立即使用
-        case needsDownload  // 支持但需下载
-        case unsupported    // 不支持
-    }
 
     enum TranslationError: Error, LocalizedError {
         case unsupportedLanguagePair
