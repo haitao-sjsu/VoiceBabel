@@ -12,7 +12,7 @@
 //
 // 第一步：定义 protocol
 //   protocol AudioRecording {
-//       func startRecording(maxDuration: TimeInterval, streamingMode: Bool) throws
+//       func startRecording(maxDuration: TimeInterval) throws
 //       func stopRecording() -> RecordingResult?
 //   }
 //

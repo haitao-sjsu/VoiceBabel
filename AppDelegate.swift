@@ -27,7 +27,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var recordingController: RecordingController!
     private var audioRecorder: AudioRecorder!
     private var cloudOpenAIService: CloudOpenAIService!
-    private var realtimeService: RealtimeOpenAIService!
     private var localWhisperService: LocalWhisperService!
     private var textInputter: TextInputter!
     private var hotkeyManager: HotkeyManager!
@@ -65,7 +64,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let apiModeDescription: String
         switch config.defaultApiMode {
-        case "realtime": apiModeDescription = "Realtime (WebSocket)"
         case "cloud":    apiModeDescription = "Cloud API (gpt-4o-transcribe)"
         default:         apiModeDescription = "Local (WhisperKit)"
         }
@@ -120,11 +118,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             language: config.whisperLanguage
         )
 
-        realtimeService = RealtimeOpenAIService(
-            apiKey: config.openaiApiKey,
-            language: config.whisperLanguage
-        )
-
         localWhisperService = LocalWhisperService(
             language: config.whisperLanguage
         )
@@ -136,7 +129,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         recordingController = RecordingController(
             audioRecorder: audioRecorder,
             cloudOpenAIService: cloudOpenAIService,
-            realtimeService: realtimeService,
             localWhisperService: localWhisperService,
             textInputter: textInputter,
             textCleanupService: textCleanupService,
@@ -155,7 +147,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let defaultMode: StatusBarController.ApiMode
         switch config.defaultApiMode {
-        case "realtime": defaultMode = .realtime
         case "cloud":    defaultMode = .cloud
         default:         defaultMode = .local
         }
@@ -230,7 +221,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self = self else { return }
             let mode: StatusBarController.ApiMode
             switch modeString {
-            case "realtime": mode = .realtime
             case "cloud": mode = .cloud
             default: mode = .local
             }
@@ -243,8 +233,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settingsStore.$transcriptionPriority.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] priority in
             guard let self = self else { return }
             self.recordingController.transcriptionPriority = priority
-            // Update currentApiMode to top priority if not in Realtime mode
-            if self.recordingController.preferredApiMode != .realtime, let top = priority.first {
+            // Update currentApiMode to top priority
+            if let top = priority.first {
                 let mode: StatusBarController.ApiMode = top == "local" ? .local : .cloud
                 self.recordingController.currentApiMode = mode
                 self.statusBarController.setApiMode(mode)
@@ -316,7 +306,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateServicesLanguage(_ lang: String) {
         cloudOpenAIService.language = lang
-        realtimeService.language = lang
         localWhisperService.language = lang
     }
 
@@ -344,22 +333,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             model: config.whisperModel,
             language: settingsStore.whisperLanguage
         )
-        realtimeService = RealtimeOpenAIService(
-            apiKey: newKey,
-            language: settingsStore.whisperLanguage
-        )
         textCleanupService = TextCleanupService(apiKey: newKey)
         networkHealthMonitor = NetworkHealthMonitor(apiKey: newKey)
 
         recordingController.updateServices(
             cloudOpenAIService: cloudOpenAIService,
-            realtimeService: realtimeService,
             textCleanupService: textCleanupService
         )
 
         let preferredMode: StatusBarController.ApiMode
         switch settingsStore.defaultApiMode {
-        case "realtime": preferredMode = .realtime
         case "cloud":    preferredMode = .cloud
         default:         preferredMode = .local
         }

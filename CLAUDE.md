@@ -2,13 +2,12 @@
 
 ## Project Overview
 
-WhisperUtil is a macOS menu bar speech-to-text tool built with Swift. It supports three API modes:
+WhisperUtil is a macOS menu bar speech-to-text tool built with Swift. It supports two API modes:
 
 - **Local** (WhisperKit) - offline on-device transcription
 - **Cloud** (gpt-4o-transcribe) - HTTP API transcription
-- **Realtime** (GA WebSocket) - streaming transcription via WebSocket
 
-All three modes support transcription. Translation uses a two-step approach: first transcribe (using current API mode), then translate text via Apple Translation (local, macOS 15.0+) or Cloud GPT (gpt-4o-mini). The `translationEngine` setting in EngineeringOptions controls the strategy ("auto"/"apple"/"cloud").
+Both modes support transcription. Translation uses a two-step approach: first transcribe (using current API mode), then translate text via Apple Translation (local, macOS 15.0+) or Cloud GPT (gpt-4o-mini). The `translationEngine` setting in EngineeringOptions controls the strategy ("auto"/"apple"/"cloud").
 
 ## Architecture
 
@@ -27,7 +26,6 @@ main.swift -> AppDelegate (Composition Root)
                  |       +-- Core/TranslationPipeline (two-step translation flow)
                  |       +-- Audio/AudioRecorder -> Audio/AudioEncoder
                  |       +-- Services/CloudOpenAIService (HTTP transcription + GPT translation)
-                 |       +-- Services/RealtimeOpenAIService (WebSocket streaming)
                  |       +-- Services/LocalWhisperService (WhisperKit local)
                  |       +-- Services/LocalAppleTranslationService (Apple Translation local, macOS 15.0+)
                  |       +-- Services/TextCleanupService (GPT-4o-mini text cleanup)
@@ -47,7 +45,7 @@ Components communicate via closures/callbacks, connected in `AppDelegate.setupCo
 Core/                       — Core logic (recording state machine, hotkey detection, auto-send, translation pipeline)
 Config/                     — Configuration (user prefs, engineering options, Keychain, settings store)
 UI/                         — Menu bar controller, SwiftUI settings panel, settings window
-Services/                   — Transcription & translation backends (Cloud / Realtime / Local / Apple Translation / Text cleanup)
+Services/                   — Transcription & translation backends (Cloud / Local / Apple Translation / Text cleanup)
 Audio/                      — Audio capture and encoding
 Utilities/                  — Helpers (text input, text post-processing, network probe, logging, i18n locale manager)
 WhisperUtil/                — Resources (Assets, Storyboard, String Catalogs)

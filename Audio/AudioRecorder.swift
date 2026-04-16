@@ -5,29 +5,25 @@
 //
 // 职责：
 //   1. 麦克风采集：通过 AVAudioEngine + installTap 实时获取音频数据
-//   2. 采样率转换：将系统采样率（48kHz/44.1kHz）降采样至目标采样率（16kHz/24kHz）
-//   3. 双模式支持：
-//      - 标准模式：音频数据缓存在内存（audioBuffer），停止时编码为 M4A/WAV
-//      - 流式模式：每个 chunk 即时转为 PCM16 并通过 onAudioChunk 回调发送给 Realtime API
+//   2. 采样率转换：将系统采样率（48kHz/44.1kHz）降采样至目标采样率（16kHz）
+//   3. 内存缓冲：音频数据缓存在内存（audioBuffer），停止时编码为 M4A/WAV
 //   4. 麦克风冲突检测：Core Audio 设备占用检测 + macOS 系统听写冲突检测
 //   5. 录音保护：最长录音时间限制，防止意外长时间录音
 //
 // 音频处理流程：
 //   麦克风 → AVAudioEngine.inputNode → installTap → processAudioBuffer()
 //     → AVAudioConverter（采样率转换）→ audioBuffer（Float32 内存缓冲）
-//       → 标准模式：stopRecording() → AudioEncoder.encodeToM4A/WAV → RecordingResult
-//       → 流式模式：convertToPCM16() → onAudioChunk 回调 → RealtimeOpenAIService
+//       → stopRecording() → AudioEncoder.encodeToM4A/WAV → RecordingResult
 //
 // 依赖：
 //   - AVFoundation：AVAudioEngine, AVAudioConverter, AVCaptureDevice（权限检查）
 //   - CoreAudio：AudioObjectGetPropertyData（麦克风占用检测）
 //   - AudioEncoder：停止录音时的音频编码
-//   - EngineeringOptions：enableAudioCompression（编码格式选择）、sampleRate, realtimeSampleRate, checkTimerInterval
+//   - EngineeringOptions：enableAudioCompression（编码格式选择）、sampleRate, checkTimerInterval
 //
 // 架构角色：
 //   由 AppDelegate 创建，由 RecordingController 控制其启停。
-//   标准模式产出的 RecordingResult 传递给 CloudOpenAIService。
-//   流式模式的 onAudioChunk 由 RecordingController 连接到 RealtimeOpenAIService。
+//   产出的 RecordingResult 传递给 CloudOpenAIService。
 
 import AVFoundation
 import Cocoa
@@ -39,10 +35,6 @@ class AudioRecorder {
 
     /// 录音达到最长时间限制时触发
     var onMaxDurationReached: (() -> Void)?
-
-    /// 流式模式（Realtime API）的音频块回调
-    /// 每次麦克风采集到新数据时，立即转换为 PCM 16-bit 格式并通过此回调发送
-    var onAudioChunk: ((Data) -> Void)?
 
     // MARK: - 私有属性
 
@@ -62,10 +54,6 @@ class AudioRecorder {
 
     /// 最长录音时间（秒），防止意外长时间录音
     private var maxRecordingDuration: TimeInterval?
-
-    /// 是否为流式模式（Realtime API 使用）
-    /// 开启后每次音频回调都会将数据转为 PCM16 并通过 onAudioChunk 发送
-    private var streamingMode: Bool?
 
     // MARK: - 录音状态
 
@@ -148,13 +136,9 @@ class AudioRecorder {
     ///
     /// - Parameters:
     ///   - maxDuration: 最长录音时间（秒）
-    ///   - streamingMode: 是否启用流式模式（Realtime API）
-    ///   - sampleRate: 目标采样率（默认 16kHz，Realtime API 需要 24kHz）
     /// - Throws: RecordingError
     func startRecording(
-        maxDuration: TimeInterval,
-        streamingMode: Bool,
-        sampleRate: Double = EngineeringOptions.sampleRate
+        maxDuration: TimeInterval
     ) throws {
         guard !isRecording else {
             Log.i(LocaleManager.shared.logLocalized("Already recording"))
@@ -163,7 +147,8 @@ class AudioRecorder {
 
         // 保存本次录音的配置参数
         self.maxRecordingDuration = maxDuration
-        self.streamingMode = streamingMode
+
+        let sampleRate = EngineeringOptions.sampleRate
 
         // 检查并请求麦克风权限
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
@@ -198,8 +183,7 @@ class AudioRecorder {
         let inputNode = audioEngine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
 
-        // 创建目标格式：指定采样率，单声道 Float32
-        // 本地/网络模式用 16kHz（Whisper 要求），实时模式用 24kHz（Realtime API 要求）
+        // 创建目标格式：16kHz 单声道 Float32（Whisper 要求）
         guard let targetFormat = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
             sampleRate: sampleRate,
@@ -228,9 +212,6 @@ class AudioRecorder {
         var modeInfo = lm.logLocalized("manual stop mode")
         if maxDuration > 0 {
             modeInfo += ", max \(Int(maxDuration / 60)) min"
-        }
-        if streamingMode {
-            modeInfo += ", streaming"
         }
         Log.i(lm.logLocalized("Recording started") + " (\(modeInfo))")
     }
@@ -349,31 +330,6 @@ class AudioRecorder {
 
         // 将转换后的采样数据追加到总缓冲区
         audioBuffer.append(contentsOf: samples)
-
-        // 流式模式：立即将新数据转为 PCM 16-bit 并发送给 Realtime API
-        if streamingMode == true {
-            let pcmData = convertToPCM16(samples)
-            onAudioChunk?(pcmData)
-        }
-    }
-
-    /// 将 Float32 采样数据转换为 PCM 16-bit 小端序格式
-    ///
-    /// Realtime API (WebSocket) 要求 PCM 16-bit 格式的音频数据。
-    /// Float32 值域 -1.0 ~ 1.0 线性映射到 Int16 值域 -32768 ~ 32767。
-    ///
-    /// - Parameter samples: Float32 采样数据
-    /// - Returns: PCM 16-bit 小端序二进制数据
-    private func convertToPCM16(_ samples: [Float]) -> Data {
-        var data = Data()
-        for sample in samples {
-            let clamped = max(-1.0, min(1.0, sample))           // 限幅防止溢出
-            let int16Value = Int16(clamped * Float(Int16.max))   // 缩放到 Int16 范围
-            withUnsafeBytes(of: int16Value.littleEndian) { bytes in
-                data.append(contentsOf: bytes)
-            }
-        }
-        return data
     }
 
     /// 启动周期性检查定时器

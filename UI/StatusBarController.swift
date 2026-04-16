@@ -10,7 +10,7 @@
 //   4. Locale sync: subscribe to LocaleManager changes, refresh all menu titles
 //
 // Also defines two domain enums:
-//   - ApiMode: API mode (local/cloud/realtime)
+//   - ApiMode: API mode (local/cloud)
 //   - AutoSendMode: auto-send mode (off/always/delayed)
 //
 // Dependencies:
@@ -37,7 +37,6 @@ class StatusBarController {
     enum ApiMode: String {
         case local = "local"
         case cloud = "cloud"
-        case realtime = "realtime"
     }
 
     // MARK: - Auto Send Mode Enum
@@ -93,7 +92,7 @@ class StatusBarController {
 
     private func idleIcon() -> String {
         switch currentApiMode {
-        case .cloud, .realtime:
+        case .cloud:
             return "🎙📶"
         case .local:
             return "🎙🏠"

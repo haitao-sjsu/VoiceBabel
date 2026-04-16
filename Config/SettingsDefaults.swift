@@ -44,7 +44,6 @@ struct SettingsDefaults {
     /// 默认 API 模式
     /// - "local"：本地识别模式（WhisperKit）
     /// - "cloud"：网络 API 模式（gpt-4o-transcribe）
-    /// - "realtime"：实时模式（WebSocket）
     static let defaultApiMode = "cloud"
 
     // ============================================================
@@ -52,7 +51,6 @@ struct SettingsDefaults {
     // ============================================================
 
     /// 转录模式优先级（有序数组，索引 0 = 最高优先级）
-    /// Realtime 模式独立，不参与优先级队列
     static let transcriptionPriority = ["cloud", "local"]
 
     /// 翻译引擎优先级（有序数组，索引 0 = 最高优先级）

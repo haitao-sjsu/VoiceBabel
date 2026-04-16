@@ -5,7 +5,7 @@
 //
 // Responsibilities:
 //   1. State machine: idle -> recording -> processing -> (waitingToSend ->) idle, error 3s auto-recovery
-//   2. API mode routing: route to local/cloud/realtime transcription flows
+//   2. API mode routing: route to local/cloud transcription flows
 //   3. Translation: Whisper API direct + two-step (transcribe+GPT translate)
 //   4. Text cleanup pipeline: post-process via TextCleanupService
 //   5. Auto-send logic: off/always/delayed
@@ -13,7 +13,7 @@
 //   7. Network fallback: Cloud API failure -> local WhisperKit
 //
 // Dependencies:
-//   - AudioRecorder, CloudOpenAIService, RealtimeOpenAIService, LocalWhisperService
+//   - AudioRecorder, CloudOpenAIService, LocalWhisperService
 //   - TextCleanupService, TextInputter, Config, EngineeringOptions, LocaleManager
 
 import Cocoa
@@ -46,7 +46,6 @@ class RecordingController {
 
     private let audioRecorder: AudioRecorder
     private var cloudOpenAIService: CloudOpenAIService
-    private var realtimeService: RealtimeOpenAIService
     private let localWhisperService: LocalWhisperService
     private let textInputter: TextInputter
     private var textCleanupService: TextCleanupService
@@ -79,7 +78,6 @@ class RecordingController {
     init(
         audioRecorder: AudioRecorder,
         cloudOpenAIService: CloudOpenAIService,
-        realtimeService: RealtimeOpenAIService,
         localWhisperService: LocalWhisperService,
         textInputter: TextInputter,
         textCleanupService: TextCleanupService,
@@ -87,7 +85,6 @@ class RecordingController {
     ) {
         self.audioRecorder = audioRecorder
         self.cloudOpenAIService = cloudOpenAIService
-        self.realtimeService = realtimeService
         self.localWhisperService = localWhisperService
         self.textInputter = textInputter
         self.textCleanupService = textCleanupService
@@ -129,7 +126,6 @@ class RecordingController {
 
     func updateServices(
         cloudOpenAIService: CloudOpenAIService,
-        realtimeService: RealtimeOpenAIService,
         textCleanupService: TextCleanupService
     ) {
         let lm = LocaleManager.shared
@@ -138,7 +134,6 @@ class RecordingController {
             return
         }
         self.cloudOpenAIService = cloudOpenAIService
-        self.realtimeService = realtimeService
         self.textCleanupService = textCleanupService
         self.translationPipeline.cloudOpenAIService = cloudOpenAIService
         setupCallbacks()
@@ -147,33 +142,8 @@ class RecordingController {
     // MARK: - Setup
 
     private func setupCallbacks() {
-        let lm = LocaleManager.shared
-
         audioRecorder.onMaxDurationReached = { [weak self] in
             self?.stopRecording()
-        }
-
-        realtimeService.onTranscriptionDelta = { [weak self] (delta: String) in
-            guard let self = self else { return }
-            guard EngineeringOptions.realtimeDeltaMode else { return }
-            if self.textCleanupMode == .off {
-                self.textInputter.inputText(TextPostProcessor.convertChineseScript(delta))
-            }
-        }
-        realtimeService.onTranscriptionComplete = { [weak self] (text: String) in
-            guard let self = self else { return }
-            let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmedText.isEmpty {
-                Log.i(lm.logLocalized("Realtime: segment transcription complete") + " - \(trimmedText)")
-                if self.textCleanupMode != .off {
-                    self.outputText(trimmedText, action: lm.logLocalized("Realtime speech recognition"))
-                } else {
-                    self.onTranscriptionResult?(trimmedText)
-                }
-            }
-        }
-        realtimeService.onError = { [weak self] (error: Error) in
-            self?.handleError(String(localized: "Realtime transcription error: \(error.localizedDescription)"))
         }
     }
 
@@ -218,13 +188,7 @@ class RecordingController {
         switch currentState {
         case .recording:
             Log.i(lm.logLocalized("User cancelled recording"))
-            if currentApiMode == .realtime {
-                _ = audioRecorder.stopRecording()
-                audioRecorder.onAudioChunk = nil
-                realtimeService.disconnect()
-            } else {
-                _ = audioRecorder.stopRecording()
-            }
+            _ = audioRecorder.stopRecording()
             playStopSound()
             currentState = .idle
 
@@ -258,7 +222,6 @@ class RecordingController {
         switch currentApiMode {
         case .local:    apiModeText = lm.logLocalized("local")
         case .cloud:    apiModeText = lm.logLocalized("cloud")
-        case .realtime: apiModeText = lm.logLocalized("realtime")
         }
         Log.i(lm.logLocalized("Starting recording") + " (\(modeText), \(apiModeText) API)...")
 
@@ -268,9 +231,7 @@ class RecordingController {
             return
         }
 
-        if currentApiMode == .realtime && currentMode == .transcribe {
-            startRealtimeRecording()
-        } else if currentApiMode == .local && currentMode == .transcribe {
+        if currentApiMode == .local && currentMode == .transcribe {
             if localWhisperService.isReady() {
                 startNonStreamingRecording()
             } else if EngineeringOptions.enableModeFallback,
@@ -294,8 +255,7 @@ class RecordingController {
 
         do {
             try audioRecorder.startRecording(
-                maxDuration: config.maxRecordingDuration,
-                streamingMode: false
+                maxDuration: config.maxRecordingDuration
             )
         } catch {
             Log.e(lm.logLocalized("Recording start failed:") + " \(error)")
@@ -317,58 +277,6 @@ class RecordingController {
         startNonStreamingRecording()
     }
 
-    private func startRealtimeRecording() {
-        let lm = LocaleManager.shared
-        Log.i(lm.logLocalized("Realtime: starting realtime recording flow"))
-        realtimeService.disconnect()
-        audioRecorder.onAudioChunk = { [weak self] data in
-            self?.realtimeService.sendAudioChunk(data)
-        }
-
-        realtimeService.resetTranscription()
-        realtimeService.onConnectionStateChange = { [weak self] (state: RealtimeConnectionState) in
-            guard let self = self else { return }
-            Log.i(lm.logLocalized("Realtime: connection state changed to") + " \(state)")
-
-            switch state {
-            case .configured:
-                DispatchQueue.main.async {
-                    Log.i(lm.logLocalized("Realtime: session configured, starting recording"))
-                    self.currentState = .recording
-                    self.playStartSound()
-
-                    do {
-                        try self.audioRecorder.startRecording(
-                            maxDuration: self.config.maxRecordingDuration,
-                            streamingMode: true,
-                            sampleRate: EngineeringOptions.realtimeSampleRate
-                        )
-                        Log.i(lm.logLocalized("Realtime: recording started (24kHz)"))
-                    } catch {
-                        Log.e(lm.logLocalized("Realtime: recording start failed:") + " \(error)")
-                        self.handleError(String(localized: "Recording start failed: \(error.localizedDescription)"))
-                        self.realtimeService.disconnect()
-                    }
-                }
-
-            case .disconnected:
-                DispatchQueue.main.async {
-                    Log.w(lm.logLocalized("Realtime: connection disconnected, current state:") + " \(self.currentState)")
-                    if self.currentState == .recording {
-                        self.handleError(String(localized: "WebSocket connection disconnected"))
-                    }
-                }
-
-            default:
-                Log.d(lm.logLocalized("Realtime: connection state:") + " \(state)")
-                break
-            }
-        }
-
-        Log.i(lm.logLocalized("Realtime: calling connect()..."))
-        realtimeService.connect()
-    }
-
     func stopRecording() {
         guard currentState == .recording else { return }
         let lm = LocaleManager.shared
@@ -380,8 +288,6 @@ class RecordingController {
             stopLocalRecording()
         } else if currentApiMode == .cloud && currentMode == .transcribe {
             stopCloudRecording()
-        } else if currentApiMode == .realtime && currentMode == .transcribe {
-            stopRealtimeRecording()
         } else {
             stopTranslationRecording()
         }
@@ -662,14 +568,6 @@ class RecordingController {
         }
     }
 
-    private func stopRealtimeRecording() {
-        _ = audioRecorder.stopRecording()
-        audioRecorder.onAudioChunk = nil
-        realtimeService.disconnect()
-        currentState = .idle
-        autoSendManager.handleAutoSend()
-    }
-
     private func handleResult(_ result: Result<String, Error>, action: String) {
         let lm = LocaleManager.shared
         DispatchQueue.main.async { [weak self] in
@@ -719,10 +617,8 @@ class RecordingController {
         let lm = LocaleManager.shared
         guard isInFallbackMode else { return }
         isInFallbackMode = false
-        // Restore to top priority mode (or preferredApiMode if Realtime)
-        if preferredApiMode == .realtime {
-            currentApiMode = .realtime
-        } else if let topMode = transcriptionPriority.first {
+        // Restore to top priority mode
+        if let topMode = transcriptionPriority.first {
             switch topMode {
             case "cloud": currentApiMode = .cloud
             case "local": currentApiMode = .local

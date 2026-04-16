@@ -9,7 +9,7 @@
 //   3. 通过 @Published 属性为 AppDelegate 提供 Combine 发布者，实时传播设置变更
 //
 // 管理的设置项：
-//   - defaultApiMode：API 模式（local/cloud/realtime）
+//   - defaultApiMode：API 模式（local/cloud）
 //   - whisperLanguage：语音识别语言
 //   - playSound：是否播放提示音
 //   - autoSendMode：自动发送模式（off/always/delayed）
@@ -110,8 +110,8 @@ final class SettingsStore: ObservableObject {
             // Migration: put user's previously selected mode first in priority
             var priority = SettingsDefaults.transcriptionPriority
             let oldMode = defaults.object(forKey: Keys.defaultApiMode) as? String ?? SettingsDefaults.defaultApiMode
-            // Only cloud and local participate in priority queue (not realtime)
-            if oldMode != "realtime", let idx = priority.firstIndex(of: oldMode), idx != 0 {
+            // Migration: put old user's API mode first in priority
+            if let idx = priority.firstIndex(of: oldMode), idx != 0 {
                 priority.remove(at: idx)
                 priority.insert(oldMode, at: 0)
             }

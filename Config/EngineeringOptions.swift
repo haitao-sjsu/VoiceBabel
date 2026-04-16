@@ -40,11 +40,6 @@ enum EngineeringOptions {
     /// Chat Completions API 端点（用于翻译和文本优化）
     static let chatCompletionsURL = "https://api.openai.com/v1/chat/completions"
 
-    /// Realtime API WebSocket 端点（转录专用模式）
-    /// - 使用 intent=transcription，仅做语音转文字，不产生对话回复
-    /// - 支持模型：gpt-4o-transcribe, gpt-4o-mini-transcribe, whisper-1
-    static let realtimeWebSocketURL = "wss://api.openai.com/v1/realtime?intent=transcription"
-
     // ============================================================
     // MARK: - Audio capture
     // ============================================================
@@ -52,10 +47,6 @@ enum EngineeringOptions {
     /// 音频采样率（Hz）— 用于本地模式和网络 API 模式
     /// - 16000 Hz 是 Whisper / WhisperKit 要求的采样率
     static let sampleRate: Double = 16000
-
-    /// Realtime API 音频采样率（Hz）
-    /// - 24000 Hz 是 Realtime API 唯一支持的 PCM 采样率
-    static let realtimeSampleRate: Double = 24000
 
     /// 是否启用静音检测（RMS / 数据大小检查）
     /// 关闭后跳过音量和数据大小检查，所有录音都会提交到转录服务
@@ -108,11 +99,6 @@ enum EngineeringOptions {
     /// 本地 WhisperKit 模型标识
     static let localWhisperModel = "openai_whisper-large-v3-v20240930_626MB"
 
-    /// 实时模式是否使用 delta（增量）输出
-    /// true: 使用 onTranscriptionDelta 实时逐词输出
-    /// false: 仅在 onTranscriptionComplete 时输出完整文本
-    static let realtimeDeltaMode = true
-
     // ============================================================
     // MARK: - Network
     // ============================================================
@@ -124,11 +110,6 @@ enum EngineeringOptions {
     /// API 处理超时上限（秒）
     /// - 长音频的最长等待时间（Cloud API、本地 WhisperKit、文本优化共用）
     static let apiProcessingTimeoutMax: TimeInterval = 90
-
-    /// Realtime API 最终结果等待超时（秒）
-    /// - 在提交音频后等待最终转录结果的最长时间
-    /// - 超时后会断开 WebSocket 连接
-    static let realtimeResultTimeout: TimeInterval = 10
 
     /// 是否启用模式间自动回退（转录和翻译）
     /// 关闭后失败时直接报错，不尝试优先级队列中的下一个模式

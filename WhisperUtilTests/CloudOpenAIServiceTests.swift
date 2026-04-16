@@ -140,11 +140,6 @@ final class EngineeringOptionsTests: XCTestCase {
 
     func testSampleRatesPositive() {
         XCTAssertGreaterThan(EngineeringOptions.sampleRate, 0)
-        XCTAssertGreaterThan(EngineeringOptions.realtimeSampleRate, 0)
-    }
-
-    func testRealtimeSampleRateHigher() {
-        XCTAssertGreaterThan(EngineeringOptions.realtimeSampleRate, EngineeringOptions.sampleRate)
     }
 
     func testTimeoutRangeValid() {
@@ -168,7 +163,6 @@ final class EngineeringOptionsTests: XCTestCase {
     func testAPIURLsValid() {
         XCTAssertNotNil(URL(string: EngineeringOptions.whisperTranscribeURL))
         XCTAssertNotNil(URL(string: EngineeringOptions.chatCompletionsURL))
-        XCTAssertNotNil(URL(string: EngineeringOptions.realtimeWebSocketURL))
     }
 
     func testTranslationEnginePriorityValid() {
