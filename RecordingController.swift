@@ -134,7 +134,7 @@ class RecordingController {
             guard let self = self else { return }
             guard EngineeringOptions.realtimeDeltaMode else { return }
             if self.textCleanupMode == .off {
-                self.textInputter.inputTextRaw(delta)
+                self.textInputter.inputText(self.convertChineseScript(delta))
             }
         }
         realtimeService.onTranscriptionComplete = { [weak self] (text: String) in
@@ -164,6 +164,65 @@ class RecordingController {
             return LocaleManager.whisperCode(for: LocaleManager.shared.currentLocale.language.languageCode?.identifier ?? "en")
         }
         return LocaleManager.whisperCode(for: lang)
+    }
+
+    // MARK: - Text Post-processing
+
+    /// 转录/翻译文本后处理：过滤特殊标签、繁简转换、去除首尾空白
+    private func postProcess(_ text: String) -> String {
+        var result = text
+
+        // 过滤 Whisper 输出的特殊标签（如 [MUSIC]、[BLANK_AUDIO] 等）
+        if EngineeringOptions.enableTagFiltering {
+            result = result.replacingOccurrences(of: "\\[.*?\\]", with: "", options: .regularExpression)
+        }
+
+        result = convertChineseScript(result)
+
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// 根据用户的语言设置决定繁简转换方向
+    ///
+    /// - "zh"：用户指定简体中文 → 繁体转简体
+    /// - "zh-Hant"：用户指定繁体中文 → 简体转繁体
+    /// - "ui"：跟随界面语言（zh-Hans → 转简体，zh-Hant → 转繁体）
+    /// - 其他（含空字符串自动检测）：不转换，原样输出
+    private func convertChineseScript(_ text: String) -> String {
+        let lang = SettingsStore.shared.whisperLanguage
+
+        let targetScript: String?  // "Hans" or "Hant" or nil
+        switch lang {
+        case "zh":
+            targetScript = "Hans"
+        case "zh-Hant":
+            targetScript = "Hant"
+        case "ui":
+            let appLang = SettingsStore.shared.appLanguage
+            if appLang == "system" {
+                let sysLangCode = Locale.current.language.languageCode?.identifier
+                if sysLangCode == "zh" {
+                    targetScript = Locale.current.language.script?.identifier == "Hant" ? "Hant" : "Hans"
+                } else {
+                    targetScript = nil
+                }
+            } else if appLang == "zh-Hans" {
+                targetScript = "Hans"
+            } else if appLang == "zh-Hant" {
+                targetScript = "Hant"
+            } else {
+                targetScript = nil
+            }
+        default:
+            targetScript = nil
+        }
+
+        guard let script = targetScript else { return text }
+
+        let mutable = NSMutableString(string: text)
+        // reverse=false: Traditional→Simplified; reverse=true: Simplified→Traditional
+        CFStringTransform(mutable, nil, "Traditional-Simplified" as CFString, script == "Hant")
+        return mutable as String
     }
 
     func beginRecording(mode: RecordingMode) {
@@ -820,9 +879,10 @@ class RecordingController {
                 currentState = .idle
             } else {
                 Log.i(lm.logLocalized("Translation result:") + " \(trimmed)")
-                onTranslationResult?(trimmed)
+                let processed = postProcess(trimmed)
+                onTranslationResult?(processed)
                 onTranscriptionResult?(transcribedText)
-                textInputter.inputText(trimmed)
+                textInputter.inputText(processed)
                 currentState = .idle
                 handleAutoSend()
             }
@@ -916,17 +976,18 @@ class RecordingController {
 
     private func outputText(_ text: String, action: String) {
         let lm = LocaleManager.shared
+        let processed = postProcess(text)
         guard textCleanupMode != .off && currentMode != .translate else {
-            Log.i("\(action) " + lm.logLocalized("result:") + " \(text)")
-            onTranscriptionResult?(text)
-            textInputter.inputText(text)
+            Log.i("\(action) " + lm.logLocalized("result:") + " \(processed)")
+            onTranscriptionResult?(processed)
+            textInputter.inputText(processed)
             currentState = .idle
             handleAutoSend()
             return
         }
 
-        Log.i("\(action) " + lm.logLocalized("result (before cleanup):") + " \(text)")
-        textCleanupService.cleanup(text: text, mode: textCleanupMode, audioDuration: lastRecordingDuration) { [weak self] result in
+        Log.i("\(action) " + lm.logLocalized("result (before cleanup):") + " \(processed)")
+        textCleanupService.cleanup(text: processed, mode: textCleanupMode, audioDuration: lastRecordingDuration) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 let finalText: String
@@ -934,13 +995,13 @@ class RecordingController {
                 case .success(let cleanedText):
                     if cleanedText.isEmpty {
                         Log.w(lm.logLocalized("Text cleanup returned empty result, using original text"))
-                        finalText = text
+                        finalText = processed
                     } else {
                         finalText = cleanedText
                     }
                 case .failure(let error):
                     Log.w(lm.logLocalized("Text cleanup failed, using original text:") + " \(error.localizedDescription)")
-                    finalText = text
+                    finalText = processed
                 }
                 Log.i("\(action) " + lm.logLocalized("result (final):") + " \(finalText)")
                 self.onTranscriptionResult?(finalText)

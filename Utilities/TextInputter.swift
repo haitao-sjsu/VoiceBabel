@@ -1,15 +1,16 @@
 // TextInputter.swift
 // WhisperUtil - macOS 菜单栏语音转文字工具
 //
-// 文本输入模块 —— 将转录/翻译结果输入到当前活跃的应用程序。
+// 文本输入模块 —— 将文本输入到当前活跃的应用程序。
 //
 // 职责：
 //   1. 文本输入：支持两种方式将文字发送到目标应用
 //      - clipboard（默认）：保存原剪贴板 → 写入 → Cmd+V → 延迟恢复原内容
 //      - keyboard：CGEvent 逐字符模拟输入（支持 CJK 等 Unicode 字符）
-//   2. 文本后处理：繁体→简体转换、特殊标签过滤（[MUSIC] 等）
-//   3. 自动发送：pressReturnKey() 模拟 Enter 键，由 RecordingController 调用
-//   4. 原始输入：inputTextRaw() 仅做繁简转换（用于 Realtime delta 保留空格）
+//   2. 自动发送：pressReturnKey() 模拟 Enter 键，由 RecordingController 调用
+//
+// 注意：本模块只负责"怎么输出"，不负责"输出什么"。
+//       文本后处理（繁简转换、标签过滤等）由 RecordingController 在调用前完成。
 //
 // 底层原理：
 //   使用 macOS CGEvent API 创建并注入键盘事件到 HID 事件流。
@@ -23,8 +24,7 @@
 // 依赖：
 //   - CGEvent (Core Graphics)：模拟键盘事件
 //   - Carbon：虚拟键码常量（kVK_Return 等）
-//   - EngineeringOptions：enableTagFiltering, clipboardPasteDelay, clipboardRestoreDelay
-//   - SettingsStore：whisperLanguage, appLanguage（用于繁简转换方向判断）
+//   - EngineeringOptions：clipboardPasteDelay, clipboardRestoreDelay
 //
 // 架构角色：
 //   由 AppDelegate 创建，由 RecordingController 在转录/翻译完成后调用。
@@ -52,93 +52,17 @@ class TextInputter {
 
     // MARK: - 公共方法
 
-    /// 将文本输入到当前活跃的应用程序（经过后处理：繁转简、过滤标签）
-    /// - Parameter text: 要输入的文本（转录或翻译结果）
+    /// 将文本原样输入到当前活跃的应用程序
+    /// 调用方负责在调用前完成所有后处理（繁简转换、标签过滤等）
+    /// - Parameter text: 要输入的文本
     func inputText(_ text: String) {
         guard !text.isEmpty else { return }
-
-        // 统一后处理：繁体→简体、去除特殊标签
-        let processed = Self.postProcess(text)
-        guard !processed.isEmpty else { return }
-
-        rawInput(processed)
-    }
-
-    /// 将文本输入，仅做繁简转换，不做其他后处理（不 trim、不过滤标签）
-    /// 用于 Realtime API delta 等需要保留空格的场景
-    func inputTextRaw(_ text: String) {
-        guard !text.isEmpty else { return }
-        rawInput(Self.convertChineseScript(text))
-    }
-
-    /// 内部输入方法
-    private func rawInput(_ text: String) {
         switch method {
         case .keyboard:
             typeText(text)
         case .clipboard:
             pasteText(text)
         }
-    }
-
-    /// 文本后处理：过滤特殊标签、繁简转换
-    /// 所有模式（本地/云端/实时/翻译）的输出都经过此处理
-    private static func postProcess(_ text: String) -> String {
-        var result = text
-
-        // 过滤 Whisper 输出的特殊标签（如 [MUSIC]、[BLANK_AUDIO] 等）
-        if EngineeringOptions.enableTagFiltering {
-            result = result.replacingOccurrences(of: "\\[.*?\\]", with: "", options: .regularExpression)
-        }
-
-        // 根据用户语言设置进行繁简转换
-        result = convertChineseScript(result)
-
-        return result.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    /// 根据用户的语言设置决定繁简转换方向
-    ///
-    /// - "zh"：用户指定简体中文 → 繁体转简体
-    /// - "zh-Hant"：用户指定繁体中文 → 简体转繁体
-    /// - "ui"：跟随界面语言（zh-Hans → 转简体，zh-Hant → 转繁体）
-    /// - 其他（含空字符串自动检测）：不转换，原样输出
-    private static func convertChineseScript(_ text: String) -> String {
-        let lang = SettingsStore.shared.whisperLanguage
-
-        // 解析用户的目标中文字形
-        let targetScript: String?  // "Hans" or "Hant" or nil
-        switch lang {
-        case "zh":
-            targetScript = "Hans"
-        case "zh-Hant":
-            targetScript = "Hant"
-        case "ui":
-            let appLang = SettingsStore.shared.appLanguage
-            if appLang == "system" {
-                let sysLangCode = Locale.current.language.languageCode?.identifier
-                if sysLangCode == "zh" {
-                    targetScript = Locale.current.language.script?.identifier == "Hant" ? "Hant" : "Hans"
-                } else {
-                    targetScript = nil
-                }
-            } else if appLang == "zh-Hans" {
-                targetScript = "Hans"
-            } else if appLang == "zh-Hant" {
-                targetScript = "Hant"
-            } else {
-                targetScript = nil
-            }
-        default:
-            targetScript = nil
-        }
-
-        guard let script = targetScript else { return text }
-
-        let mutable = NSMutableString(string: text)
-        // reverse=false: Traditional→Simplified; reverse=true: Simplified→Traditional
-        CFStringTransform(mutable, nil, "Traditional-Simplified" as CFString, script == "Hant")
-        return mutable as String
     }
 
     /// 使用键盘模拟逐字符输入文本
