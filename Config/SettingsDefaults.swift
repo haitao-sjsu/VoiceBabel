@@ -37,14 +37,8 @@ struct SettingsDefaults {
     /// - 完整列表：https://platform.openai.com/docs/guides/speech-to-text
     static let whisperLanguage = ""
 
-    // ============================================================
-    // MARK: - API 模式配置
-    // ============================================================
-
-    /// 默认 API 模式
-    /// - "local"：本地识别模式（WhisperKit）
-    /// - "cloud"：网络 API 模式（gpt-4o-transcribe）
-    static let defaultApiMode = "cloud"
+    /// 翻译输出目标语言（BCP-47 语言代码）
+    static let translationTargetLanguage = "en"
 
     // ============================================================
     // MARK: - 优先级配置

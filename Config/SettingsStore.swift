@@ -9,7 +9,6 @@
 //   3. 通过 @Published 属性为 AppDelegate 提供 Combine 发布者，实时传播设置变更
 //
 // 管理的设置项：
-//   - defaultApiMode：API 模式（local/cloud）
 //   - whisperLanguage：语音识别语言
 //   - playSound：是否播放提示音
 //   - autoSendMode：自动发送模式（off/always/delayed）
@@ -45,7 +44,6 @@ final class SettingsStore: ObservableObject {
 
     // Keys
     private enum Keys {
-        static let defaultApiMode = "defaultApiMode"
         static let transcriptionPriority = "transcriptionPriority"
         static let translationEnginePriority = "translationEnginePriority"
         static let whisperLanguage = "whisperLanguage"
@@ -56,9 +54,6 @@ final class SettingsStore: ObservableObject {
         static let appLanguage = "appLanguage"
     }
 
-    @Published var defaultApiMode: String {
-        didSet { defaults.set(defaultApiMode, forKey: Keys.defaultApiMode) }
-    }
     @Published var transcriptionPriority: [String] {
         didSet { defaults.set(transcriptionPriority, forKey: Keys.transcriptionPriority) }
     }
@@ -96,22 +91,8 @@ final class SettingsStore: ObservableObject {
 
     private init() {
         // Load from UserDefaults, fall back to SettingsDefaults defaults
-        self.defaultApiMode = defaults.object(forKey: Keys.defaultApiMode) as? String ?? SettingsDefaults.defaultApiMode
-
-        // Load priority arrays with migration from legacy defaultApiMode
-        if let saved = defaults.object(forKey: Keys.transcriptionPriority) as? [String], !saved.isEmpty {
-            self.transcriptionPriority = saved
-        } else {
-            // Migration: put user's previously selected mode first in priority
-            var priority = SettingsDefaults.transcriptionPriority
-            let oldMode = defaults.object(forKey: Keys.defaultApiMode) as? String ?? SettingsDefaults.defaultApiMode
-            // Migration: put old user's API mode first in priority
-            if let idx = priority.firstIndex(of: oldMode), idx != 0 {
-                priority.remove(at: idx)
-                priority.insert(oldMode, at: 0)
-            }
-            self.transcriptionPriority = priority
-        }
+        self.transcriptionPriority = defaults.object(forKey: Keys.transcriptionPriority) as? [String]
+            ?? SettingsDefaults.transcriptionPriority
         self.translationEnginePriority = defaults.object(forKey: Keys.translationEnginePriority) as? [String]
             ?? SettingsDefaults.translationEnginePriority
 
@@ -119,7 +100,7 @@ final class SettingsStore: ObservableObject {
         self.playSound = defaults.object(forKey: Keys.playSound) as? Bool ?? SettingsDefaults.playSound
         self.autoSendMode = defaults.object(forKey: Keys.autoSendMode) as? String ?? SettingsDefaults.autoSendMode
         self.delayedSendDuration = defaults.object(forKey: Keys.delayedSendDuration) as? TimeInterval ?? SettingsDefaults.delayedSendDuration
-        self.translationTargetLanguage = defaults.object(forKey: Keys.translationTargetLanguage) as? String ?? "en"
+        self.translationTargetLanguage = defaults.object(forKey: Keys.translationTargetLanguage) as? String ?? SettingsDefaults.translationTargetLanguage
         self.appLanguage = defaults.object(forKey: Keys.appLanguage) as? String ?? "system"
 
         // Apply saved locale

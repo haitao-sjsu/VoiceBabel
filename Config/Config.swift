@@ -35,7 +35,6 @@ struct Config {
     // MARK: - 用户设置（来自 SettingsDefaults）
 
     let whisperLanguage: String
-    let defaultApiMode: String
     let autoSendMode: String
     var delayedSendDuration: TimeInterval
 
@@ -54,7 +53,6 @@ struct Config {
             typingDelay: EngineeringOptions.typingDelay,
             // 用户设置
             whisperLanguage: SettingsDefaults.whisperLanguage,
-            defaultApiMode: SettingsDefaults.defaultApiMode,
             autoSendMode: SettingsDefaults.autoSendMode,
             delayedSendDuration: SettingsDefaults.delayedSendDuration
         )

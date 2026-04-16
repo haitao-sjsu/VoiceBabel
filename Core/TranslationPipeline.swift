@@ -66,7 +66,14 @@ class TranslationPipeline {
         useLocalTranscription: Bool
     ) {
         let lm = LocaleManager.shared
-        let targetLang = SettingsStore.shared.translationTargetLanguage
+        let storedLang = SettingsStore.shared.translationTargetLanguage
+        let targetLang: String
+        if storedLang.isEmpty {
+            Log.w(lm.logLocalized("translationTargetLanguage is empty, falling back to default"))
+            targetLang = SettingsDefaults.translationTargetLanguage
+        } else {
+            targetLang = storedLang
+        }
 
         Log.i(lm.logLocalized("Starting two-step translation: transcribe then translate to") + " \(targetLang)")
 

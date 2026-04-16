@@ -62,9 +62,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupComponents()
 
         let apiModeDescription: String
-        switch config.defaultApiMode {
-        case "cloud":    apiModeDescription = "Cloud API (gpt-4o-transcribe)"
-        default:         apiModeDescription = "Local (WhisperKit)"
+        switch settingsStore.transcriptionPriority.first {
+        case "local": apiModeDescription = "Local (WhisperKit)"
+        default:      apiModeDescription = "Cloud API (gpt-4o-transcribe)"
         }
         Log.i(lm.logLocalized("WhisperUtil started") + " — API mode: \(apiModeDescription), send mode: \(StatusBarController.AutoSendMode.from(config.autoSendMode).displayName)")
 
@@ -139,11 +139,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         #endif
 
-        let defaultMode: StatusBarController.ApiMode
-        switch config.defaultApiMode {
-        case "cloud":    defaultMode = .cloud
-        default:         defaultMode = .local
-        }
+        let defaultMode: StatusBarController.ApiMode =
+            (settingsStore.transcriptionPriority.first == "local") ? .local : .cloud
         recordingController.preferredApiMode = defaultMode
         recordingController.currentApiMode = defaultMode
         recordingController.transcriptionPriority = settingsStore.transcriptionPriority
@@ -210,19 +207,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Combine subscriptions for settings changes
-        settingsStore.$defaultApiMode.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] modeString in
-            guard let self = self else { return }
-            let mode: StatusBarController.ApiMode
-            switch modeString {
-            case "cloud": mode = .cloud
-            default: mode = .local
-            }
-            self.recordingController.userDidChangeApiMode(mode)
-            self.networkHealthMonitor.stopMonitoring()
-            self.statusBarController.setApiMode(mode)
-            Log.i(lm.logLocalized("Settings: API mode changed to") + " \(modeString)")
-        }.store(in: &cancellables)
-
         settingsStore.$transcriptionPriority.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] priority in
             guard let self = self else { return }
             self.recordingController.transcriptionPriority = priority
@@ -327,15 +311,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             cloudOpenAIService: cloudOpenAIService
         )
 
-        let preferredMode: StatusBarController.ApiMode
-        switch settingsStore.defaultApiMode {
-        case "cloud":    preferredMode = .cloud
-        default:         preferredMode = .local
-        }
+        let topPriority = settingsStore.transcriptionPriority.first ?? "cloud"
+        let preferredMode: StatusBarController.ApiMode = (topPriority == "local") ? .local : .cloud
         recordingController.userDidChangeApiMode(preferredMode)
         statusBarController.setApiMode(preferredMode)
 
-        Log.i(lm.logLocalized("API Key updated, services rebuilt, mode restored to") + " \(settingsStore.defaultApiMode)")
+        Log.i(lm.logLocalized("API Key updated, services rebuilt, mode restored to") + " \(topPriority)")
         statusBarController.showNotification(
             title: "WhisperUtil",
             message: String(localized: "API Key updated")
