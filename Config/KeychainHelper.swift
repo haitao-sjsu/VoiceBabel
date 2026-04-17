@@ -40,7 +40,9 @@ enum KeychainHelper {
         ]
 
         let status = SecItemAdd(query as CFDictionary, nil)
-        if status != errSecSuccess {
+        if status == errSecSuccess {
+            Log.i("KeychainHelper: saved successfully")
+        } else {
             Log.e("Keychain 保存失败: \(status)")
         }
         return status == errSecSuccess
@@ -59,8 +61,13 @@ enum KeychainHelper {
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
 
-        guard status == errSecSuccess,
-              let data = result as? Data,
+        guard status == errSecSuccess else {
+            if status != errSecItemNotFound {
+                Log.w("KeychainHelper: load failed, status: \(status)")
+            }
+            return nil
+        }
+        guard let data = result as? Data,
               let key = String(data: data, encoding: .utf8) else {
             return nil
         }

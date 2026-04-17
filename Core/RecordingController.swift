@@ -139,6 +139,7 @@ class RecordingController {
         self.transcriptionPipeline.cloudOpenAIService = cloudOpenAIService
         self.translationPipeline.cloudOpenAIService = cloudOpenAIService
         setupCallbacks()
+        Log.i(lm.logLocalized("RecordingController: cloud service updated"))
     }
 
     // MARK: - Setup
@@ -158,6 +159,7 @@ class RecordingController {
             return
         }
         if currentApiMode != .local && (KeychainHelper.load() ?? "").isEmpty {
+            Log.w(LocaleManager.shared.logLocalized("API key not configured, cannot start recording"))
             onError?(String(localized: "Please configure OpenAI API Key in Settings"))
             return
         }
@@ -429,11 +431,13 @@ class RecordingController {
     // MARK: - Error Handling
 
     private func handleError(_ message: String) {
+        Log.e(LocaleManager.shared.logLocalized("RecordingController: error:") + " \(message)")
         currentState = .error
         onError?(message)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + EngineeringOptions.errorRecoveryDelay) { [weak self] in
             if self?.currentState == .error {
+                Log.i(LocaleManager.shared.logLocalized("RecordingController: auto-recovered from error"))
                 self?.currentState = .idle
             }
         }

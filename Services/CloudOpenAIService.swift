@@ -59,6 +59,7 @@ class CloudOpenAIService {
     ///   - audioDuration: 音频时长（秒），用于动态计算处理超时
     ///   - completion: 完成回调，返回识别文本或错误
     func transcribe(audioData: Data, format: AudioRecorder.AudioFormat, audioDuration: TimeInterval = 0, completion: @escaping (Result<String, Error>) -> Void) {
+        Log.i(LocaleManager.shared.logLocalized("Cloud transcription: starting, audio size:") + " \(audioData.count) bytes, format: \(format.filename)")
         sendRequest(
             url: transcribeURL,
             audioData: audioData,
@@ -152,6 +153,7 @@ class CloudOpenAIService {
                    let firstChoice = choices.first,
                    let message = firstChoice["message"] as? [String: Any],
                    let content = message["content"] as? String {
+                    Log.i(LocaleManager.shared.logLocalized("GPT translation: complete, text length:") + " \(content.count)")
                     completion(.success(content))
                 } else {
                     Log.e(LocaleManager.shared.logLocalized("GPT translation: response decoding failed"))
@@ -282,18 +284,21 @@ class CloudOpenAIService {
 
             // 处理网络错误
             if let error = error {
+                Log.e(LocaleManager.shared.logLocalized("Cloud transcription: network error:") + " \(error.localizedDescription)")
                 completion(.failure(WhisperError.networkError(error.localizedDescription)))
                 return
             }
 
             // 检查 HTTP 响应
             guard let httpResponse = response as? HTTPURLResponse else {
+                Log.e(LocaleManager.shared.logLocalized("Cloud transcription: invalid response"))
                 completion(.failure(WhisperError.invalidResponse))
                 return
             }
 
             // 检查响应数据
             guard let data = data else {
+                Log.e(LocaleManager.shared.logLocalized("Cloud transcription: no data returned"))
                 completion(.failure(WhisperError.noData))
                 return
             }
@@ -301,14 +306,17 @@ class CloudOpenAIService {
             // 处理错误状态码
             if httpResponse.statusCode != 200 {
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+                Log.e(LocaleManager.shared.logLocalized("Cloud transcription: API error") + " (\(httpResponse.statusCode)): \(errorMessage)")
                 completion(.failure(WhisperError.apiError(httpResponse.statusCode, errorMessage)))
                 return
             }
 
             // Parse response (text format returns text directly)
             if let text = String(data: data, encoding: .utf8) {
+                Log.i(LocaleManager.shared.logLocalized("Cloud transcription: complete, text length:") + " \(text.count)")
                 completion(.success(text))
             } else {
+                Log.e(LocaleManager.shared.logLocalized("Cloud transcription: response decoding failed"))
                 completion(.failure(WhisperError.decodingError))
             }
         }

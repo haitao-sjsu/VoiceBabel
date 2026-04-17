@@ -34,6 +34,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     required init?(coder: NSCoder) { fatalError() }
 
     func showSettings() {
+        Log.i("SettingsWindow: opened")
         installEditMenuIfNeeded()
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)

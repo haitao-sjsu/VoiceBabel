@@ -142,7 +142,11 @@ class NetworkHealthMonitor {
                 }
             } else {
                 let code = (response as? HTTPURLResponse)?.statusCode ?? -1
-                Log.d("NetworkHealthMonitor: probe returned non-200 status: \(code)")
+                if code >= 400 && code < 500 {
+                    Log.w("NetworkHealthMonitor: probe returned client error: \(code)")
+                } else {
+                    Log.d("NetworkHealthMonitor: probe returned non-200 status: \(code)")
+                }
             }
         }
         task.resume()

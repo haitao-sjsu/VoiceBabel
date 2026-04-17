@@ -73,10 +73,13 @@ class LocalAppleTranslationService {
         targetLanguage: String,
         completion: @escaping (Result<String, Error>) -> Void
     ) {
+        Log.i("[AppleTranslation] Starting translation: source=\(sourceLanguage ?? "auto"), target=\(targetLanguage), text length=\(text.count)")
+
         let source = sourceLanguage.flatMap { mapToLocaleLanguage($0) }
         let target = mapToLocaleLanguage(targetLanguage)
 
         guard let target = target else {
+            Log.e("[AppleTranslation] Unsupported target language code: \(targetLanguage)")
             completion(.failure(TranslationError.unsupportedLanguagePair))
             return
         }
@@ -84,6 +87,7 @@ class LocalAppleTranslationService {
         // 源语言未指定(Auto Detect)时用 NLLanguageRecognizer 预先识别，
         // 避免把识别责任推给 TranslationSession —— 后者在缺语言包时可能挂起而非抛错。
         let resolvedSource = source ?? Self.detectSourceLanguage(from: text)
+        Log.i("[AppleTranslation] Source language detected: \(resolvedSource?.languageCode?.identifier ?? "undetected")")
 
         Task {
             // 已知具体源语言 → 预检查语言包状态，未安装/不支持快速失败
@@ -99,9 +103,11 @@ class LocalAppleTranslationService {
                     await MainActor.run { completion(.failure(TranslationError.unsupportedLanguagePair)) }
                     return
                 case .unsupported:
+                    Log.w("[AppleTranslation] Language pair unsupported: \(resolvedSource.languageCode?.identifier ?? "?") → \(targetLanguage)")
                     await MainActor.run { completion(.failure(TranslationError.unsupportedLanguagePair)) }
                     return
                 @unknown default:
+                    Log.w("[AppleTranslation] Unknown availability status for language pair")
                     await MainActor.run { completion(.failure(TranslationError.unsupportedLanguagePair)) }
                     return
                 }
@@ -123,6 +129,7 @@ class LocalAppleTranslationService {
         completion: @escaping (Result<String, Error>) -> Void
     ) {
         guard let window = bridgeWindow else {
+            Log.e("[AppleTranslation] Bridge window is nil, cannot perform translation")
             completion(.failure(TranslationError.sessionCreationFailed))
             return
         }
@@ -160,6 +167,7 @@ class LocalAppleTranslationService {
         // 超时保护（60 秒：允许语言包下载时间）
         DispatchQueue.main.asyncAfter(deadline: .now() + 60) {
             if !hasCompleted {
+                Log.e("[AppleTranslation] Translation timed out after 60s")
                 safeCompletion(.failure(TranslationError.translationFailed("Translation timed out")))
             }
         }
@@ -228,10 +236,12 @@ private struct TranslationHostView: View {
             .translationTask(configuration) { session in
                 do {
                     let response = try await session.translate(text)
+                    Log.i("[AppleTranslation] Translation complete, result length: \(response.targetText.count)")
                     await MainActor.run {
                         completion(.success(response.targetText))
                     }
                 } catch {
+                    Log.e("[AppleTranslation] Translation session error: \(error.localizedDescription)")
                     await MainActor.run {
                         completion(.failure(error))
                     }

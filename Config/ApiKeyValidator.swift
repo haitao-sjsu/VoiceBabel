@@ -21,6 +21,7 @@ enum ApiKeyValidator {
     /// 使用 GET /v1/models 端点（只返回模型列表，不消耗 token）
     static func validate(apiKey: String) async -> SettingsStore.ApiKeyStatus {
         guard let url = URL(string: "https://api.openai.com/v1/models") else {
+            Log.e("ApiKeyValidator: invalid URL")
             return .invalid(String(localized: "Invalid URL"))
         }
 
@@ -33,23 +34,30 @@ enum ApiKeyValidator {
             let (_, response) = try await URLSession.shared.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {
+                Log.e("ApiKeyValidator: invalid response")
                 return .invalid(String(localized: "Invalid response"))
             }
 
             switch httpResponse.statusCode {
             case 200:
+                Log.i("ApiKeyValidator: API key is valid")
                 return .valid
             case 401:
+                Log.w("ApiKeyValidator: API key invalid or expired")
                 return .invalid(String(localized: "API Key invalid or expired"))
             case 403:
+                Log.w("ApiKeyValidator: API key insufficient permissions")
                 return .invalid(String(localized: "API Key insufficient permissions"))
             case 429:
                 // 429 说明 Key 是有效的，只是速率受限
+                Log.i("ApiKeyValidator: API key valid (rate limited)")
                 return .valid
             default:
+                Log.w("ApiKeyValidator: unexpected status \(httpResponse.statusCode)")
                 return .invalid(String(localized: "Validation failed (HTTP \(httpResponse.statusCode))"))
             }
         } catch {
+            Log.e("ApiKeyValidator: network error: \(error.localizedDescription)")
             return .invalid(String(localized: "Network error: \(error.localizedDescription)"))
         }
     }

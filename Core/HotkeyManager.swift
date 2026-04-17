@@ -255,6 +255,7 @@ class HotkeyManager {
 
     /// 取消检测并重置状态
     private func cancelAndReset() {
+        Log.d("HotkeyManager: gesture cancelled and reset")
         cancelAllTimers()
         state = .idle
     }

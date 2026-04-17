@@ -23,6 +23,7 @@ enum TextPostProcessor {
 
     /// Post-process transcription/translation text: filter special tags, convert Chinese script, trim whitespace
     static func process(_ text: String) -> String {
+        let original = text
         var result = text
 
         // Filter Whisper output special tags (e.g. [MUSIC], [BLANK_AUDIO])
@@ -32,7 +33,9 @@ enum TextPostProcessor {
 
         result = convertChineseScript(result)
 
-        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+        result = result.trimmingCharacters(in: .whitespacesAndNewlines)
+        if result != original { Log.d("TextPostProcessor: processed, length \(original.count) → \(result.count)") }
+        return result
     }
 
     /// Convert Chinese script direction based on user language settings

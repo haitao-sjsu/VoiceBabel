@@ -79,6 +79,7 @@ final class LocaleManager: ObservableObject {
             currentLocale = Locale(identifier: code)
             currentBundle = Self.bundle(for: code)
         }
+        Log.i("LocaleManager: locale set to \(currentLocale.identifier)")
     }
 
     /// Localized string for AppKit UI (menus, alerts, etc.)

@@ -128,16 +128,19 @@ class TranslationPipeline {
         let engines = translationEnginePriority
 
         guard engineIndex < engines.count else {
+            Log.e(LocaleManager.shared.logLocalized("TranslationPipeline: all translation engines exhausted"))
             onError?(String(localized: "All translation engines failed"))
             return
         }
 
         if engineIndex > 0 && !EngineeringOptions.enableModeFallback {
+            Log.e(LocaleManager.shared.logLocalized("TranslationPipeline: translation failed and fallback disabled"))
             onError?(String(localized: "Translation failed"))
             return
         }
 
         let engine = engines[engineIndex]
+        Log.i(LocaleManager.shared.logLocalized("TranslationPipeline: trying engine") + " '\(engine)' (\(engineIndex + 1)/\(engines.count))")
         let tryNext: () -> Void = { [weak self] in
             self?.translateTextWithFallback(text, targetLanguage: targetLanguage, engineIndex: engineIndex + 1)
         }
@@ -148,6 +151,7 @@ class TranslationPipeline {
         case "cloud":
             translateTextViaCloud(text, targetLanguage: targetLanguage, onFailure: tryNext)
         default:
+            Log.w("TranslationPipeline: unknown translation engine '\(engine)', skipping")
             tryNext()
         }
     }

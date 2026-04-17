@@ -91,6 +91,7 @@ class LocalWhisperService {
             Log.i(LocaleManager.shared.logLocalized("LocalWhisper: model loaded"))
         } catch {
             self.isModelLoading = false
+            Log.e(LocaleManager.shared.logLocalized("LocalWhisper: model loading failed:") + " \(error.localizedDescription)")
             throw error
         }
     }
@@ -109,10 +110,12 @@ class LocalWhisperService {
     /// - Returns: 转录文本
     func transcribe(samples: [Float]) async throws -> String {
         guard let whisperKit = whisperKit, isModelLoaded else {
+            Log.e(LocaleManager.shared.logLocalized("LocalWhisper: transcription rejected, model not loaded"))
             throw LocalWhisperError.modelNotLoaded
         }
 
         guard !samples.isEmpty else {
+            Log.w(LocaleManager.shared.logLocalized("LocalWhisper: transcription rejected, no audio data"))
             throw LocalWhisperError.noAudioData
         }
 

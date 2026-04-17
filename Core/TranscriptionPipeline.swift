@@ -77,6 +77,7 @@ class TranscriptionPipeline {
         audioDuration: TimeInterval,
         startingEngine: String
     ) {
+        Log.i(LocaleManager.shared.logLocalized("TranscriptionPipeline: starting from engine") + " '\(startingEngine)', priority: \(priority)")
         let startIndex = priority.firstIndex(of: startingEngine) ?? 0
         tryEngine(at: startIndex, recording: recording, samples: samples, audioDuration: audioDuration)
     }
@@ -92,11 +93,13 @@ class TranscriptionPipeline {
         let lm = LocaleManager.shared
 
         guard index < priority.count else {
+            Log.e(lm.logLocalized("TranscriptionPipeline: all engines exhausted"))
             onError?(String(localized: "All transcription modes failed"))
             return
         }
 
         if index > 0 && !EngineeringOptions.enableModeFallback {
+            Log.e(lm.logLocalized("TranscriptionPipeline: failed and fallback disabled"))
             onError?(String(localized: "Transcription failed"))
             return
         }
@@ -131,6 +134,7 @@ class TranscriptionPipeline {
             localTranscribe(samples: samples, tryNext: tryNext)
 
         default:
+            Log.w("TranscriptionPipeline: unknown engine '\(engine)', skipping")
             tryNext()
         }
     }
@@ -149,6 +153,7 @@ class TranscriptionPipeline {
                 guard let self = self else { return }
                 switch result {
                 case .success(let text):
+                    Log.i(lm.logLocalized("Cloud transcription succeeded"))
                     self.onResult?(text, "cloud")
                 case .failure(let error):
                     if let whisperError = error as? CloudOpenAIService.WhisperError,
@@ -188,6 +193,7 @@ class TranscriptionPipeline {
                     return result
                 }
                 await MainActor.run {
+                    Log.i(lm.logLocalized("Local transcription succeeded"))
                     self.onResult?(text, "local")
                 }
             } catch is CancellationError {

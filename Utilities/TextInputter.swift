@@ -57,6 +57,7 @@ class TextInputter {
     /// - Parameter text: 要输入的文本
     func inputText(_ text: String) {
         guard !text.isEmpty else { return }
+        Log.i("TextInputter: inputting \(text.count) chars via \(method == .clipboard ? "clipboard" : "keyboard")")
         switch method {
         case .keyboard:
             typeText(text)
@@ -122,6 +123,7 @@ class TextInputter {
     /// 模拟按下 Return（Enter）键
     /// 用于自动发送功能：在文本粘贴/输入完成后按 Enter 发送消息
     func pressReturnKey() {
+        Log.i("TextInputter: pressing Return key (auto-send)")
         pressKey(keyCode: 36)  // macOS 键码 36 = Return 键
     }
 
@@ -190,6 +192,10 @@ class TextInputter {
     /// - Returns: 是否已获得辅助功能权限
     static func checkAccessibilityPermission() -> Bool {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        return AXIsProcessTrustedWithOptions(options as CFDictionary)
+        let trusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        if !trusted {
+            Log.w("TextInputter: accessibility permission not granted")
+        }
+        return trusted
     }
 }

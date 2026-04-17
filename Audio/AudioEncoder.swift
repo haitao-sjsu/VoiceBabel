@@ -44,7 +44,10 @@ enum AudioEncoder {
     /// - Parameter samples: Float32 PCM 采样数据（值域 -1.0 ~ 1.0）
     /// - Returns: 编码结果，失败时自动回退到 WAV 格式；数据为空时返回 nil
     static func encodeToM4A(samples: [Float]) -> EncodingResult? {
-        guard !samples.isEmpty else { return nil }
+        guard !samples.isEmpty else {
+            Log.w("AudioEncoder: encodeToM4A skipped, empty samples")
+            return nil
+        }
 
         // 创建临时文件路径（AVAudioFile 需要写入磁盘文件，不支持纯内存操作）
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
@@ -153,7 +156,10 @@ enum AudioEncoder {
     /// - Returns: 编码结果
     static func encodeToWAV(samples: [Float]) -> EncodingResult? {
         Log.i("AudioEncoder: 使用 WAV 格式")
-        guard !samples.isEmpty else { return nil }
+        guard !samples.isEmpty else {
+            Log.w("AudioEncoder: encodeToWAV skipped, empty samples")
+            return nil
+        }
 
         // 将 Float32（-1.0 ~ 1.0）转换为 Int16（-32768 ~ 32767）
         let int16Samples = samples.map { sample -> Int16 in
@@ -190,6 +196,7 @@ enum AudioEncoder {
             data.append(contentsOf: withUnsafeBytes(of: sample.littleEndian) { Array($0) })
         }
 
+        Log.i("WAV encoding complete: \(data.count / 1024) KB")
         return EncodingResult(data: data, format: .wav)
     }
 

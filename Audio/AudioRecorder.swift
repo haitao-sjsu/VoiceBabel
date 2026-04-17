@@ -164,6 +164,7 @@ class AudioRecorder {
             // 首次请求时立即抛出错误，等待用户授权后重试
             throw RecordingError.permissionDenied
         case .denied, .restricted:
+            Log.w(LocaleManager.shared.logLocalized("Microphone permission denied or restricted"))
             throw RecordingError.permissionDenied
         @unknown default:
             break
@@ -225,6 +226,7 @@ class AudioRecorder {
     /// - Returns: 编码后的录音结果（M4A 格式），无数据时返回 nil
     func stopRecording() -> RecordingResult? {
         guard isRecording else {
+            Log.w(LocaleManager.shared.logLocalized("AudioRecorder: stopRecording called but not recording"))
             return nil
         }
 
@@ -250,6 +252,7 @@ class AudioRecorder {
             encoded = AudioEncoder.encodeToWAV(samples: audioBuffer)
         }
         guard let encoded else {
+            Log.w(LocaleManager.shared.logLocalized("AudioRecorder: audio encoding returned nil"))
             return nil
         }
         return RecordingResult(data: encoded.data, format: encoded.format)
@@ -293,6 +296,7 @@ class AudioRecorder {
     private func processAudioBuffer(_ buffer: AVAudioPCMBuffer, from inputFormat: AVAudioFormat, to targetFormat: AVAudioFormat) {
         // 创建采样率转换器（输入格式 → 目标格式）
         guard let converter = AVAudioConverter(from: inputFormat, to: targetFormat) else {
+            Log.e("AudioRecorder: AVAudioConverter creation failed")
             return
         }
 
@@ -303,6 +307,7 @@ class AudioRecorder {
 
         // 创建输出缓冲区
         guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputFrameCount) else {
+            Log.e("AudioRecorder: output buffer allocation failed")
             return
         }
 
@@ -323,6 +328,7 @@ class AudioRecorder {
 
         // 从输出缓冲区提取 Float32 采样数据
         guard let floatData = outputBuffer.floatChannelData?[0] else {
+            Log.e("AudioRecorder: float channel data extraction failed")
             return
         }
 
