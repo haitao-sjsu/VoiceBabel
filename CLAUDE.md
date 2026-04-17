@@ -21,11 +21,12 @@ main.swift -> AppDelegate (Composition Root)
                  +-- UI/StatusBarController (menu bar UI)
                  +-- UI/SettingsWindowController -> UI/SettingsView (SwiftUI settings panel)
                  +-- Core/HotkeyManager (Option key gesture detection)
-                 +-- Core/RecordingController (state machine / core dispatcher)
+                 +-- Core/AppController (state machine / core dispatcher)
                  |       +-- Core/AutoSendManager (delayed send logic)
-                 |       +-- Core/TranscriptionPipeline (audio → text, priority + fallback, shared)
-                 |       +-- Core/TranslationPipeline (two-step translation flow)
-                 |       +-- Audio/AudioRecorder -> Audio/AudioEncoder
+                 |       +-- Core/TranscriptionManager (audio → text, priority + fallback)
+                 |       +-- Core/TranslationManager (text translation, engine fallback)
+                 |       +-- Core/AudioRecorder (audio capture)
+                 |       +-- Utilities/AudioEncoder (PCM → M4A/WAV encoding)
                  |       +-- Services/CloudOpenAIService (HTTP transcription + GPT translation)
                  |       +-- Services/LocalWhisperService (WhisperKit local)
                  |       +-- Services/LocalAppleTranslationService (Apple Translation local, macOS 15.0+)
@@ -42,16 +43,15 @@ Components communicate via closures/callbacks, connected in `AppDelegate.setupCo
 ### Directories
 
 ```
-Core/                       — Core logic (recording state machine, hotkey detection, auto-send, translation pipeline)
+Core/                       — Core logic (state machine, hotkey detection, auto-send, transcription/translation managers, audio recorder)
 Config/                     — Configuration (user prefs, engineering options, Keychain, settings store)
 UI/                         — Menu bar controller, SwiftUI settings panel, settings window
 Services/                   — Transcription & translation backends (Cloud / Local / Apple Translation)
-Audio/                      — Audio capture and encoding
-Utilities/                  — Helpers (text input, text post-processing, network probe, logging, i18n locale manager)
+Utilities/                  — Helpers (text input, text post-processing, audio encoding, network probe, logging, i18n locale manager)
 WhisperUtil/                — Resources (Assets, Storyboard, String Catalogs)
 WhisperUtilTests/           — Unit tests
-.claude-research-tech/      — Technical research documents
-.claude-research-commercial/— Commercial research documents
+.claude-tech-research/      — Technical research documents
+.claude-commercial-research/— Commercial research documents
 .claude-plan/               — Implementation plans
 .claude-code-review/        — Code review documents
 .human-learn/               — Learning notes (hand-written code reproductions)
@@ -172,7 +172,7 @@ git push
 - Follow existing commit style in `git log`
 
 ### File naming conventions (for docs commits)
-- `.claude-research-tech/`: `01_topic_name.md` (sequential numbering)
+- `.claude-tech-research/`: `01_topic_name.md` (sequential numbering)
 - `.claude-code-review/`: `01_review_name.md` (sequential numbering)
 - `.claude-plan/`: `01_plan_name.md` (sequential numbering)
 - When renumbering files (e.g., after deletion), keep all numbers sequential with no gaps
