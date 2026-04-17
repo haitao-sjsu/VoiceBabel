@@ -7,10 +7,10 @@
 //   1. 文本输入：支持两种方式将文字发送到目标应用
 //      - clipboard（默认）：保存原剪贴板 → 写入 → Cmd+V → 延迟恢复原内容
 //      - keyboard：CGEvent 逐字符模拟输入（支持 CJK 等 Unicode 字符）
-//   2. 自动发送：pressReturnKey() 模拟 Enter 键，由 RecordingController 调用
+//   2. 自动发送：pressReturnKey() 模拟 Enter 键，由 AppController 调用
 //
 // 注意：本模块只负责"怎么输出"，不负责"输出什么"。
-//       文本后处理（繁简转换、标签过滤等）由 RecordingController 在调用前完成。
+//       文本后处理（繁简转换、标签过滤等）由 AppController 在调用前完成。
 //
 // 底层原理：
 //   使用 macOS CGEvent API 创建并注入键盘事件到 HID 事件流。
@@ -27,7 +27,7 @@
 //   - EngineeringOptions：clipboardPasteDelay, clipboardRestoreDelay
 //
 // 架构角色：
-//   由 AppDelegate 创建，由 RecordingController 在转录/翻译完成后调用。
+//   由 AppDelegate 创建，由 AppController 在转录/翻译完成后调用。
 
 import Cocoa
 import Carbon

@@ -13,7 +13,7 @@
 //   - Log：日志工具
 //
 // 架构角色：
-//   被 Config.swift、SettingsStore.swift、AppDelegate.swift、RecordingController.swift 引用，
+//   被 Config.swift、SettingsStore.swift、AppDelegate.swift、AppController.swift 引用，
 //   作为 API Key 的唯一存储后端。
 
 import Foundation

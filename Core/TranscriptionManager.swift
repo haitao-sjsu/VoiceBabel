@@ -1,14 +1,17 @@
-// TranscriptionPipeline.swift
+// TranscriptionManager.swift
 // WhisperUtil - macOS menu bar speech-to-text tool
 //
-// Transcription pipeline — audio to text with priority-based engine fallback.
+// Transcription manager — engine management with priority-based fallback,
+// fallback state ownership, and structured output via TranscriptionResult.
 //
 // Responsibilities:
-//   1. Iterate configured engines (cloud / local) in priority order
-//   2. Dispatch to the matching backend: cloud (HTTP) or local (WhisperKit)
-//   3. Fallback on recoverable failure — network error for cloud, any error for local
-//   4. Apply dynamic timeout to local transcription (based on audio duration)
-//   5. Report outcomes via callbacks — no internal state is mutated
+//   1. Own transcription engine state: preferred vs effective start engine, fallback mode
+//   2. Iterate configured engines (cloud / local) in priority order
+//   3. Dispatch to the matching backend: cloud (HTTP) or local (WhisperKit)
+//   4. Fallback on recoverable failure — network error for cloud, any error for local
+//   5. Apply dynamic timeout to local transcription (based on audio duration)
+//   6. Report structured outcomes via TranscriptionResult callback
+//   7. Provide engine change and fallback recovery methods
 //
 // Dependencies:
 //   - CloudOpenAIService (cloud transcription)
@@ -16,14 +19,19 @@
 //   - EngineeringOptions, LocaleManager, SettingsDefaults
 //
 // Architecture role:
-//   Shared by RecordingController (transcription mode) and TranslationPipeline
-//   (two-step translation, Step 1). Stateless — callers wire callbacks before
-//   each call. Fallback state (isInFallbackMode / currentApiMode) lives in
-//   RecordingController; this pipeline only emits an onFallbackEntered signal.
+//   Shared by AppController (transcription mode and translation Step 1).
+//   Owns fallback state (isInFallbackMode / effectiveStartEngine) — callers
+//   no longer need to track engine switching.
 
 import Foundation
 
-class TranscriptionPipeline {
+struct TranscriptionResult {
+    let text: String
+    let engine: String           // "cloud" / "local"
+    let fallbackFrom: String?    // non-nil = fallback occurred
+}
+
+class TranscriptionManager {
 
     // MARK: - Dependencies
 
@@ -34,23 +42,28 @@ class TranscriptionPipeline {
 
     var priority: [String] = SettingsDefaults.transcriptionPriority
 
+    // MARK: - Engine State
+
+    var preferredStartEngine: String = "cloud"
+    private(set) var effectiveStartEngine: String = "cloud"
+    private(set) var isInFallbackMode: Bool = false
+
     // MARK: - Callbacks
 
-    /// Emitted on the main queue when any engine succeeds. Raw text — caller
-    /// is responsible for trimming and empty-result handling. Second argument
-    /// is the engine identifier that succeeded ("cloud" / "local"), used by
-    /// callers to build engine-specific log messages.
-    var onResult: ((String, String) -> Void)?
+    /// Emitted on the main queue when any engine succeeds. Structured result
+    /// includes the text, which engine succeeded, and whether fallback occurred.
+    var onResult: ((TranscriptionResult) -> Void)?
 
     /// Emitted on the main queue when every engine in the priority list has
     /// failed (or the single attempted engine failed with a non-recoverable
     /// error). The payload is a UI-facing localized message.
     var onError: ((String) -> Void)?
 
-    /// Emitted on the main queue when an engine yields to the next priority
-    /// due to a recoverable failure (cloud network error, local any error).
-    /// The payload is the engine identifier that just gave up ("cloud" / "local").
-    var onFallbackEntered: ((String) -> Void)?
+    // MARK: - Private State
+
+    /// Tracks the starting engine for the current transcribe() call, so we can
+    /// populate `fallbackFrom` in the result when fallback occurs.
+    private var currentCallStartEngine: String = ""
 
     // MARK: - Init
 
@@ -62,44 +75,57 @@ class TranscriptionPipeline {
     // MARK: - Public
 
     /// Start transcription, trying engines in priority order starting from
-    /// `startingEngine`. Used to respect the user's current API mode when it
-    /// diverges from `priority[0]` (e.g. after `userDidChangeApiMode`).
+    /// `effectiveStartEngine`.
     ///
     /// - Parameters:
-    ///   - recording: Encoded audio for cloud engines. Pass `nil` to skip cloud.
-    ///   - samples: Float PCM samples for local engines. Pass empty to skip local.
+    ///   - samples: Float PCM samples for transcription.
     ///   - audioDuration: Duration in seconds, used for cloud request timeout.
-    ///   - startingEngine: Engine name ("cloud" / "local") to attempt first.
-    ///     Fallback continues forward in the priority list only.
-    func transcribe(
-        recording: AudioRecorder.RecordingResult?,
-        samples: [Float],
-        audioDuration: TimeInterval,
-        startingEngine: String
-    ) {
-        Log.i(LocaleManager.shared.logLocalized("TranscriptionPipeline: starting from engine") + " '\(startingEngine)', priority: \(priority)")
-        let startIndex = priority.firstIndex(of: startingEngine) ?? 0
-        tryEngine(at: startIndex, recording: recording, samples: samples, audioDuration: audioDuration)
+    func transcribe(samples: [Float], audioDuration: TimeInterval) {
+        currentCallStartEngine = effectiveStartEngine
+        Log.i(LocaleManager.shared.logLocalized("TranscriptionManager: starting from engine") + " '\(effectiveStartEngine)', priority: \(priority)")
+        let startIndex = priority.firstIndex(of: effectiveStartEngine) ?? 0
+        tryEngine(at: startIndex, samples: samples, audioDuration: audioDuration)
+    }
+
+    /// Called when the user manually changes their preferred engine.
+    /// Exits fallback mode and updates both preferred and effective engines.
+    func userDidChangePreferredEngine(_ engine: String) {
+        let lm = LocaleManager.shared
+        preferredStartEngine = engine
+        effectiveStartEngine = engine
+        if isInFallbackMode {
+            isInFallbackMode = false
+            Log.i(lm.logLocalized("User manually changed API mode, exiting fallback state"))
+        }
+    }
+
+    /// Called when network recovers. Restores effective engine to preferred
+    /// and exits fallback mode.
+    func recoverFromFallback() {
+        let lm = LocaleManager.shared
+        guard isInFallbackMode else { return }
+        isInFallbackMode = false
+        effectiveStartEngine = preferredStartEngine
+        Log.i(lm.logLocalized("Network recovered, switching back to") + " \(effectiveStartEngine) " + lm.logLocalized("mode"))
     }
 
     // MARK: - Private
 
     private func tryEngine(
         at index: Int,
-        recording: AudioRecorder.RecordingResult?,
         samples: [Float],
         audioDuration: TimeInterval
     ) {
         let lm = LocaleManager.shared
 
         guard index < priority.count else {
-            Log.e(lm.logLocalized("TranscriptionPipeline: all engines exhausted"))
+            Log.e(lm.logLocalized("TranscriptionManager: all engines exhausted"))
             onError?(String(localized: "All transcription modes failed"))
             return
         }
 
         if index > 0 && !EngineeringOptions.enableModeFallback {
-            Log.e(lm.logLocalized("TranscriptionPipeline: failed and fallback disabled"))
+            Log.e(lm.logLocalized("TranscriptionManager: failed and fallback disabled"))
             onError?(String(localized: "Transcription failed"))
             return
         }
@@ -107,18 +133,18 @@ class TranscriptionPipeline {
         let engine = priority[index]
         let tryNext: () -> Void = { [weak self] in
             DispatchQueue.main.async {
-                self?.tryEngine(at: index + 1, recording: recording, samples: samples, audioDuration: audioDuration)
+                self?.tryEngine(at: index + 1, samples: samples, audioDuration: audioDuration)
             }
         }
 
         switch engine {
         case "cloud":
-            guard let recording = recording else {
-                Log.w(lm.logLocalized("No encoded audio for cloud transcription, trying next priority"))
+            guard !samples.isEmpty else {
+                Log.w(lm.logLocalized("No audio samples for cloud transcription, trying next priority"))
                 tryNext()
                 return
             }
-            cloudTranscribe(recording: recording, audioDuration: audioDuration, tryNext: tryNext)
+            cloudTranscribe(samples: samples, audioDuration: audioDuration, tryNext: tryNext)
 
         case "local":
             guard localWhisperService.isReady() else {
@@ -134,13 +160,13 @@ class TranscriptionPipeline {
             localTranscribe(samples: samples, tryNext: tryNext)
 
         default:
-            Log.w("TranscriptionPipeline: unknown engine '\(engine)', skipping")
+            Log.w("TranscriptionManager: unknown engine '\(engine)', skipping")
             tryNext()
         }
     }
 
     private func cloudTranscribe(
-        recording: AudioRecorder.RecordingResult,
+        samples: [Float],
         audioDuration: TimeInterval,
         tryNext: @escaping () -> Void
     ) {
@@ -148,18 +174,22 @@ class TranscriptionPipeline {
         let action = lm.logLocalized("Cloud speech recognition")
         Log.i(lm.logLocalized("Calling Whisper API (cloud transcription)..."))
 
-        cloudOpenAIService.transcribe(audioData: recording.data, format: recording.format, audioDuration: audioDuration) { [weak self] result in
+        cloudOpenAIService.transcribe(samples: samples, audioDuration: audioDuration) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 switch result {
                 case .success(let text):
                     Log.i(lm.logLocalized("Cloud transcription succeeded"))
-                    self.onResult?(text, "cloud")
+                    let fallbackFrom = ("cloud" != self.currentCallStartEngine) ? self.currentCallStartEngine : nil
+                    let transcriptionResult = TranscriptionResult(text: text, engine: "cloud", fallbackFrom: fallbackFrom)
+                    self.onResult?(transcriptionResult)
                 case .failure(let error):
                     if let whisperError = error as? CloudOpenAIService.WhisperError,
                        case .networkError = whisperError {
                         Log.w(lm.logLocalized("Cloud API failed, trying next priority:") + " \(error.localizedDescription)")
-                        self.onFallbackEntered?("cloud")
+                        self.effectiveStartEngine = self.priority.first(where: { $0 != "cloud" }) ?? self.effectiveStartEngine
+                        self.isInFallbackMode = true
+                        Log.i(lm.logLocalized("Entered fallback mode, original mode:") + " cloud")
                         tryNext()
                     } else {
                         Log.i("\(action) " + lm.logLocalized("failed:") + " \(error)")
@@ -194,14 +224,18 @@ class TranscriptionPipeline {
                 }
                 await MainActor.run {
                     Log.i(lm.logLocalized("Local transcription succeeded"))
-                    self.onResult?(text, "local")
+                    let fallbackFrom = ("local" != self.currentCallStartEngine) ? self.currentCallStartEngine : nil
+                    let transcriptionResult = TranscriptionResult(text: text, engine: "local", fallbackFrom: fallbackFrom)
+                    self.onResult?(transcriptionResult)
                 }
             } catch is CancellationError {
                 await MainActor.run {
                     Log.e("\(action) " + lm.logLocalized("timed out") + " (\(String(format: "%.0f", timeout))s)")
                     if EngineeringOptions.enableModeFallback {
                         Log.w(lm.logLocalized("Local transcription failed, trying next priority"))
-                        self.onFallbackEntered?("local")
+                        self.effectiveStartEngine = self.priority.first(where: { $0 != "local" }) ?? self.effectiveStartEngine
+                        self.isInFallbackMode = true
+                        Log.i(lm.logLocalized("Entered fallback mode, original mode:") + " local")
                         tryNext()
                     } else {
                         self.onError?(String(localized: "\(action) timed out, try shorter recordings"))
@@ -212,7 +246,9 @@ class TranscriptionPipeline {
                     Log.e("\(action) " + lm.logLocalized("failed:") + " \(error)")
                     if EngineeringOptions.enableModeFallback {
                         Log.w(lm.logLocalized("Local transcription failed, trying next priority"))
-                        self.onFallbackEntered?("local")
+                        self.effectiveStartEngine = self.priority.first(where: { $0 != "local" }) ?? self.effectiveStartEngine
+                        self.isInFallbackMode = true
+                        Log.i(lm.logLocalized("Entered fallback mode, original mode:") + " local")
                         tryNext()
                     } else {
                         self.onError?(String(localized: "\(action) failed: \(error.localizedDescription)"))

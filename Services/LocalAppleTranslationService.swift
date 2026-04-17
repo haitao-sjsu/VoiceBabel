@@ -19,7 +19,7 @@
 //   - SwiftUI（桥接 TranslationSession）
 //
 // 架构角色：
-//   由 AppDelegate 创建（@available 条件编译），由 RecordingController 在
+//   由 AppDelegate 创建（@available 条件编译），由 AppController 在
 //   Apple Translation 翻译路径下调用。与 CloudOpenAIService.chatTranslate() 职责对应。
 
 import Foundation

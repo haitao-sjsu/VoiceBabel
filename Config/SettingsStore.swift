@@ -25,7 +25,7 @@
 //
 // 架构角色：
 //   - SwiftUI SettingsView 通过 @ObservedObject 绑定
-//   - AppDelegate 通过 Combine $publisher 订阅变更，驱动 RecordingController 和 StatusBarController
+//   - AppDelegate 通过 Combine $publisher 订阅变更，驱动 AppController 和 StatusBarController
 
 import Foundation
 import Combine

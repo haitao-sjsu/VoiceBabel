@@ -14,7 +14,7 @@
 //   - AutoSendMode: auto-send mode (off/always/delayed)
 //
 // Dependencies:
-//   - RecordingController.AppState
+//   - AppController.AppState
 //   - LocaleManager: for localized menu strings
 //
 // Architecture:
@@ -64,7 +64,7 @@ class StatusBarController {
 
     private var statusItem: NSStatusItem!
     private var menu: NSMenu!
-    private var currentAppState: RecordingController.AppState = .idle
+    private var currentAppState: AppController.AppState = .idle
     private var transcribeMenuItem: NSMenuItem!
     private var translateMenuItem: NSMenuItem!
     private var currentApiMode: ApiMode
@@ -82,7 +82,7 @@ class StatusBarController {
 
     // MARK: - State Icons
 
-    private let stateIcons: [RecordingController.AppState: String] = [
+    private let stateIcons: [AppController.AppState: String] = [
         .idle: "🎙",
         .recording: "🔴",
         .processing: "⏳",
@@ -265,7 +265,7 @@ class StatusBarController {
         }
     }
 
-    func updateState(_ state: RecordingController.AppState) {
+    func updateState(_ state: AppController.AppState) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             let lm = LocaleManager.shared

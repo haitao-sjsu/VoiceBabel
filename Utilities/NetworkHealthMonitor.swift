@@ -19,7 +19,7 @@
 //
 // 架构角色：
 //   由 AppDelegate 创建并配置 onCloudRecovered 回调。
-//   在 RecordingController.onError 中触发 startMonitoring()，
+//   在 AppController.onError 中触发 startMonitoring()，
 //   在用户手动切换模式或网络恢复时 stopMonitoring()。
 
 import Foundation

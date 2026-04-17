@@ -14,8 +14,8 @@
 //   - SettingsStore (whisperLanguage, appLanguage for script direction)
 //
 // Architecture role:
-//   Stateless utility extracted from RecordingController. Called by RecordingController
-//   and TranslationPipeline before outputting text.
+//   Stateless utility extracted from AppController. Called by AppController
+//   and TranslationManager before outputting text.
 
 import Foundation
 

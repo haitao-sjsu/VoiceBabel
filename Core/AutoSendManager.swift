@@ -15,7 +15,7 @@
 //   - LocaleManager (log localization)
 //
 // Architecture role:
-//   Extracted from RecordingController. Owned by RecordingController, communicates
+//   Extracted from AppController. Owned by AppController, communicates
 //   state changes back via onStateChange callback.
 
 import Cocoa
@@ -29,7 +29,7 @@ class AutoSendManager {
 
     // MARK: - Callbacks
 
-    var onStateChange: ((RecordingController.AppState) -> Void)?
+    var onStateChange: ((AppController.AppState) -> Void)?
 
     // MARK: - Dependencies
 

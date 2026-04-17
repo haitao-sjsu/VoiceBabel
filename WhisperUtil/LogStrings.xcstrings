@@ -22,7 +22,7 @@
     "API Key saved to Keychain": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "API Key 已保存到 Keychain" } } } },
     "API Key save to Keychain failed": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "API Key 保存到 Keychain 失败" } } } },
     "API Key cleared from Keychain": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "API Key 已从 Keychain 清除" } } } },
-    "RecordingController: current state": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "RecordingController: 当前状态" } } } },
+    "AppController: current state": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "AppController: 当前状态" } } } },
     "does not allow service update": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "不允许更新服务" } } } },
     "Cannot start recording, current state:": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "无法开始录音，当前状态:" } } } },
     "Processing in progress, please wait...": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在处理中，请稍候..." } } } },
@@ -100,6 +100,22 @@
     "Option double-tap detected": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "检测到 Option 双击" } } } },
     "Push-to-Talk ended (Option key released)": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "Push-to-Talk 结束（Option 键松开）" } } } },
     "Push-to-Talk started (Option key held": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "Push-to-Talk 开始（Option 键按住" } } } },
-    "Option single-tap detected": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "检测到 Option 单击" } } } }
+    "Option single-tap detected": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "检测到 Option 单击" } } } },
+    "AppController: error:": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "AppController: 错误:" } } } },
+    "AppController: auto-recovered from error": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "AppController: 已自动从错误恢复" } } } },
+    "API key not configured, cannot start recording": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "API Key 未配置，无法开始录音" } } } },
+    "WhisperKit not ready, falling back to cloud for this recording": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "WhisperKit 未就绪，本次录音回退到网络模式" } } } },
+    "Recording ended, sample count:": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "录音结束，采样点数:" } } } },
+    "Starting two-step translation: transcribe then translate to": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "开始两步翻译：先转录再翻译为" } } } },
+    "Transcription result is empty, skipping translation": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "转录结果为空，跳过翻译" } } } },
+    "Translation result:": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "翻译结果:" } } } },
+    "Translation (step 2) failed:": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "翻译（第2步）失败:" } } } },
+    "Transcription preserved in menu bar": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "转录结果已保留在菜单栏" } } } },
+    "Transcription (step 1) failed:": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "转录（第1步）失败:" } } } },
+    "translationTargetLanguage is empty, falling back to default": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "translationTargetLanguage 为空，回退到默认值" } } } },
+    "Settings: Transcription priority changed to": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "设置: 转录优先级切换为" } } } },
+    "Settings: Translation engine priority changed to": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "设置: 翻译引擎优先级切换为" } } } },
+    "Settings: Recognition language changed to": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "设置: 识别语言切换为" } } } },
+    "Apple Translation service initialized": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "Apple 翻译服务已初始化" } } } }
   }
 }

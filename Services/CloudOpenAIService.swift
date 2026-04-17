@@ -18,11 +18,11 @@
 //
 // 依赖：
 //   - EngineeringOptions：API 端点 URL（whisperTranscribeURL, chatCompletionsURL）、超时参数、模型名
-//   - AudioRecorder.AudioFormat：音频格式信息（文件名、Content-Type）
+//   - AudioEncoder：音频编码（Float32 采样 → M4A/WAV）及格式信息（文件名、Content-Type）
 //
 // 架构角色：
-//   由 AppDelegate 创建（传入 API key、model、language），由 RecordingController 在
-//   cloud 模式和翻译模式下调用。网络错误时 RecordingController 可触发本地回退。
+//   由 AppDelegate 创建（传入 API key、model、language），由 AppController 在
+//   cloud 模式和翻译模式下调用。网络错误时 AppController 可触发本地回退。
 
 import Foundation
 
@@ -52,18 +52,29 @@ class CloudOpenAIService {
 
     // MARK: - 公共方法
 
-    /// 转录音频（语音转文字，保持原语言）
+    /// 转录原始音频采样（Float32 PCM → 编码 → 上传）
     /// - Parameters:
-    ///   - audioData: 音频数据
-    ///   - format: 音频格式
+    ///   - samples: Float32 PCM 采样数据（值域 -1.0 ~ 1.0）
     ///   - audioDuration: 音频时长（秒），用于动态计算处理超时
     ///   - completion: 完成回调，返回识别文本或错误
-    func transcribe(audioData: Data, format: AudioRecorder.AudioFormat, audioDuration: TimeInterval = 0, completion: @escaping (Result<String, Error>) -> Void) {
-        Log.i(LocaleManager.shared.logLocalized("Cloud transcription: starting, audio size:") + " \(audioData.count) bytes, format: \(format.filename)")
+    func transcribe(samples: [Float], audioDuration: TimeInterval, completion: @escaping (Result<String, Error>) -> Void) {
+        let lm = LocaleManager.shared
+        let encoded: AudioEncoder.EncodingResult?
+        if EngineeringOptions.enableAudioCompression {
+            encoded = AudioEncoder.encodeToM4A(samples: samples)
+        } else {
+            encoded = AudioEncoder.encodeToWAV(samples: samples)
+        }
+        guard let encoded = encoded else {
+            Log.e(lm.logLocalized("Audio encoding failed"))
+            completion(.failure(WhisperError.encodingFailed))
+            return
+        }
+        Log.i(lm.logLocalized("Audio encoded:") + " \(encoded.format), \(encoded.data.count) bytes")
         sendRequest(
             url: transcribeURL,
-            audioData: audioData,
-            format: format,
+            audioData: encoded.data,
+            format: encoded.format,
             includeLanguage: true,
             overrideModel: nil,
             audioDuration: audioDuration,
@@ -192,7 +203,7 @@ class CloudOpenAIService {
     private func sendRequest(
         url: URL,
         audioData: Data,
-        format: AudioRecorder.AudioFormat,
+        format: AudioEncoder.AudioFormat,
         includeLanguage: Bool,
         overrideModel: String?,
         audioDuration: TimeInterval = 0,
@@ -354,6 +365,7 @@ class CloudOpenAIService {
         case noData
         case apiError(Int, String)
         case decodingError
+        case encodingFailed
 
         var errorDescription: String? {
             switch self {
@@ -367,6 +379,8 @@ class CloudOpenAIService {
                 return String(localized: "API error (\(code)): \(message)")
             case .decodingError:
                 return String(localized: "Response decoding failed")
+            case .encodingFailed:
+                return String(localized: "Audio encoding failed")
             }
         }
     }

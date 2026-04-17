@@ -23,7 +23,7 @@
 //
 // 架构角色：
 //   被几乎所有组件引用，提供统一的工程配置和常量定义。
-//   部分字段通过 Config.load() 传递给组件，部分由组件直接访问（如 RecordingController
+//   部分字段通过 Config.load() 传递给组件，部分由组件直接访问（如 AppController
 //   直接读取 enableSilenceDetection、AudioRecorder 直接读取 enableAudioCompression）。
 
 import Foundation
@@ -78,10 +78,6 @@ enum EngineeringOptions {
     /// 最短有效音频时长（秒）
     /// - 短于此时长的音频会被忽略
     static let minAudioDuration: TimeInterval = 0.5
-
-    /// 最小音频数据大小（字节）
-    /// - 小于此大小的音频数据会被忽略
-    static let minAudioDataSize: Int = 1000
 
     /// 最长录音时间（秒）
     static let maxRecordingDuration: TimeInterval = 600

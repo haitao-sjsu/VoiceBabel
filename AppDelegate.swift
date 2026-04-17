@@ -12,7 +12,7 @@
 //
 // Dependencies:
 //   - KeychainHelper, SettingsStore, LocaleManager
-//   - AudioRecorder, Services, RecordingController
+//   - AudioRecorder, Services, AppController
 //   - StatusBarController, SettingsWindowController
 //   - HotkeyManager, NetworkHealthMonitor, TextInputter
 
@@ -24,7 +24,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Components
 
     private var statusBarController: StatusBarController!
-    private var recordingController: RecordingController!
+    private var appController: AppController!
     private var audioRecorder: AudioRecorder!
     private var cloudOpenAIService: CloudOpenAIService!
     private var localWhisperService: LocalWhisperService!
@@ -88,7 +88,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let lm = LocaleManager.shared
-        let state = recordingController.currentState
+        let state = appController.currentState
         if state == .idle || state == .error {
             Log.i(lm.logLocalized("Quit requested, currently idle, quitting now"))
             return .terminateNow
@@ -121,7 +121,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             language: settingsStore.whisperLanguage
         )
 
-        recordingController = RecordingController(
+        appController = AppController(
             audioRecorder: audioRecorder,
             cloudOpenAIService: cloudOpenAIService,
             localWhisperService: localWhisperService,
@@ -133,62 +133,61 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if #available(macOS 15.0, *) {
             let service = LocalAppleTranslationService()
             self.localAppleTranslationService = service
-            recordingController.setLocalAppleTranslationService(service)
+            appController.setLocalAppleTranslationService(service)
             Log.i(lm.logLocalized("Apple Translation service initialized"))
         }
         #endif
 
-        let defaultMode: StatusBarController.ApiMode =
-            (settingsStore.transcriptionPriority.first == "local") ? .local : .cloud
-        recordingController.preferredApiMode = defaultMode
-        recordingController.currentApiMode = defaultMode
-        recordingController.transcriptionPipeline.priority = settingsStore.transcriptionPriority
-        recordingController.translationPipeline.translationEnginePriority = settingsStore.translationEnginePriority
+        appController.transcriptionManager.priority = settingsStore.transcriptionPriority
+        if let topEngine = settingsStore.transcriptionPriority.first {
+            appController.transcriptionManager.userDidChangePreferredEngine(topEngine)
+        }
+        appController.translationManager.translationEnginePriority = settingsStore.translationEnginePriority
 
         networkHealthMonitor = NetworkHealthMonitor(apiKey: openaiApiKey)
         networkHealthMonitor.onCloudRecovered = { [weak self] in
             guard let self = self else { return }
-            self.recordingController.recoverFromFallback()
-            self.statusBarController.setApiMode(self.recordingController.currentApiMode)
-            self.statusBarController.updateState(self.recordingController.currentState)
+            self.appController.recoverFromFallback()
+            self.statusBarController.setApiMode(self.appController.currentApiMode)
+            self.statusBarController.updateState(self.appController.currentState)
             self.statusBarController.showNotification(title: "WhisperUtil", message: String(localized: "Network recovered, switched back to Cloud API"))
         }
 
-        recordingController.autoSendManager.autoSendMode = StatusBarController.AutoSendMode.from(settingsStore.autoSendMode)
-        recordingController.autoSendManager.delayedSendDuration = settingsStore.delayedSendDuration
+        appController.autoSendManager.autoSendMode = StatusBarController.AutoSendMode.from(settingsStore.autoSendMode)
+        appController.autoSendManager.delayedSendDuration = settingsStore.delayedSendDuration
 
         hotkeyManager = HotkeyManager()
         hotkeyManager.onPushToTalkStart = { [weak self] in
             guard let self = self else { return }
-            guard self.recordingController.currentState == .idle ||
-                  self.recordingController.currentState == .error ||
-                  self.recordingController.currentState == .waitingToSend else {
+            guard self.appController.currentState == .idle ||
+                  self.appController.currentState == .error ||
+                  self.appController.currentState == .waitingToSend else {
                 return
             }
             self.isPushToTalkActive = true
-            self.recordingController.beginRecording(mode: .transcribe)
+            self.appController.beginRecording(mode: .transcribe)
         }
         hotkeyManager.onPushToTalkStop = { [weak self] in
             guard let self = self else { return }
             guard self.isPushToTalkActive else { return }
             self.isPushToTalkActive = false
-            self.recordingController.stopRecording()
+            self.appController.stopRecording()
         }
         hotkeyManager.onSingleTap = { [weak self] in
             self?.isPushToTalkActive = false
-            self?.recordingController.toggleRecording(mode: .transcribe)
+            self?.appController.toggleRecording(mode: .transcribe)
         }
         hotkeyManager.onDoubleTap = { [weak self] in
             self?.isPushToTalkActive = false
-            self?.recordingController.toggleRecording(mode: .translate)
+            self?.appController.toggleRecording(mode: .translate)
         }
         hotkeyManager.onEscPressed = { [weak self] in
             self?.isPushToTalkActive = false
-            self?.recordingController.cancelRecording()
+            self?.appController.cancelRecording()
         }
         hotkeyManager.startMonitoring()
 
-        statusBarController = StatusBarController(apiMode: recordingController.currentApiMode)
+        statusBarController = StatusBarController(apiMode: appController.currentApiMode)
 
         settingsWindowController = SettingsWindowController(settingsStore: settingsStore)
         statusBarController.onOpenSettings = { [weak self] in
@@ -196,10 +195,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         statusBarController.onTranscribeToggle = { [weak self] in
-            self?.recordingController.toggleRecording(mode: .transcribe)
+            self?.appController.toggleRecording(mode: .transcribe)
         }
         statusBarController.onTranslateToggle = { [weak self] in
-            self?.recordingController.toggleRecording(mode: .translate)
+            self?.appController.toggleRecording(mode: .translate)
         }
         statusBarController.onQuit = {
             NSApplication.shared.terminate(nil)
@@ -208,33 +207,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Combine subscriptions for settings changes
         settingsStore.$transcriptionPriority.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] priority in
             guard let self = self else { return }
-            self.recordingController.transcriptionPipeline.priority = priority
-            // Update currentApiMode to top priority
-            if let top = priority.first {
-                let mode: StatusBarController.ApiMode = top == "local" ? .local : .cloud
-                self.recordingController.currentApiMode = mode
-                self.statusBarController.setApiMode(mode)
+            self.appController.transcriptionManager.priority = priority
+            if let topEngine = priority.first {
+                self.appController.transcriptionManager.userDidChangePreferredEngine(topEngine)
             }
+            self.statusBarController.setApiMode(self.appController.currentApiMode)
             Log.i(lm.logLocalized("Settings: Transcription priority changed to") + " \(priority)")
         }.store(in: &cancellables)
 
         settingsStore.$translationEnginePriority.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] priority in
-            self?.recordingController.translationPipeline.translationEnginePriority = priority
+            self?.appController.translationManager.translationEnginePriority = priority
             Log.i(lm.logLocalized("Settings: Translation engine priority changed to") + " \(priority)")
         }.store(in: &cancellables)
 
         settingsStore.$autoSendMode.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] modeString in
-            self?.recordingController.autoSendManager.autoSendMode = StatusBarController.AutoSendMode.from(modeString)
+            self?.appController.autoSendManager.autoSendMode = StatusBarController.AutoSendMode.from(modeString)
             Log.i(lm.logLocalized("Settings: Send mode changed to") + " \(modeString)")
         }.store(in: &cancellables)
 
         settingsStore.$delayedSendDuration.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] duration in
-            self?.recordingController.autoSendManager.delayedSendDuration = duration
+            self?.appController.autoSendManager.delayedSendDuration = duration
             Log.i(lm.logLocalized("Settings: Delay changed to") + " \(Int(duration))s")
         }.store(in: &cancellables)
 
         settingsStore.$playSound.receive(on: DispatchQueue.main).sink { [weak self] value in
-            self?.recordingController.playSound = value
+            self?.appController.playSound = value
             Log.i(lm.logLocalized("Settings: Sound effects") + " \(value ? "on" : "off")")
         }.store(in: &cancellables)
 
@@ -247,24 +244,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.rebuildServicesWithNewApiKey()
         }.store(in: &cancellables)
 
-        recordingController.onStateChange = { [weak self] state in
+        appController.onStateChange = { [weak self] state in
             self?.statusBarController.updateState(state)
             if self?.pendingQuit == true && (state == .idle || state == .error) {
                 Log.i(lm.logLocalized("Processing complete, executing delayed quit"))
                 NSApplication.shared.reply(toApplicationShouldTerminate: true)
             }
         }
-        recordingController.onTranscriptionResult = { [weak self] text in
+        appController.onTranscriptionResult = { [weak self] text, _ in
             self?.statusBarController.setLastTranscription(text)
         }
-        recordingController.onTranslationResult = { [weak self] text in
+        appController.onTranslationResult = { [weak self] text, _ in
             self?.statusBarController.setLastTranslation(text)
         }
-        recordingController.onError = { [weak self] message in
+        appController.onError = { [weak self] message in
             guard let self = self else { return }
             self.statusBarController.showNotification(title: "WhisperUtil", message: message)
 
-            if self.recordingController.isInFallbackMode && !self.networkHealthMonitor.isMonitoring {
+            if self.appController.isInFallbackMode && !self.networkHealthMonitor.isMonitoring {
                 self.statusBarController.setApiMode(.local)
                 self.networkHealthMonitor.startMonitoring()
             }
@@ -288,8 +285,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if newKey.isEmpty {
             Log.w(lm.logLocalized("API Key cleared, network features unavailable"))
-            if recordingController.currentApiMode != .local {
-                recordingController.userDidChangeApiMode(.local)
+            if appController.currentApiMode != .local {
+                appController.userDidChangeApiMode(.local)
                 statusBarController.setApiMode(.local)
                 statusBarController.showNotification(
                     title: "WhisperUtil",
@@ -306,13 +303,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         networkHealthMonitor = NetworkHealthMonitor(apiKey: newKey)
 
-        recordingController.updateServices(
+        appController.updateServices(
             cloudOpenAIService: cloudOpenAIService
         )
 
         let topPriority = settingsStore.transcriptionPriority.first ?? "cloud"
         let preferredMode: StatusBarController.ApiMode = (topPriority == "local") ? .local : .cloud
-        recordingController.userDidChangeApiMode(preferredMode)
+        appController.userDidChangeApiMode(preferredMode)
         statusBarController.setApiMode(preferredMode)
 
         Log.i(lm.logLocalized("API Key updated, services rebuilt, mode restored to") + " \(topPriority)")

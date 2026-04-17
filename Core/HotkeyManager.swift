@@ -28,7 +28,7 @@
 //   - Log：日志输出
 //
 // 架构角色：
-//   由 AppDelegate 创建并配置回调，连接到 RecordingController 的录音控制方法。
+//   由 AppDelegate 创建并配置回调，连接到 AppController 的录音控制方法。
 
 import Cocoa
 

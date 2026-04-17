@@ -20,7 +20,7 @@
 //   - EngineeringOptions：localWhisperModel（模型名称）、enableTagFiltering
 //
 // 架构角色：
-//   由 AppDelegate 创建并预加载模型，由 RecordingController 在 local 模式下调用。
+//   由 AppDelegate 创建并预加载模型，由 AppController 在 local 模式下调用。
 //   也作为 Cloud API 网络回退的后备方案。
 //
 // 限制：
@@ -104,7 +104,7 @@ class LocalWhisperService {
     /// 转录音频采样数据
     ///
     /// 接收 Float32 PCM 采样数据（16kHz 单声道），使用 WhisperKit 进行本地转录。
-    /// 录音停止后由 RecordingController 调用。
+    /// 录音停止后由 AppController 调用。
     ///
     /// - Parameter samples: Float32 PCM 采样数据（16kHz 单声道）
     /// - Returns: 转录文本
