@@ -12,7 +12,7 @@
 		D646E6782F3E4D6100376E45 /* LocalWhisperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D646E6772F3E4D6100376E45 /* LocalWhisperService.swift */; };
 		D64B58382F333841003BEA1A /* SettingsDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B58372F333841003BEA1A /* SettingsDefaults.swift */; };
 		D6E0A0012F8400010000E001 /* EngineeringOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E0A0002F8400010000E001 /* EngineeringOptions.swift */; };
-		D64B583B2F334121003BEA1A /* RecordingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B583A2F334121003BEA1A /* RecordingController.swift */; };
+		D64B583B2F334121003BEA1A /* AppController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B583A2F334121003BEA1A /* AppController.swift */; };
 		D64B583C2F334121003BEA1A /* AudioEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B58392F334121003BEA1A /* AudioEncoder.swift */; };
 		D69A0EDC2F21D61C00CD1DC0 /* TextInputter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D69A0EDA2F21D61C00CD1DC0 /* TextInputter.swift */; };
 		D69A0EDD2F21D61C00CD1DC0 /* CloudOpenAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D69A0EDB2F21D61C00CD1DC0 /* CloudOpenAIService.swift */; };
@@ -30,13 +30,13 @@
 		D6AT00012FC000010000A001 /* LocalAppleTranslationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6AT00002FC000010000A001 /* LocalAppleTranslationService.swift */; };
 		D6TF00012FD400010000TF02 /* AudioEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00002FD400010000TF01 /* AudioEncoderTests.swift */; };
 		D6TF00032FD400010000TF04 /* CloudOpenAIServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00022FD400010000TF03 /* CloudOpenAIServiceTests.swift */; };
-		D6TF00052FD400010000TF06 /* RecordingControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00042FD400010000TF05 /* RecordingControllerTests.swift */; };
+		D6TF00052FD400010000TF06 /* AppControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00042FD400010000TF05 /* AppControllerTests.swift */; };
 		D6TF00072FD400010000TF08 /* LocalWhisperServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00062FD400010000TF07 /* LocalWhisperServiceTests.swift */; };
 		D6TF00092FD400010000TF10 /* LocalAppleTranslationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00082FD400010000TF09 /* LocalAppleTranslationServiceTests.swift */; };
 		AA00000000000000000000B1 /* TextPostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000A1 /* TextPostProcessor.swift */; };
 		AA00000000000000000000B2 /* AutoSendManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000A2 /* AutoSendManager.swift */; };
-		AA00000000000000000000B3 /* TranslationPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000A3 /* TranslationPipeline.swift */; };
-		AA00000000000000000000B4 /* TranscriptionPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000A4 /* TranscriptionPipeline.swift */; };
+		AA00000000000000000000B3 /* TranslationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000A3 /* TranslationManager.swift */; };
+		AA00000000000000000000B4 /* TranscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000A4 /* TranscriptionManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,7 +46,7 @@
 		D64B58372F333841003BEA1A /* SettingsDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDefaults.swift; sourceTree = "<group>"; };
 		D6E0A0002F8400010000E001 /* EngineeringOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineeringOptions.swift; sourceTree = "<group>"; };
 		D64B58392F334121003BEA1A /* AudioEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEncoder.swift; sourceTree = "<group>"; };
-		D64B583A2F334121003BEA1A /* RecordingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingController.swift; sourceTree = "<group>"; };
+		D64B583A2F334121003BEA1A /* AppController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppController.swift; sourceTree = "<group>"; };
 		D69A0EC32F21D5B700CD1DC0 /* WhisperUtil.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WhisperUtil.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D69A0ED42F21D61C00CD1DC0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D69A0ED52F21D61C00CD1DC0 /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
@@ -65,13 +65,13 @@
 		D6TS00012FD400010000TS02 /* WhisperUtilTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WhisperUtilTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D6TF00002FD400010000TF01 /* AudioEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEncoderTests.swift; sourceTree = "<group>"; };
 		D6TF00022FD400010000TF03 /* CloudOpenAIServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudOpenAIServiceTests.swift; sourceTree = "<group>"; };
-		D6TF00042FD400010000TF05 /* RecordingControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingControllerTests.swift; sourceTree = "<group>"; };
+		D6TF00042FD400010000TF05 /* AppControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppControllerTests.swift; sourceTree = "<group>"; };
 		D6TF00062FD400010000TF07 /* LocalWhisperServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalWhisperServiceTests.swift; sourceTree = "<group>"; };
 		D6TF00082FD400010000TF09 /* LocalAppleTranslationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAppleTranslationServiceTests.swift; sourceTree = "<group>"; };
 		AA00000000000000000000A1 /* TextPostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPostProcessor.swift; sourceTree = "<group>"; };
 		AA00000000000000000000A2 /* AutoSendManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSendManager.swift; sourceTree = "<group>"; };
-		AA00000000000000000000A3 /* TranslationPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationPipeline.swift; sourceTree = "<group>"; };
-		AA00000000000000000000A4 /* TranscriptionPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionPipeline.swift; sourceTree = "<group>"; };
+		AA00000000000000000000A3 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
+		AA00000000000000000000A4 /* TranscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -108,7 +108,6 @@
 				D6B0A0052F6A000100000005 /* Config */,
 				D6B0A0012F6A000100000001 /* Services */,
 				D6B0A0042F6A000100000004 /* UI */,
-				D6B0A0022F6A000100000002 /* Audio */,
 				AA00000000000000000000C1 /* Core */,
 				D6B0A0032F6A000100000003 /* Utilities */,
 				D69A0EC52F21D5B700CD1DC0 /* WhisperUtil */,
@@ -136,15 +135,7 @@
 			path = Services;
 			sourceTree = "<group>";
 		};
-		D6B0A0022F6A000100000002 /* Audio */ = {
-			isa = PBXGroup;
-			children = (
-				D69A0ED52F21D61C00CD1DC0 /* AudioRecorder.swift */,
-				D64B58392F334121003BEA1A /* AudioEncoder.swift */,
-			);
-			path = Audio;
-			sourceTree = "<group>";
-		};
+		/* Audio group removed — files moved to Core/ and Utilities/ */
 		D6B0A0032F6A000100000003 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
@@ -153,6 +144,7 @@
 				D6A1B0002F5A000100000001 /* Log.swift */,
 				D6L0C0002FB400010000L001 /* LocaleManager.swift */,
 				AA00000000000000000000A1 /* TextPostProcessor.swift */,
+				D64B58392F334121003BEA1A /* AudioEncoder.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -160,11 +152,12 @@
 		AA00000000000000000000C1 /* Core */ = {
 			isa = PBXGroup;
 			children = (
-				D64B583A2F334121003BEA1A /* RecordingController.swift */,
+				D64B583A2F334121003BEA1A /* AppController.swift */,
 				D69A0ED72F21D61C00CD1DC0 /* HotkeyManager.swift */,
 				AA00000000000000000000A2 /* AutoSendManager.swift */,
-				AA00000000000000000000A3 /* TranslationPipeline.swift */,
-				AA00000000000000000000A4 /* TranscriptionPipeline.swift */,
+				AA00000000000000000000A3 /* TranslationManager.swift */,
+				AA00000000000000000000A4 /* TranscriptionManager.swift */,
+				D69A0ED52F21D61C00CD1DC0 /* AudioRecorder.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -196,7 +189,7 @@
 			children = (
 				D6TF00002FD400010000TF01 /* AudioEncoderTests.swift */,
 				D6TF00022FD400010000TF03 /* CloudOpenAIServiceTests.swift */,
-				D6TF00042FD400010000TF05 /* RecordingControllerTests.swift */,
+				D6TF00042FD400010000TF05 /* AppControllerTests.swift */,
 				D6TF00062FD400010000TF07 /* LocalWhisperServiceTests.swift */,
 				D6TF00082FD400010000TF09 /* LocalAppleTranslationServiceTests.swift */,
 			);
@@ -332,7 +325,7 @@
 				D69A0EDF2F21D61C00CD1DC0 /* HotkeyManager.swift in Sources */,
 				D69A0EE02F21D61C00CD1DC0 /* StatusBarController.swift in Sources */,
 				D69A0EE12F21D61C00CD1DC0 /* AppDelegate.swift in Sources */,
-				D64B583B2F334121003BEA1A /* RecordingController.swift in Sources */,
+				D64B583B2F334121003BEA1A /* AppController.swift in Sources */,
 				D64B583C2F334121003BEA1A /* AudioEncoder.swift in Sources */,
 				D69A0EE22F21D61C00CD1DC0 /* AudioRecorder.swift in Sources */,
 				D69A0EE32F21D61C00CD1DC0 /* main.swift in Sources */,
@@ -347,8 +340,8 @@
 				D6AT00012FC000010000A001 /* LocalAppleTranslationService.swift in Sources */,
 				AA00000000000000000000B1 /* TextPostProcessor.swift in Sources */,
 				AA00000000000000000000B2 /* AutoSendManager.swift in Sources */,
-				AA00000000000000000000B3 /* TranslationPipeline.swift in Sources */,
-				AA00000000000000000000B4 /* TranscriptionPipeline.swift in Sources */,
+				AA00000000000000000000B3 /* TranslationManager.swift in Sources */,
+				AA00000000000000000000B4 /* TranscriptionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -358,7 +351,7 @@
 			files = (
 				D6TF00012FD400010000TF02 /* AudioEncoderTests.swift in Sources */,
 				D6TF00032FD400010000TF04 /* CloudOpenAIServiceTests.swift in Sources */,
-				D6TF00052FD400010000TF06 /* RecordingControllerTests.swift in Sources */,
+				D6TF00052FD400010000TF06 /* AppControllerTests.swift in Sources */,
 				D6TF00072FD400010000TF08 /* LocalWhisperServiceTests.swift in Sources */,
 				D6TF00092FD400010000TF10 /* LocalAppleTranslationServiceTests.swift in Sources */,
 			);

@@ -6,24 +6,23 @@
 // 职责：
 //   1. 麦克风采集：通过 AVAudioEngine + installTap 实时获取音频数据
 //   2. 采样率转换：将系统采样率（48kHz/44.1kHz）降采样至目标采样率（16kHz）
-//   3. 内存缓冲：音频数据缓存在内存（audioBuffer），停止时编码为 M4A/WAV
+//   3. 内存缓冲：音频数据缓存在内存（audioBuffer），停止时返回原始 [Float] 采样
 //   4. 麦克风冲突检测：Core Audio 设备占用检测 + macOS 系统听写冲突检测
 //   5. 录音保护：最长录音时间限制，防止意外长时间录音
 //
 // 音频处理流程：
 //   麦克风 → AVAudioEngine.inputNode → installTap → processAudioBuffer()
 //     → AVAudioConverter（采样率转换）→ audioBuffer（Float32 内存缓冲）
-//       → stopRecording() → AudioEncoder.encodeToM4A/WAV → RecordingResult
+//       → stopRecording() → [Float] 原始采样（编码由下游处理）
 //
 // 依赖：
 //   - AVFoundation：AVAudioEngine, AVAudioConverter, AVCaptureDevice（权限检查）
 //   - CoreAudio：AudioObjectGetPropertyData（麦克风占用检测）
-//   - AudioEncoder：停止录音时的音频编码
-//   - EngineeringOptions：enableAudioCompression（编码格式选择）、sampleRate, checkTimerInterval
+//   - EngineeringOptions：sampleRate, checkTimerInterval
 //
 // 架构角色：
-//   由 AppDelegate 创建，由 RecordingController 控制其启停。
-//   产出的 RecordingResult 传递给 CloudOpenAIService。
+//   由 AppDelegate 创建，由 AppController 控制其启停。
+//   产出的 [Float] 采样传递给 TranscriptionManager 进行编码和转录。
 
 import AVFoundation
 import Cocoa
@@ -42,7 +41,7 @@ class AudioRecorder {
     private var audioEngine: AVAudioEngine?
 
     /// 所有录音采样数据的内存缓冲区（Float32 格式，值域 -1.0 ~ 1.0）
-    /// 停止录音时整体编码为 M4A
+    /// 停止录音时整体返回给调用方
     private var audioBuffer: [Float] = []
 
     /// 是否正在录音（外部只读）
@@ -217,14 +216,13 @@ class AudioRecorder {
         Log.i(lm.logLocalized("Recording started") + " (\(modeInfo))")
     }
 
-    /// 停止录音并返回编码后的音频数据
+    /// 停止录音并返回原始 Float32 采样数据
     ///
-    /// 停止 AVAudioEngine，将缓冲区中的全部采样数据编码为 M4A 格式。
-    /// 在流式模式下，此方法仍会被调用以清理资源，
-    /// 但返回的数据可能不被使用（因为数据已在录音过程中实时发送）。
+    /// 停止 AVAudioEngine，返回缓冲区中的全部采样数据。
+    /// 编码（M4A/WAV）由下游调用方负责。
     ///
-    /// - Returns: 编码后的录音结果（M4A 格式），无数据时返回 nil
-    func stopRecording() -> RecordingResult? {
+    /// - Returns: 原始 Float32 采样数据，无数据时返回 nil
+    func stopRecording() -> [Float]? {
         guard isRecording else {
             Log.w(LocaleManager.shared.logLocalized("AudioRecorder: stopRecording called but not recording"))
             return nil
@@ -244,36 +242,25 @@ class AudioRecorder {
         let lm = LocaleManager.shared
         Log.i(lm.logLocalized("Recording stopped, duration:") + " \(String(format: "%.1f", duration))s, " + lm.logLocalized("sample count:") + " \(audioBuffer.count)")
 
-        // 使用 AudioEncoder 将采样数据编码（根据 enableAudioCompression 选择格式）
-        let encoded: AudioEncoder.EncodingResult?
-        if EngineeringOptions.enableAudioCompression {
-            encoded = AudioEncoder.encodeToM4A(samples: audioBuffer)
-        } else {
-            encoded = AudioEncoder.encodeToWAV(samples: audioBuffer)
-        }
-        guard let encoded else {
-            Log.w(LocaleManager.shared.logLocalized("AudioRecorder: audio encoding returned nil"))
-            return nil
-        }
-        return RecordingResult(data: encoded.data, format: encoded.format)
+        guard !audioBuffer.isEmpty else { return nil }
+
+        let samples = audioBuffer
+        audioBuffer.removeAll()
+        return samples
     }
 
-    /// 计算整段录音的平均音量（RMS 均方根值）
+    /// 计算采样数据的平均音量（RMS 均方根值）
     ///
     /// 用于判断录音是否包含有效语音。如果平均音量低于阈值，
     /// 说明录音期间用户可能没有说话，可以跳过 API 调用以节省费用。
     ///
+    /// - Parameters:
+    ///   - samples: Float32 采样数据
     /// - Returns: 平均 RMS 值（0.0 ~ 1.0）
-    func getLastRecordingAverageRMS() -> Float {
-        guard !audioBuffer.isEmpty else { return 0 }
-        let sumOfSquares = audioBuffer.reduce(0) { $0 + $1 * $1 }
-        return sqrt(sumOfSquares / Float(audioBuffer.count))
-    }
-
-    /// 获取当前录音的原始 Float32 采样数据（用于本地 WhisperKit 转录）
-    /// 在 stopRecording() 之前调用，因为 stopRecording() 会清空缓冲区
-    func getAudioSamples() -> [Float] {
-        return audioBuffer
+    static func averageRMS(of samples: [Float]) -> Float {
+        guard !samples.isEmpty else { return 0 }
+        let sumOfSquares = samples.reduce(0) { $0 + $1 * $1 }
+        return sqrt(sumOfSquares / Float(samples.count))
     }
 
     /// 获取当前已录音的时长（秒）
@@ -359,15 +346,6 @@ class AudioRecorder {
     }
 
     // MARK: - 类型定义
-
-    /// 音频格式类型别名，复用 AudioEncoder 中的定义
-    typealias AudioFormat = AudioEncoder.AudioFormat
-
-    /// 录音结果，包含编码后的音频数据和格式信息
-    struct RecordingResult {
-        let data: Data          // 编码后的音频二进制数据（M4A 或 WAV）
-        let format: AudioFormat // 音频格式（用于构建 API 请求）
-    }
 
     /// 录音错误类型
     enum RecordingError: Error, LocalizedError {
