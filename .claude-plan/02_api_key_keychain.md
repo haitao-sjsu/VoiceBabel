@@ -4,7 +4,7 @@
 
 当前 API Key 硬编码在 `Config/EngineeringOptions.swift` 中，存在安全风险（编译产物可通过 `strings` 提取明文）且不便于用户管理。迁移到 macOS Keychain 后，用户通过设置面板输入 API Key，无需接触源码。
 
-参考文档：`.claude-research-tech/13_api_key_management.md`
+参考文档：`.claude-tech-research/13_api_key_management.md`
 
 ## 实施步骤
 
