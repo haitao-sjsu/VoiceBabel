@@ -11,8 +11,6 @@
 import XCTest
 @testable import WhisperUtil
 
-#if canImport(Translation)
-
 final class AppleTranslationErrorTests: XCTestCase {
 
     func testErrorDescriptions_nonEmpty() {
@@ -29,5 +27,3 @@ final class AppleTranslationErrorTests: XCTestCase {
         }
     }
 }
-
-#endif

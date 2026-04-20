@@ -1,208 +1,213 @@
 // TranslationManager.swift
 // WhisperUtil - macOS menu bar speech-to-text tool
 //
-// Translation engine manager — text-to-text translation with priority-based
-// engine fallback. Handles only Step 2 of the two-step flow (translate text).
-// Step 1 (transcribe audio) and orchestration live in AppController.
+// Translation engine manager — text-to-text translation via list-iteration
+// over the configured engine priority. Stateless across calls: no fallback
+// memory, no per-call stored state.
+//
+// Responsibilities:
+//   1. Resolve target and source languages from SettingsStore on each call.
+//   2. Iterate engines in `translationEnginePriority` order (pre-filtered by
+//      AppDelegate to enabled ∩ available engines).
+//   3. Run TextPostProcessor.process on successful output before returning.
+//   4. Return a structured TranslationResult with the winning engine and the
+//      full ordered attempts list — or throw TranslationError.allEnginesFailed
+//      when every engine failed, or .noEngineAvailable when the priority list
+//      is empty on entry.
+//
+// Non-responsibilities (moved or deleted):
+//   - No availability / enablement checks. AppDelegate pre-filters the
+//     effective list before pushing it into `translationEnginePriority`.
 //
 // Dependencies:
-//   - CloudOpenAIService (GPT text translation via chatTranslate)
-//   - LocalAppleTranslationService (Apple Translation, macOS 15.0+, conditional)
-//   - SettingsStore, EngineeringOptions, LocaleManager
+//   - CloudOpenAIService.chatTranslate (async throws)
+//   - LocalTranslator (async throws, macOS 15.0+ via LocalTranslatorFactory)
+//   - SettingsStore, SettingsDefaults, LocaleManager, TextPostProcessor
+//
+// Note on EngineAttempt:
+//   The `EngineAttempt` struct is defined in TranscriptionManager.swift and
+//   shared by both Managers (same module, no import needed).
 
 import Foundation
 
+// MARK: - Result + Error Types
+
 struct TranslationResult {
-    let text: String
-    let engine: String           // "apple" / "cloud"
-    let fallbackFrom: String?    // non-nil = translation engine fallback occurred
+    let text: String                    // post-processed by TextPostProcessor
+    let engine: String                  // winning engine ("apple" / "cloud")
+    let attempts: [EngineAttempt]       // ordered, last entry is the winner
 }
+
+enum TranslationError: Error, LocalizedError {
+    case emptyInput
+    case noEngineAvailable
+    case allEnginesFailed(attempts: [EngineAttempt])
+    /// Internal invariant violation — thrown from the private `runEngine`
+    /// dispatcher when the `apple` engine is dispatched without a
+    /// `LocalTranslator`, or an unknown engine id reaches dispatch. If this
+    /// ever surfaces it is a bug in TranslationManager itself, not a
+    /// user-facing translation failure.
+    case internalInconsistency(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .emptyInput:
+            return String(localized: "Translation input is empty")
+        case .noEngineAvailable:
+            return String(localized: "No translation engine available. Check Settings.")
+        case .allEnginesFailed(let attempts):
+            let details = attempts
+                .map { "\($0.engine): \($0.failure ?? "unknown")" }
+                .joined(separator: "; ")
+            return String(localized: "All translation engines failed (\(details))")
+        case .internalInconsistency(let detail):
+            return "TranslationManager internal inconsistency: \(detail)"
+        }
+    }
+}
+
+// MARK: - Manager
 
 class TranslationManager {
 
-    // MARK: - Dependencies
+    // MARK: Dependencies
 
     var cloudOpenAIService: CloudOpenAIService
-    #if canImport(Translation)
-    var localAppleTranslationService: Any?  // LocalAppleTranslationService, type-erased for availability
-    #endif
+    /// On-device translator, created by `LocalTranslatorFactory.make()`.
+    /// `nil` on macOS < 15 (no availability gate surfaces at this level).
+    var localTranslator: LocalTranslator?
 
-    // MARK: - Configuration
+    // MARK: Configuration
 
     var translationEnginePriority: [String] = SettingsDefaults.translationEnginePriority
 
-    // MARK: - Callbacks
-
-    var onResult: ((TranslationResult) -> Void)?
-    var onError: ((String) -> Void)?
-
-    // MARK: - State
-
-    private var currentCallStartEngine: String = ""
-
-    // MARK: - Init
+    // MARK: Init
 
     init(cloudOpenAIService: CloudOpenAIService) {
         self.cloudOpenAIService = cloudOpenAIService
     }
 
-    // MARK: - Public
+    // MARK: Public — Translate
 
-    /// Translate text to the target language using the configured engine priority.
-    func translate(text: String, targetLanguage: String) {
-        let lm = LocaleManager.shared
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            Log.i(lm.logLocalized("Translation input is empty, skipping"))
-            onError?(String(localized: "Translation input is empty"))
-            return
+    /// Translate `text` into the target language resolved from SettingsStore.
+    ///
+    /// The manager does NOT trim whitespace from the input — callers that want
+    /// trimming must do it themselves. An empty string throws `.emptyInput`.
+    ///
+    /// Iterates `translationEnginePriority` (pre-filtered by AppDelegate to
+    /// enabled ∩ available engines); each engine either succeeds (returns) or
+    /// fails (logged + recorded, moves on). If the list is empty on entry we
+    /// throw `.noEngineAvailable` immediately. Only if every engine fails does
+    /// this throw `.allEnginesFailed` with the full attempts list.
+    func translate(text: String) async throws -> TranslationResult {
+        guard !translationEnginePriority.isEmpty else {
+            Log.e("TranslationManager: priority is empty (no enabled + available engine)")
+            throw TranslationError.noEngineAvailable
         }
-        Log.i(lm.logLocalized("Starting translation to") + " \(targetLanguage)")
-        translateTextWithFallback(trimmed, targetLanguage: targetLanguage, engineIndex: 0)
+
+        guard !text.isEmpty else {
+            Log.i("TranslationManager: empty input, aborting")
+            throw TranslationError.emptyInput
+        }
+
+        let targetLanguage = resolveTargetLanguage()
+        let sourceLanguage = resolveSourceLanguage()  // may be "" (auto-detect)
+        Log.i("TranslationManager: starting translate — priority=\(translationEnginePriority), source='\(sourceLanguage.isEmpty ? "auto" : sourceLanguage)', target='\(targetLanguage)'")
+
+        var attempts: [EngineAttempt] = []
+
+        for engine in translationEnginePriority {
+            Log.i("TranslationManager: trying engine '\(engine)'")
+            do {
+                let raw = try await runEngine(
+                    engine,
+                    text: text,
+                    source: sourceLanguage,
+                    target: targetLanguage
+                )
+                attempts.append(EngineAttempt(engine: engine, failure: nil))
+                let processed = TextPostProcessor.process(raw)
+                Log.i("TranslationManager: \(engine) succeeded (output length=\(processed.count))")
+                return TranslationResult(text: processed, engine: engine, attempts: attempts)
+            } catch {
+                attempts.append(EngineAttempt(engine: engine, failure: error.localizedDescription))
+                Log.w("TranslationManager: \(engine) failed: \(error.localizedDescription)")
+                continue
+            }
+        }
+
+        Log.e("TranslationManager: all engines exhausted (\(attempts.count) attempts)")
+        throw TranslationError.allEnginesFailed(attempts: attempts)
     }
 
-    // MARK: - Private
+    // MARK: Private — Engine Dispatch
 
-    /// Try translation engines in priority order, fallback on failure
-    private func translateTextWithFallback(_ text: String, targetLanguage: String, engineIndex: Int) {
-        let engines = translationEnginePriority
-
-        guard engineIndex < engines.count else {
-            Log.e(LocaleManager.shared.logLocalized("TranslationManager: all translation engines exhausted"))
-            onError?(String(localized: "All translation engines failed"))
-            return
-        }
-
-        if engineIndex > 0 && !EngineeringOptions.enableModeFallback {
-            Log.e(LocaleManager.shared.logLocalized("TranslationManager: translation failed and fallback disabled"))
-            onError?(String(localized: "Translation failed"))
-            return
-        }
-
-        if engineIndex == 0 {
-            currentCallStartEngine = engines[0]
-        }
-
-        let engine = engines[engineIndex]
-        Log.i(LocaleManager.shared.logLocalized("TranslationManager: trying engine") + " '\(engine)' (\(engineIndex + 1)/\(engines.count))")
-        let tryNext: () -> Void = { [weak self] in
-            self?.translateTextWithFallback(text, targetLanguage: targetLanguage, engineIndex: engineIndex + 1)
-        }
-
+    /// Route a single engine attempt to the underlying service. Assumes the
+    /// engine has already been filtered into the effective priority list by
+    /// AppDelegate — the `apple` branch still defends against a missing
+    /// `localTranslator` because it is a separate injected dependency that
+    /// can legitimately be nil on macOS < 15 even if the id was not filtered.
+    private func runEngine(
+        _ engine: String,
+        text: String,
+        source: String,
+        target: String
+    ) async throws -> String {
         switch engine {
-        case "apple":
-            translateTextViaApple(text, targetLanguage: targetLanguage, engine: engine, onFailure: tryNext)
         case "cloud":
-            translateTextViaCloud(text, targetLanguage: targetLanguage, engine: engine, onFailure: tryNext)
+            return try await cloudOpenAIService.chatTranslate(
+                text: text,
+                targetLanguage: target
+            )
+
+        case "apple":
+            guard let translator = localTranslator else {
+                // Defensive — AppDelegate's probe should have filtered "apple"
+                // out of the priority list when the translator is unavailable.
+                throw TranslationError.internalInconsistency(
+                    "apple engine dispatched without a LocalTranslator"
+                )
+            }
+            return try await translator.translate(
+                text: text,
+                sourceLanguage: source.isEmpty ? nil : source,
+                targetLanguage: target
+            )
+
         default:
-            Log.w("TranslationManager: unknown translation engine '\(engine)', skipping")
-            tryNext()
+            throw TranslationError.internalInconsistency("unknown engine '\(engine)'")
         }
     }
 
-    /// Cloud GPT translation
-    private func translateTextViaCloud(_ text: String, targetLanguage: String, engine: String, onFailure: (() -> Void)? = nil) {
-        let lm = LocaleManager.shared
-        Log.i(lm.logLocalized("Calling GPT translation (cloud)..."))
-        cloudOpenAIService.chatTranslate(text: text, targetLanguage: targetLanguage) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                switch result {
-                case .success:
-                    let fallbackFrom = (engine != self.currentCallStartEngine) ? self.currentCallStartEngine : nil
-                    self.handleTranslationResult(result, engine: engine, fallbackFrom: fallbackFrom)
-                case .failure(let error):
-                    if let onFailure = onFailure {
-                        Log.w(lm.logLocalized("Cloud GPT translation failed, trying next engine:") + " \(error.localizedDescription)")
-                        onFailure()
-                    } else {
-                        let fallbackFrom = (engine != self.currentCallStartEngine) ? self.currentCallStartEngine : nil
-                        self.handleTranslationResult(result, engine: engine, fallbackFrom: fallbackFrom)
-                    }
-                }
-            }
+    // MARK: Private — Language Resolution
+
+    /// Resolve the target language from SettingsStore, falling back to the
+    /// default only when the stored value is empty (treated as misconfiguration).
+    private func resolveTargetLanguage() -> String {
+        let stored = SettingsStore.shared.translationTargetLanguage
+        if stored.isEmpty {
+            Log.w("TranslationManager: translationTargetLanguage is empty, falling back to default '\(SettingsDefaults.translationTargetLanguage)'")
+            return SettingsDefaults.translationTargetLanguage
         }
+        return stored
     }
 
-    /// Apple Translation local translation
-    private func translateTextViaApple(_ text: String, targetLanguage: String, engine: String, onFailure: (() -> Void)? = nil) {
-        let lm = LocaleManager.shared
-
-        #if canImport(Translation)
-        guard #available(macOS 15.0, *),
-              let service = localAppleTranslationService as? LocalAppleTranslationService else {
-            if let onFailure = onFailure {
-                Log.i(lm.logLocalized("Apple Translation unavailable, trying next engine"))
-                onFailure()
-            } else {
-                onError?(String(localized: "Apple Translation requires macOS 15.0 or later"))
-            }
-            return
-        }
-
-        Log.i(lm.logLocalized("Calling Apple Translation (local)..."))
-        let sourceLang = effectiveWhisperLanguage()
-        service.translate(
-            text: text,
-            sourceLanguage: sourceLang.isEmpty ? nil : sourceLang,
-            targetLanguage: targetLanguage
-        ) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                switch result {
-                case .success:
-                    let fallbackFrom = (engine != self.currentCallStartEngine) ? self.currentCallStartEngine : nil
-                    self.handleTranslationResult(result, engine: engine, fallbackFrom: fallbackFrom)
-                case .failure(let error):
-                    if let onFailure = onFailure {
-                        Log.w(lm.logLocalized("Apple Translation failed, trying next engine:") + " \(error.localizedDescription)")
-                        onFailure()
-                    } else {
-                        let fallbackFrom = (engine != self.currentCallStartEngine) ? self.currentCallStartEngine : nil
-                        self.handleTranslationResult(result, engine: engine, fallbackFrom: fallbackFrom)
-                    }
-                }
-            }
-        }
-        #else
-        if let onFailure = onFailure {
-            Log.i(lm.logLocalized("Translation framework not available, trying next engine"))
-            onFailure()
-        } else {
-            onError?(String(localized: "Apple Translation is not available on this system"))
-        }
-        #endif
-    }
-
-    /// Handle translation result: build TranslationResult on success, call onError on failure
-    private func handleTranslationResult(_ result: Result<String, Error>, engine: String, fallbackFrom: String?) {
-        let lm = LocaleManager.shared
-        switch result {
-        case .success(let translatedText):
-            let trimmed = translatedText.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.isEmpty {
-                Log.i(lm.logLocalized("Translation result is empty"))
-                onError?(String(localized: "Translation result is empty"))
-            } else {
-                Log.i(lm.logLocalized("Translation result:") + " \(trimmed)")
-                let output = TranslationResult(text: trimmed, engine: engine, fallbackFrom: fallbackFrom)
-                onResult?(output)
-            }
-        case .failure(let error):
-            Log.e(lm.logLocalized("Translation failed:") + " \(error.localizedDescription)")
-            onError?(String(localized: "Translation failed: \(error.localizedDescription)"))
-        }
-    }
-
-    // MARK: - Helpers
-
-    /// Resolve the effective whisper language for source language in translation
-    private func effectiveWhisperLanguage() -> String {
+    /// Resolve the source language code for translation.
+    /// - `"ui"`  → current UI language (whisperCode-normalized). If the UI
+    ///   language code is unresolvable, returns `""` (auto-detect) rather than
+    ///   inventing a locale, per Services/CLAUDE.md.
+    /// - `""`    → `""` (auto-detect propagates as-is).
+    /// - other → `LocaleManager.whisperCode(for: lang)`.
+    private func resolveSourceLanguage() -> String {
         let lang = SettingsStore.shared.whisperLanguage
         if lang == "ui" {
-            return LocaleManager.whisperCode(for: LocaleManager.shared.currentLocale.language.languageCode?.identifier ?? "en")
+            if let code = LocaleManager.shared.currentLocale.language.languageCode?.identifier {
+                return LocaleManager.whisperCode(for: code)
+            }
+            Log.w("TranslationManager: UI language code unresolvable, source set to auto-detect")
+            return ""
         }
+        if lang.isEmpty { return "" }
         return LocaleManager.whisperCode(for: lang)
     }
-
 }

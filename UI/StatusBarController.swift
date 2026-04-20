@@ -5,12 +5,13 @@
 //
 // Responsibilities:
 //   1. Icon management: dynamically switch menu bar emoji icons based on AppState
-//   2. Dropdown menu: transcribe/translate buttons, copy last transcription, settings, about, quit
+//      (icon reflects state only — idle / recording / processing / error — not API mode).
+//   2. Dropdown menu: transcribe/translate buttons, last-engine indicators, copy last
+//      transcription/translation, settings, about, quit.
 //   3. State sync: update menu item text and availability based on AppState
 //   4. Locale sync: subscribe to LocaleManager changes, refresh all menu titles
 //
-// Also defines two domain enums:
-//   - ApiMode: API mode (local/cloud)
+// Also defines:
 //   - AutoSendMode: auto-send mode (off/always/delayed)
 //
 // Dependencies:
@@ -18,7 +19,9 @@
 //   - LocaleManager: for localized menu strings
 //
 // Architecture:
-//   Pure UI layer. Forwards user actions to AppDelegate via closures.
+//   Pure UI layer. Forwards user actions to AppDelegate via closures. Engine-selection
+//   decisions (which transcription/translation engine was used) flow *into* the menu
+//   via `setLastTranscriptionEngine` / `setLastTranslationEngine` — informational only.
 
 import Cocoa
 import Combine
@@ -31,13 +34,6 @@ class StatusBarController {
     var onTranslateToggle: (() -> Void)?
     var onQuit: (() -> Void)?
     var onOpenSettings: (() -> Void)?
-
-    // MARK: - API Mode Enum
-
-    enum ApiMode: String {
-        case local = "local"
-        case cloud = "cloud"
-    }
 
     // MARK: - Auto Send Mode Enum
 
@@ -67,7 +63,6 @@ class StatusBarController {
     private var currentAppState: AppController.AppState = .idle
     private var transcribeMenuItem: NSMenuItem!
     private var translateMenuItem: NSMenuItem!
-    private var currentApiMode: ApiMode
     private var lastTranscriptionItem: NSMenuItem!
     private var lastTranscriptionText: String = ""
     private var copyTranscriptionHintItem: NSMenuItem!
@@ -78,9 +73,17 @@ class StatusBarController {
     private var aboutItem: NSMenuItem!
     private var quitItem: NSMenuItem!
 
+    // Last-used engine ids (nil = no run yet). Drive the engine indicator menu items.
+    private var lastTranscriptionEngine: String?
+    private var lastTranslationEngine: String?
+
     private var localeCancellable: AnyCancellable?
 
     // MARK: - State Icons
+    //
+    // Icon is a single mic glyph (optionally badged for non-idle states) — no longer
+    // varies by API mode. The menu's "Last transcription/translation: <engine>" items
+    // convey engine information instead (post-hoc, honest).
 
     private let stateIcons: [AppController.AppState: String] = [
         .idle: "🎙",
@@ -91,18 +94,12 @@ class StatusBarController {
     ]
 
     private func idleIcon() -> String {
-        switch currentApiMode {
-        case .cloud:
-            return "🎙📶"
-        case .local:
-            return "🎙🏠"
-        }
+        return "🎙"
     }
 
     // MARK: - Init
 
-    init(apiMode: ApiMode) {
-        self.currentApiMode = apiMode
+    init() {
         setupStatusBar()
         subscribeToLocaleChanges()
     }
@@ -136,7 +133,7 @@ class StatusBarController {
 
         menu.addItem(NSMenuItem.separator())
 
-        copyTranscriptionHintItem = NSMenuItem(title: lm.localized("Copy & Paste Last Transcription:"), action: nil, keyEquivalent: "")
+        copyTranscriptionHintItem = NSMenuItem(title: lm.localized("Last Transcription:"), action: nil, keyEquivalent: "")
         copyTranscriptionHintItem.isEnabled = false
         menu.addItem(copyTranscriptionHintItem)
 
@@ -149,7 +146,7 @@ class StatusBarController {
         lastTranscriptionItem.isEnabled = false
         menu.addItem(lastTranscriptionItem)
 
-        copyTranslationHintItem = NSMenuItem(title: lm.localized("Copy & Paste Last Translation:"), action: nil, keyEquivalent: "")
+        copyTranslationHintItem = NSMenuItem(title: lm.localized("Last Translation:"), action: nil, keyEquivalent: "")
         copyTranslationHintItem.isEnabled = false
         menu.addItem(copyTranslationHintItem)
 
@@ -206,63 +203,129 @@ class StatusBarController {
         let lm = LocaleManager.shared
 
         // Refresh static menu items
-        copyTranscriptionHintItem.title = lm.localized("Copy & Paste Last Transcription:")
-        copyTranslationHintItem.title = lm.localized("Copy & Paste Last Translation:")
         settingsItem.title = lm.localized("Settings...")
         aboutItem.title = lm.localized("About WhisperUtil")
         quitItem.title = lm.localized("Quit")
 
+        // Headers (re-rendered with engine suffix if any)
+        refreshTranscriptionHeader()
+        refreshTranslationHeader()
+
         // Refresh last transcription/translation items
-        if lastTranscriptionText.isEmpty {
-            lastTranscriptionItem.title = lm.localized("  (None)")
-        }
-        if lastTranslationText.isEmpty {
-            lastTranslationItem.title = lm.localized("  (None)")
-        }
+        refreshLastTranscriptionItem()
+        refreshLastTranslationItem()
 
         // Refresh state-dependent items
         updateState(currentAppState)
     }
 
-    // MARK: - Public Methods
+    // MARK: - Engine Display Helpers
 
-    func setApiMode(_ mode: ApiMode) {
-        currentApiMode = mode
-        if let button = statusItem.button, currentAppState == .idle {
-            button.title = idleIcon()
+    /// Human-readable name for an engine id. Appended to the transcription/translation
+    /// content line as an engine-used indicator.
+    private static func engineDisplayName(for engine: String) -> String {
+        let lm = LocaleManager.shared
+        switch engine {
+        case "cloud": return lm.localized("Cloud")
+        case "local": return lm.localized("Local")
+        case "apple": return lm.localized("Apple Translation")
+        default:      return engine
         }
     }
 
-    func setLastTranscription(_ text: String) {
-        lastTranscriptionText = text
-        if text.isEmpty {
-            lastTranscriptionItem.title = LocaleManager.shared.localized("  (None)")
+    /// Emoji glyph preceding the engine name. Kept as unicode glyphs because
+    /// NSMenuItem titles render emoji inline without needing NSImage attachment.
+    private static func engineIconGlyph(for engine: String) -> String {
+        switch engine {
+        case "cloud": return "☁️"
+        case "local": return "💻"
+        case "apple": return "🍎"
+        default:      return "•"
+        }
+    }
+
+    /// Header base string + engine suffix (if any): `Last Transcription: (by 💻 Local)`.
+    private static func headerTitle(base: String, engine: String?) -> String {
+        guard let engine = engine else { return base }
+        let glyph = engineIconGlyph(for: engine)
+        let name = engineDisplayName(for: engine)
+        return "\(base) (by \(glyph) \(name))"
+    }
+
+    /// Content preview (indented, no emoji prefix): truncates to 10 chars.
+    private static func contentTitle(text: String) -> String {
+        let preview = text.count > 10
+            ? String(text.prefix(10)) + "..."
+            : text
+        return "  \(preview)"
+    }
+
+    private func refreshTranscriptionHeader() {
+        let lm = LocaleManager.shared
+        copyTranscriptionHintItem.title = Self.headerTitle(
+            base: lm.localized("Last Transcription:"),
+            engine: lastTranscriptionEngine
+        )
+    }
+
+    private func refreshTranslationHeader() {
+        let lm = LocaleManager.shared
+        copyTranslationHintItem.title = Self.headerTitle(
+            base: lm.localized("Last Translation:"),
+            engine: lastTranslationEngine
+        )
+    }
+
+    private func refreshLastTranscriptionItem() {
+        let lm = LocaleManager.shared
+        if lastTranscriptionText.isEmpty {
+            lastTranscriptionItem.title = lm.localized("  (None)")
             lastTranscriptionItem.action = nil
             lastTranscriptionItem.isEnabled = false
         } else {
-            let preview = text.count > 10
-                ? String(text.prefix(10)) + "..."
-                : text
-            lastTranscriptionItem.title = "  📋 \(preview)"
+            lastTranscriptionItem.title = Self.contentTitle(text: lastTranscriptionText)
             lastTranscriptionItem.action = #selector(copyLastTranscription)
             lastTranscriptionItem.isEnabled = true
         }
     }
 
-    func setLastTranslation(_ text: String) {
-        lastTranslationText = text
-        if text.isEmpty {
-            lastTranslationItem.title = LocaleManager.shared.localized("  (None)")
+    private func refreshLastTranslationItem() {
+        let lm = LocaleManager.shared
+        if lastTranslationText.isEmpty {
+            lastTranslationItem.title = lm.localized("  (None)")
             lastTranslationItem.action = nil
             lastTranslationItem.isEnabled = false
         } else {
-            let preview = text.count > 10
-                ? String(text.prefix(10)) + "..."
-                : text
-            lastTranslationItem.title = "  📋 \(preview)"
+            lastTranslationItem.title = Self.contentTitle(text: lastTranslationText)
             lastTranslationItem.action = #selector(copyLastTranslation)
             lastTranslationItem.isEnabled = true
         }
+    }
+
+    // MARK: - Public Methods
+
+    func setLastTranscription(_ text: String) {
+        lastTranscriptionText = text
+        refreshLastTranscriptionItem()
+    }
+
+    func setLastTranslation(_ text: String) {
+        lastTranslationText = text
+        refreshLastTranslationItem()
+    }
+
+    /// Record which transcription engine was actually used on the most recent run.
+    /// Drives the "(by <glyph> <engine>)" suffix on the section header.
+    func setLastTranscriptionEngine(_ engine: String) {
+        lastTranscriptionEngine = engine
+        refreshTranscriptionHeader()
+    }
+
+    /// Record which translation engine was actually used on the most recent run.
+    /// Drives the "(by <glyph> <engine>)" suffix on the section header.
+    func setLastTranslationEngine(_ engine: String) {
+        lastTranslationEngine = engine
+        refreshTranslationHeader()
     }
 
     func updateState(_ state: AppController.AppState) {

@@ -8,16 +8,19 @@
 //   @ObservedObject, changes are instantly persisted to UserDefaults and propagated
 //   via Combine to AppDelegate.
 //
-// Panel layout (4 Sections):
+// Panel layout (5 Sections):
 //   1. API Key: OpenAI API Key input and validation
 //   2. Language: Recognition language selection
-//   3. Transcription: Priority list
+//   3. Transcription: Priority list (with per-row Toggle + availability badges)
 //   4. Translation: Engine priority list + output language selection
 //   5. General: Interface language, send mode, delay stepper, sound toggle
 //
 // Dependencies:
 //   - SettingsStore: ObservableObject singleton, persists user preferences
 //   - LocaleManager: Manages UI locale for instant language switching
+//   - EngineAvailabilityProbe: Live objective-availability probe (injected by
+//     SettingsWindowController) used by the priority rows to render
+//     disabled/unavailable state and the empty-list footer warning.
 //
 // Architecture:
 //   Embedded in SettingsWindowController's NSHostingController.
@@ -28,6 +31,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var store: SettingsStore
     @ObservedObject var localeManager = LocaleManager.shared
+    let probe: EngineAvailabilityProbe
 
     var body: some View {
         Form {
@@ -117,28 +121,52 @@ struct SettingsView: View {
             Section {
                 PriorityList(
                     items: $store.transcriptionPriority,
+                    enabled: $store.transcriptionEnabled,
+                    availability: { probe.availability(ofTranscriptionEngine: $0) },
                     icon: transcriptionModeIcon,
                     name: transcriptionModeName,
-                    description: transcriptionModeDescription
+                    description: transcriptionModeDescription,
+                    unavailableSubtitle: unavailabilityReasonText
                 )
             } header: {
                 Text("Transcription Priority")
             } footer: {
-                Text("Drag to reorder. First item is preferred; others are fallback.")
+                let effective = store.transcriptionPriority
+                    .filter { store.transcriptionEnabled[$0] ?? true }
+                    .filter { probe.availability(ofTranscriptionEngine: $0) == .available }
+                if effective.isEmpty {
+                    Text("⚠️ No transcription engine enabled. Transcription will fail.")
+                        .foregroundColor(.red)
+                        .font(.caption)
+                } else {
+                    Text("Drag to reorder. First item is preferred; others are fallback.")
+                }
             }
 
             // MARK: - Translation
             Section {
                 PriorityList(
                     items: $store.translationEnginePriority,
+                    enabled: $store.translationEngineEnabled,
+                    availability: { probe.availability(ofTranslationEngine: $0) },
                     icon: translationEngineIcon,
                     name: translationEngineName,
-                    description: translationEngineDescription
+                    description: translationEngineDescription,
+                    unavailableSubtitle: unavailabilityReasonText
                 )
             } header: {
                 Text("Translation Engine Priority")
             } footer: {
-                Text("Drag to reorder. First engine is preferred; others are fallback.")
+                let effective = store.translationEnginePriority
+                    .filter { store.translationEngineEnabled[$0] ?? true }
+                    .filter { probe.availability(ofTranslationEngine: $0) == .available }
+                if effective.isEmpty {
+                    Text("⚠️ No translation engine enabled. Translation will fail.")
+                        .foregroundColor(.red)
+                        .font(.caption)
+                } else {
+                    Text("Drag to reorder. First engine is preferred; others are fallback.")
+                }
             }
 
             Section("Translation") {
@@ -236,49 +264,160 @@ struct SettingsView: View {
         default: return ""
         }
     }
+
+    /// Maps an `UnavailabilityReason` to the per-row subtitle text shown when an
+    /// engine is objectively unavailable. Strings are not yet in the xcstrings
+    /// catalog (Phase 4 adds them); for now they display verbatim in English.
+    private func unavailabilityReasonText(_ reason: UnavailabilityReason) -> LocalizedStringKey {
+        switch reason {
+        case .missingApiKey:
+            return "API Key required"
+        case .osTooOld(let v):
+            return LocalizedStringKey("Requires \(v) or later")
+        case .localModelNotLoaded:
+            return "Local model not ready"
+        }
+    }
 }
 
 // MARK: - Reusable Priority List
 
+/// Drag-reorderable priority list with per-row enable toggle + live availability state.
+///
+/// Each row delegates to `Row` which handles the compound UI (toggle, icon, name,
+/// subtitle, badge, opacity). The "Primary" badge tracks the *first effectively
+/// active* engine — objectively available AND user-enabled — not necessarily
+/// `items[0]`, so toggling off the top row migrates the badge downward.
 private struct PriorityList: View {
     @Binding var items: [String]
+    @Binding var enabled: [String: Bool]
+    let availability: (String) -> EngineAvailability
     let icon: (String) -> String
     let name: (String) -> LocalizedStringKey
     let description: (String) -> LocalizedStringKey
+    let unavailableSubtitle: (UnavailabilityReason) -> LocalizedStringKey
+
+    /// Index of the first row that will actually be used (enabled + objectively
+    /// available). `nil` when nothing is active — in that case no row renders
+    /// the Primary badge and the section footer shows the empty-list warning.
+    private var firstActiveIndex: Int? {
+        items.firstIndex { item in
+            (enabled[item] ?? true) && availability(item) == .available
+        }
+    }
 
     var body: some View {
         List {
             ForEach(Array(items.enumerated()), id: \.element) { index, item in
-                HStack(spacing: 10) {
-                    Image(systemName: icon(item))
-                        .foregroundColor(.accentColor)
-                        .frame(width: 20)
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(name(item))
-                            .font(.body)
-                        Text(description(item))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    Spacer()
-
-                    if index == 0 {
-                        Text("Primary")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.12))
-                            .cornerRadius(4)
-                    }
-                }
+                Row(
+                    item: item,
+                    availability: availability(item),
+                    isPrimary: index == firstActiveIndex,
+                    isEnabled: Binding(
+                        get: { enabled[item] ?? true },
+                        set: { enabled[item] = $0 }
+                    ),
+                    icon: icon(item),
+                    name: name(item),
+                    description: description(item),
+                    unavailableSubtitle: unavailableSubtitle
+                )
             }
             .onMove { from, to in
                 items.move(fromOffsets: from, toOffset: to)
             }
         }
-        .frame(height: CGFloat(items.count * 44))
+        // Row height bumped to 52 to accommodate the toggle + two-line text stack.
+        .frame(height: CGFloat(items.count * 52))
+    }
+}
+
+// MARK: - Row
+
+/// Single priority-list row. Three visual states composed from two booleans:
+///   - isObjectivelyAvailable (system ready)
+///   - isEnabled              (user preference)
+/// Combinations:
+///   available + enabled  → normal row, Primary badge if first-active
+///   available + disabled → dimmed, "Disabled" badge
+///   unavailable          → dimmed, toggle disabled, "Unavailable" badge,
+///                          subtitle replaced with the failure reason
+private struct Row: View {
+    let item: String
+    let availability: EngineAvailability
+    let isPrimary: Bool
+    @Binding var isEnabled: Bool
+    let icon: String
+    let name: LocalizedStringKey
+    let description: LocalizedStringKey
+    let unavailableSubtitle: (UnavailabilityReason) -> LocalizedStringKey
+
+    private var isObjectivelyAvailable: Bool { availability == .available }
+    private var isEffectivelyActive: Bool { isObjectivelyAvailable && isEnabled }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Toggle("", isOn: $isEnabled)
+                .labelsHidden()
+                .disabled(!isObjectivelyAvailable)
+                .toggleStyle(.switch)
+
+            Image(systemName: icon)
+                .foregroundColor(.accentColor)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(name).font(.body)
+                Text(subtitle).font(.caption).foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            badge
+        }
+        .opacity(isEffectivelyActive ? 1.0 : 0.55)
+    }
+
+    /// Row subtitle: engine description when available, unavailability reason otherwise.
+    private var subtitle: LocalizedStringKey {
+        switch availability {
+        case .available:
+            return description
+        case .unavailable(let reason):
+            return unavailableSubtitle(reason)
+        }
+    }
+
+    /// Right-side status pill. At most one renders; priority order is
+    /// Primary > Unavailable > Disabled. Available+enabled non-primary rows
+    /// intentionally show nothing (reduces clutter for the common case).
+    @ViewBuilder
+    private var badge: some View {
+        if isPrimary {
+            Badge(text: "Primary", color: .green)
+        } else if !isObjectivelyAvailable {
+            Badge(text: "Unavailable", color: .orange)
+        } else if !isEnabled {
+            Badge(text: "Disabled", color: .secondary)
+        }
+    }
+}
+
+// MARK: - Badge
+
+/// Small colored pill used for Primary / Unavailable / Disabled state.
+/// Text is `LocalizedStringKey` so each usage picks up xcstrings translation.
+private struct Badge: View {
+    let text: LocalizedStringKey
+    let color: Color
+
+    var body: some View {
+        Text(text)
+            .font(.caption2)
+            .foregroundColor(color)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.12))
+            .cornerRadius(4)
     }
 }

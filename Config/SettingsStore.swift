@@ -46,6 +46,8 @@ final class SettingsStore: ObservableObject {
     private enum Keys {
         static let transcriptionPriority = "transcriptionPriority"
         static let translationEnginePriority = "translationEnginePriority"
+        static let transcriptionEnabled = "transcriptionEnabled"
+        static let translationEngineEnabled = "translationEngineEnabled"
         static let whisperLanguage = "whisperLanguage"
         static let playSound = "playSound"
         static let autoSendMode = "autoSendMode"
@@ -59,6 +61,15 @@ final class SettingsStore: ObservableObject {
     }
     @Published var translationEnginePriority: [String] {
         didSet { defaults.set(translationEnginePriority, forKey: Keys.translationEnginePriority) }
+    }
+    /// 转录引擎主观启用状态（id → 是否启用）。与 `transcriptionPriority` 正交：
+    /// 即便一个引擎在优先级数组里，若在此为 false 也会被 AppDelegate 过滤掉。
+    @Published var transcriptionEnabled: [String: Bool] {
+        didSet { defaults.set(transcriptionEnabled, forKey: Keys.transcriptionEnabled) }
+    }
+    /// 翻译引擎主观启用状态，同上。
+    @Published var translationEngineEnabled: [String: Bool] {
+        didSet { defaults.set(translationEngineEnabled, forKey: Keys.translationEngineEnabled) }
     }
     @Published var whisperLanguage: String {
         didSet { defaults.set(whisperLanguage, forKey: Keys.whisperLanguage) }
@@ -90,11 +101,26 @@ final class SettingsStore: ObservableObject {
     @Published var apiKeyVersion: Int = 0
 
     private init() {
-        // Load from UserDefaults, fall back to SettingsDefaults defaults
-        self.transcriptionPriority = defaults.object(forKey: Keys.transcriptionPriority) as? [String]
+        // Load priorities into local vars first — Swift forbids reading `self.*` before
+        // every stored property has an initial value, so we can't iterate
+        // `self.transcriptionPriority` for backfill until the whole init is done.
+        let transcriptionPriority = (defaults.object(forKey: Keys.transcriptionPriority) as? [String])
             ?? SettingsDefaults.transcriptionPriority
-        self.translationEnginePriority = defaults.object(forKey: Keys.translationEnginePriority) as? [String]
+        let translationEnginePriority = (defaults.object(forKey: Keys.translationEnginePriority) as? [String])
             ?? SettingsDefaults.translationEnginePriority
+        self.transcriptionPriority = transcriptionPriority
+        self.translationEnginePriority = translationEnginePriority
+
+        // 主观启用字典 —— 对优先级数组里但字典缺失的 id 回填为 true（新引擎默认启用）。
+        var tEnabled = (defaults.object(forKey: Keys.transcriptionEnabled) as? [String: Bool])
+            ?? SettingsDefaults.transcriptionEnabled
+        for id in transcriptionPriority where tEnabled[id] == nil { tEnabled[id] = true }
+        self.transcriptionEnabled = tEnabled
+
+        var trEnabled = (defaults.object(forKey: Keys.translationEngineEnabled) as? [String: Bool])
+            ?? SettingsDefaults.translationEngineEnabled
+        for id in translationEnginePriority where trEnabled[id] == nil { trEnabled[id] = true }
+        self.translationEngineEnabled = trEnabled
 
         self.whisperLanguage = defaults.object(forKey: Keys.whisperLanguage) as? String ?? SettingsDefaults.whisperLanguage
         self.playSound = defaults.object(forKey: Keys.playSound) as? Bool ?? SettingsDefaults.playSound
@@ -111,6 +137,9 @@ final class SettingsStore: ObservableObject {
         if let key = KeychainHelper.load() {
             self.maskedApiKey = Self.maskApiKey(key)
         }
+
+        // 日志：记录加载后的主观启用状态，便于排查"为什么引擎未被尝试"类问题。
+        Log.i("SettingsStore loaded transcriptionEnabled=\(tEnabled), translationEngineEnabled=\(trEnabled)")
     }
 
     // MARK: - API Key 管理

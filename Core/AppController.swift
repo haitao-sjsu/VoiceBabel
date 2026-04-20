@@ -7,10 +7,18 @@
 //
 // Responsibilities:
 //   1. State machine: idle -> recording -> processing -> (waitingToSend ->) idle, error 3s auto-recovery
-//   2. Recording lifecycle: begin / stop / cancel
-//   3. Audio validation: min sample count + RMS threshold
-//   4. Flow orchestration: transcription mode or two-step translation mode
-//   5. Result output: trim, post-process, input text to active window, trigger auto-send
+//   2. Recording lifecycle: begin / stop / cancel (single entry point beginRecording(mode:))
+//   3. Availability preconditions: refuse to start when no engine is usable
+//   4. Audio validation: min sample count + RMS threshold
+//   5. Flow orchestration: transcription mode or two-step translation mode
+//      via async/await on the Manager APIs — no callback plumbing
+//   6. Result output: input text to active window, trigger auto-send
+//
+// Non-responsibilities (moved to Managers):
+//   - Language resolution (TranscriptionManager / TranslationManager)
+//   - Text post-processing (Managers apply TextPostProcessor before returning)
+//   - Engine priority iteration and fallback (Managers)
+//   - Timeouts and wire encoding (Services)
 //
 // Dependencies:
 //   - AudioRecorder, TextInputter, AutoSendManager
@@ -46,11 +54,7 @@ class AppController {
     // MARK: - Dependencies
 
     private let audioRecorder: AudioRecorder
-    private let localWhisperService: LocalWhisperService
     private let textInputter: TextInputter
-    #if canImport(Translation)
-    private var localAppleTranslationService: Any?  // LocalAppleTranslationService, type-erased for availability
-    #endif
 
     // MARK: - State
 
@@ -63,10 +67,6 @@ class AppController {
     private var currentMode: RecordingMode = .transcribe
     let transcriptionManager: TranscriptionManager
     let translationManager: TranslationManager
-    var currentApiMode: StatusBarController.ApiMode {
-        transcriptionManager.effectiveStartEngine == "local" ? .local : .cloud
-    }
-    var isInFallbackMode: Bool { transcriptionManager.isInFallbackMode }
     let autoSendManager: AutoSendManager
     var playSound: Bool = true
     private var lastRecordingDuration: TimeInterval = 0
@@ -80,7 +80,6 @@ class AppController {
         textInputter: TextInputter
     ) {
         self.audioRecorder = audioRecorder
-        self.localWhisperService = localWhisperService
         self.textInputter = textInputter
         self.transcriptionManager = TranscriptionManager(
             cloudOpenAIService: cloudOpenAIService,
@@ -96,14 +95,9 @@ class AppController {
         setupCallbacks()
     }
 
-    #if canImport(Translation)
-    @available(macOS 15.0, *)
-    func setLocalAppleTranslationService(_ service: LocalAppleTranslationService) {
-        self.localAppleTranslationService = service
-        self.translationManager.localAppleTranslationService = service
-    }
-    #endif
-
+    /// Swap in a freshly-built `CloudOpenAIService` (e.g. after the user updates
+    /// the API key or model in Settings). Safe to call only in idle/error states
+    /// to avoid pulling the rug out from under an in-flight request.
     func updateServices(cloudOpenAIService: CloudOpenAIService) {
         let lm = LocaleManager.shared
         guard currentState == .idle || currentState == .error else {
@@ -112,7 +106,6 @@ class AppController {
         }
         self.transcriptionManager.cloudOpenAIService = cloudOpenAIService
         self.translationManager.cloudOpenAIService = cloudOpenAIService
-        setupCallbacks()
     }
 
     // MARK: - Setup
@@ -125,30 +118,61 @@ class AppController {
 
     // MARK: - Public Methods
 
+    /// Single entry point into the recording pipeline. Validates state, engine
+    /// availability, and microphone availability before transitioning into
+    /// `.recording`. Callers must not invoke any lower-level start method.
     func beginRecording(mode: RecordingMode) {
+        let lm = LocaleManager.shared
         guard currentState == .idle || currentState == .error || currentState == .waitingToSend else {
-            let lm = LocaleManager.shared
             Log.i(lm.logLocalized("Cannot start recording, current state:") + " \(currentState)")
             return
         }
-        if transcriptionManager.effectiveStartEngine != "local" && (KeychainHelper.load() ?? "").isEmpty {
-            Log.w(LocaleManager.shared.logLocalized("API key not configured, cannot start recording"))
-            onError?(String(localized: "Please configure OpenAI API Key in Settings"))
+
+        // Availability preconditions — AppDelegate pre-filters `priority` lists
+        // into the effective (enabled ∩ available) set, so emptiness here is the
+        // single source of truth for "no engine usable right now".
+        switch mode {
+        case .transcribe:
+            guard !transcriptionManager.priority.isEmpty else {
+                Log.w("No transcription engine available (empty effective priority)")
+                onError?(String(localized: "No transcription engine available. Check Settings."))
+                return
+            }
+        case .translate:
+            guard !transcriptionManager.priority.isEmpty else {
+                Log.w("No transcription engine available (translation requires transcribe first)")
+                onError?(String(localized: "No transcription engine available. Check Settings."))
+                return
+            }
+            guard !translationManager.translationEnginePriority.isEmpty else {
+                Log.w("No translation engine available (empty effective priority)")
+                onError?(String(localized: "No translation engine available. Check Settings."))
+                return
+            }
+        }
+
+        // Mic availability
+        if !audioRecorder.checkMicrophoneAvailability() {
+            Log.i(lm.logLocalized("Microphone occupied"))
+            handleError(String(localized: "Microphone is in use by another app"))
             return
         }
-        if currentState == .error {
-            currentState = .idle
-        }
+
+        if currentState == .error { currentState = .idle }
         currentMode = mode
-        startRecording()
+
+        let modeText = mode == .transcribe ? lm.logLocalized("speech-to-text") : lm.logLocalized("speech translation")
+        Log.i(lm.logLocalized("Starting recording") + " (\(modeText), priority=\(transcriptionManager.priority))...")
+
+        autoSendManager.cancelDelayedSendForNewRecording()
+        startNonStreamingRecording()
     }
 
     func toggleRecording(mode: RecordingMode) {
         let lm = LocaleManager.shared
         switch currentState {
         case .idle:
-            currentMode = mode
-            startRecording()
+            beginRecording(mode: mode)
         case .recording:
             stopRecording()
         case .processing:
@@ -182,48 +206,6 @@ class AppController {
     }
 
     // MARK: - Recording Control
-
-    private func startRecording() {
-        let lm = LocaleManager.shared
-
-        let needsApiKey = transcriptionManager.effectiveStartEngine != "local" || currentMode == .translate
-        if needsApiKey && (KeychainHelper.load() ?? "").isEmpty {
-            onError?(String(localized: "Please configure OpenAI API Key in Settings"))
-            return
-        }
-
-        autoSendManager.cancelDelayedSendForNewRecording()
-
-        let modeText = currentMode == .transcribe ? lm.logLocalized("speech-to-text") : lm.logLocalized("speech translation")
-        let apiModeText = transcriptionManager.effectiveStartEngine == "local" ? lm.logLocalized("local") : lm.logLocalized("cloud")
-        Log.i(lm.logLocalized("Starting recording") + " (\(modeText), \(apiModeText) API)...")
-
-        if !audioRecorder.checkMicrophoneAvailability() {
-            Log.i(lm.logLocalized("Microphone occupied"))
-            handleError(String(localized: "Microphone is in use by another app"))
-            return
-        }
-
-        if transcriptionManager.effectiveStartEngine == "local" && currentMode == .transcribe {
-            if localWhisperService.isReady() {
-                startNonStreamingRecording()
-            } else if EngineeringOptions.enableModeFallback,
-                      let nextMode = transcriptionManager.priority.first(where: { $0 != "local" }),
-                      nextMode == "cloud" {
-                Log.w(lm.logLocalized("WhisperKit not ready, falling back to cloud for this recording"))
-                startNonStreamingRecording()
-            } else {
-                // WhisperKit not ready, show appropriate error
-                let message = localWhisperService.isModelLoading
-                    ? String(localized: "WhisperKit model is loading, please wait...")
-                    : String(localized: "WhisperKit model not loaded yet, please try again later")
-                Log.i(lm.logLocalized("WhisperKit model not ready"))
-                onError?(message)
-            }
-        } else {
-            startNonStreamingRecording()
-        }
-    }
 
     private func startNonStreamingRecording() {
         let lm = LocaleManager.shared
@@ -287,72 +269,70 @@ class AppController {
 
     // MARK: - Transcription
 
+    /// Flat async/await flow: Manager call -> output. No callback nesting.
+    /// Text is already post-processed by TranscriptionManager before return.
     private func startTranscription(samples: [Float], audioDuration: TimeInterval) {
-        let lm = LocaleManager.shared
-
-        transcriptionManager.onResult = { [weak self] result in
-            let actionKey = result.engine == "cloud" ? "Cloud speech recognition" : "Local speech recognition"
-            self?.outputText(result.text, action: lm.logLocalized(actionKey), engine: result.engine)
+        Task { @MainActor in
+            do {
+                let result = try await transcriptionManager.transcribe(samples: samples, audioDuration: audioDuration)
+                guard !result.text.isEmpty else {
+                    Log.i("Transcription result empty, skipping output")
+                    currentState = .idle
+                    return
+                }
+                Log.i("Transcription complete via \(result.engine): \(result.text)")
+                onTranscriptionResult?(result.text, result.engine)
+                textInputter.inputText(result.text)
+                currentState = .idle
+                autoSendManager.handleAutoSend()
+            } catch {
+                handleError(describeTranscriptionError(error))
+            }
         }
-        transcriptionManager.onError = { [weak self] message in
-            self?.handleError(message)
-        }
+    }
 
-        transcriptionManager.transcribe(samples: samples, audioDuration: audioDuration)
+    private func describeTranscriptionError(_ error: Error) -> String {
+        if let te = error as? TranscriptionError {
+            return te.errorDescription ?? String(localized: "Transcription failed")
+        }
+        return String(localized: "Transcription failed: \(error.localizedDescription)")
     }
 
     // MARK: - Translation (Two-Step)
 
+    /// Two-step flow: transcribe -> translate. Both steps are `await`ed
+    /// sequentially in one `Task`, producing a flat control flow. If the
+    /// transcription step returns empty text, skip translation entirely;
+    /// if translation fails after a successful transcription, we log that the
+    /// transcription is preserved in the menu bar (it was already emitted via
+    /// `onTranscriptionResult`) before surfacing the translation error.
     private func startTranslation(samples: [Float], audioDuration: TimeInterval) {
-        let lm = LocaleManager.shared
-        let targetLang = resolveTargetLanguage()
-        Log.i(lm.logLocalized("Starting two-step translation: transcribe then translate to") + " \(targetLang)")
+        Task { @MainActor in
+            do {
+                let transcription = try await transcriptionManager.transcribe(samples: samples, audioDuration: audioDuration)
+                guard !transcription.text.isEmpty else {
+                    Log.i("Transcription empty; skipping translation step")
+                    currentState = .idle
+                    return
+                }
+                Log.i("Two-step translation step 1 complete via \(transcription.engine): \(transcription.text)")
+                onTranscriptionResult?(transcription.text, transcription.engine)
 
-        // Step 1: Transcribe
-        transcriptionManager.onResult = { [weak self] result in
-            guard let self = self else { return }
-            let trimmed = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else {
-                Log.i(lm.logLocalized("Transcription result is empty, skipping translation"))
-                self.currentState = .idle
-                return
+                let translation = try await translationManager.translate(text: transcription.text)
+                Log.i("Two-step translation step 2 complete via \(translation.engine): \(translation.text)")
+                onTranslationResult?(translation.text, translation.engine)
+                textInputter.inputText(translation.text)
+                currentState = .idle
+                autoSendManager.handleAutoSend()
+            } catch let error as TranscriptionError {
+                handleError(error.errorDescription ?? String(localized: "Transcription failed"))
+            } catch let error as TranslationError {
+                Log.i("Transcription preserved in menu bar (translation failed)")
+                handleError(error.errorDescription ?? String(localized: "Translation failed"))
+            } catch {
+                handleError(error.localizedDescription)
             }
-
-            Log.i(lm.logLocalized("Two-step translation Step 1 complete, transcription result:") + " \(trimmed)")
-            self.onTranscriptionResult?(trimmed, result.engine)
-
-            // Step 2: Translate
-            self.translationManager.onResult = { [weak self] translationResult in
-                guard let self = self else { return }
-                let processed = TextPostProcessor.process(translationResult.text)
-                Log.i(lm.logLocalized("Translation result:") + " \(processed)")
-                self.onTranslationResult?(processed, translationResult.engine)
-                self.textInputter.inputText(processed)
-                self.currentState = .idle
-                self.autoSendManager.handleAutoSend()
-            }
-            self.translationManager.onError = { [weak self] message in
-                Log.e(lm.logLocalized("Translation (step 2) failed:") + " \(message)")
-                Log.i(lm.logLocalized("Transcription preserved in menu bar"))
-                self?.handleError(String(localized: "Translation failed: \(message). Transcription preserved in menu bar."))
-            }
-            self.translationManager.translate(text: trimmed, targetLanguage: targetLang)
         }
-        transcriptionManager.onError = { [weak self] message in
-            Log.e(lm.logLocalized("Transcription (step 1) failed:") + " \(message)")
-            self?.handleError(String(localized: "Transcription failed: \(message)"))
-        }
-
-        transcriptionManager.transcribe(samples: samples, audioDuration: audioDuration)
-    }
-
-    private func resolveTargetLanguage() -> String {
-        let stored = SettingsStore.shared.translationTargetLanguage
-        if stored.isEmpty {
-            Log.w(LocaleManager.shared.logLocalized("translationTargetLanguage is empty, falling back to default"))
-            return SettingsDefaults.translationTargetLanguage
-        }
-        return stored
     }
 
     // MARK: - Error Handling
@@ -370,17 +350,6 @@ class AppController {
         }
     }
 
-    // MARK: - Network Fallback & Recovery
-
-    func userDidChangeApiMode(_ mode: StatusBarController.ApiMode) {
-        let engine = mode == .local ? "local" : "cloud"
-        transcriptionManager.userDidChangePreferredEngine(engine)
-    }
-
-    func recoverFromFallback() {
-        transcriptionManager.recoverFromFallback()
-    }
-
     // MARK: - Helpers
 
     private func playStartSound() {
@@ -393,24 +362,6 @@ class AppController {
         if self.playSound {
             NSSound(named: "Pop")?.play()
         }
-    }
-
-    // MARK: - Unified Text Output
-
-    private func outputText(_ text: String, action: String, engine: String) {
-        let lm = LocaleManager.shared
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            Log.i("\(action) " + lm.logLocalized("result is empty"))
-            currentState = .idle
-            return
-        }
-        let processed = TextPostProcessor.process(trimmed)
-        Log.i("\(action) " + lm.logLocalized("result:") + " \(processed)")
-        onTranscriptionResult?(processed, engine)
-        textInputter.inputText(processed)
-        currentState = .idle
-        autoSendManager.handleAutoSend()
     }
 
 }

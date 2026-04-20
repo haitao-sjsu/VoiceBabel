@@ -52,6 +52,14 @@ struct SettingsDefaults {
     /// - "cloud"：Cloud GPT（gpt-4o-mini，需网络）
     static let translationEnginePriority = ["apple", "cloud"]
 
+    /// 转录引擎主观启用状态（id → 是否启用）。
+    /// 用户在设置面板勾选禁用后，即便保留在优先级数组里也不会被尝试。
+    /// 新引擎默认启用 (true)；SettingsStore.init 会对缺失的 key 补齐为 true。
+    static let transcriptionEnabled: [String: Bool] = ["cloud": true, "local": true]
+
+    /// 翻译引擎主观启用状态，同上。
+    static let translationEngineEnabled: [String: Bool] = ["apple": true, "cloud": true]
+
     // ============================================================
     // MARK: - 自动发送配置
     // ============================================================

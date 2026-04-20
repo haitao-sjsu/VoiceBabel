@@ -19,8 +19,13 @@ import Cocoa
 import SwiftUI
 
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
-    init(settingsStore: SettingsStore) {
-        let hostingController = NSHostingController(rootView: SettingsView(store: settingsStore))
+    init(settingsStore: SettingsStore, probe: EngineAvailabilityProbe) {
+        // Probe is forwarded to SettingsView so the priority rows can render
+        // live objective-availability state (greyed rows, reason subtitles,
+        // empty-list footer warning).
+        let hostingController = NSHostingController(
+            rootView: SettingsView(store: settingsStore, probe: probe)
+        )
         let window = NSWindow(contentViewController: hostingController)
         window.title = LocaleManager.shared.localized("WhisperUtil Settings")
         window.styleMask = [.titled, .closable]

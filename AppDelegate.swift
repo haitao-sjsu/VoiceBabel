@@ -34,9 +34,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var networkHealthMonitor: NetworkHealthMonitor!
     private var settingsStore: SettingsStore!
     private var settingsWindowController: SettingsWindowController!
-    #if canImport(Translation)
-    private var localAppleTranslationService: Any?  // LocalAppleTranslationService, type-erased for availability
-    #endif
+    // Objective-availability probe. Implicitly unwrapped because it needs dependencies
+    // (translationManager.localTranslator) that only exist after setupComponents() runs.
+    private var probe: EngineAvailabilityProbe!
     private var cancellables = Set<AnyCancellable>()
 
     private var isPushToTalkActive = false
@@ -113,13 +113,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         cloudOpenAIService = CloudOpenAIService(
             apiKey: openaiApiKey,
-            model: EngineeringOptions.whisperModel,
-            language: settingsStore.whisperLanguage
+            model: EngineeringOptions.whisperModel
         )
 
-        localWhisperService = LocalWhisperService(
-            language: settingsStore.whisperLanguage
-        )
+        localWhisperService = LocalWhisperService()
 
         appController = AppController(
             audioRecorder: audioRecorder,
@@ -128,30 +125,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             textInputter: textInputter
         )
 
-        // Apple Translation service (macOS 14.4+)
-        #if canImport(Translation)
-        if #available(macOS 15.0, *) {
-            let service = LocalAppleTranslationService()
-            self.localAppleTranslationService = service
-            appController.setLocalAppleTranslationService(service)
+        // On-device translation — factory handles the macOS 15+ gate.
+        if let translator = LocalTranslatorFactory.make() {
+            appController.translationManager.localTranslator = translator
             Log.i(lm.logLocalized("Apple Translation service initialized"))
         }
-        #endif
 
-        appController.transcriptionManager.priority = settingsStore.transcriptionPriority
-        if let topEngine = settingsStore.transcriptionPriority.first {
-            appController.transcriptionManager.userDidChangePreferredEngine(topEngine)
-        }
-        appController.translationManager.translationEnginePriority = settingsStore.translationEnginePriority
+        // Manager priorities are pushed by the merged CombineLatest sinks below — no manual
+        // initial assignment here (that would push the *unfiltered* list and get overwritten
+        // microseconds later).
 
+        // NetworkHealthMonitor instance retained but unwired — recoverFromFallback / isInFallbackMode
+        // no longer exist after the engine-priority refactor. File flagged as dead code for follow-up PR.
         networkHealthMonitor = NetworkHealthMonitor(apiKey: openaiApiKey)
-        networkHealthMonitor.onCloudRecovered = { [weak self] in
-            guard let self = self else { return }
-            self.appController.recoverFromFallback()
-            self.statusBarController.setApiMode(self.appController.currentApiMode)
-            self.statusBarController.updateState(self.appController.currentState)
-            self.statusBarController.showNotification(title: "WhisperUtil", message: String(localized: "Network recovered, switched back to Cloud API"))
-        }
 
         appController.autoSendManager.autoSendMode = StatusBarController.AutoSendMode.from(settingsStore.autoSendMode)
         appController.autoSendManager.delayedSendDuration = settingsStore.delayedSendDuration
@@ -187,9 +173,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         hotkeyManager.startMonitoring()
 
-        statusBarController = StatusBarController(apiMode: appController.currentApiMode)
+        // Construct the availability probe once dependencies exist. It reads live state;
+        // AppDelegate's merged Combine sinks trigger re-evaluation on change.
+        probe = EngineAvailabilityProbe(
+            settingsStore: settingsStore,
+            localWhisperService: localWhisperService,
+            localTranslator: { [weak self] in self?.appController.translationManager.localTranslator }
+        )
 
-        settingsWindowController = SettingsWindowController(settingsStore: settingsStore)
+        statusBarController = StatusBarController()
+
+        settingsWindowController = SettingsWindowController(settingsStore: settingsStore, probe: probe)
         statusBarController.onOpenSettings = { [weak self] in
             self?.settingsWindowController.showSettings()
         }
@@ -204,21 +198,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSApplication.shared.terminate(nil)
         }
 
-        // Combine subscriptions for settings changes
-        settingsStore.$transcriptionPriority.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] priority in
+        // Merged subscriptions — effective priority = priority ∩ subjective-enabled ∩ objectively-available.
+        // CombineLatest fires once with current values on subscribe, then on any change, so the Managers
+        // get the correctly-filtered list without needing a manual initial push.
+        Publishers.CombineLatest4(
+            settingsStore.$transcriptionPriority,
+            settingsStore.$transcriptionEnabled,
+            settingsStore.$apiKeyVersion,
+            localWhisperService.$isReadyState
+        )
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] _, _, _, _ in
             guard let self = self else { return }
-            self.appController.transcriptionManager.priority = priority
-            if let topEngine = priority.first {
-                self.appController.transcriptionManager.userDidChangePreferredEngine(topEngine)
-            }
-            self.statusBarController.setApiMode(self.appController.currentApiMode)
-            Log.i(lm.logLocalized("Settings: Transcription priority changed to") + " \(priority)")
-        }.store(in: &cancellables)
+            let effective = self.effectiveTranscriptionPriority()
+            self.appController.transcriptionManager.priority = effective
+            Log.i(lm.logLocalized("Effective transcription priority:") + " \(effective)")
+        }
+        .store(in: &cancellables)
 
-        settingsStore.$translationEnginePriority.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] priority in
-            self?.appController.translationManager.translationEnginePriority = priority
-            Log.i(lm.logLocalized("Settings: Translation engine priority changed to") + " \(priority)")
-        }.store(in: &cancellables)
+        Publishers.CombineLatest3(
+            settingsStore.$translationEnginePriority,
+            settingsStore.$translationEngineEnabled,
+            settingsStore.$apiKeyVersion
+        )
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] _, _, _ in
+            guard let self = self else { return }
+            let effective = self.effectiveTranslationPriority()
+            self.appController.translationManager.translationEnginePriority = effective
+            Log.i(lm.logLocalized("Effective translation priority:") + " \(effective)")
+        }
+        .store(in: &cancellables)
 
         settingsStore.$autoSendMode.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] modeString in
             self?.appController.autoSendManager.autoSendMode = StatusBarController.AutoSendMode.from(modeString)
@@ -235,8 +245,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Log.i(lm.logLocalized("Settings: Sound effects") + " \(value ? "on" : "off")")
         }.store(in: &cancellables)
 
-        settingsStore.$whisperLanguage.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] lang in
-            self?.updateServicesLanguage(lang)
+        settingsStore.$whisperLanguage.dropFirst().receive(on: DispatchQueue.main).sink { lang in
+            // Language is resolved per-call inside TranscriptionManager; services no longer mirror it.
             Log.i(lm.logLocalized("Settings: Recognition language changed to") + " \(lang.isEmpty ? "auto" : lang)")
         }.store(in: &cancellables)
 
@@ -251,30 +261,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 NSApplication.shared.reply(toApplicationShouldTerminate: true)
             }
         }
-        appController.onTranscriptionResult = { [weak self] text, _ in
+        appController.onTranscriptionResult = { [weak self] text, engine in
             self?.statusBarController.setLastTranscription(text)
+            self?.statusBarController.setLastTranscriptionEngine(engine)
         }
-        appController.onTranslationResult = { [weak self] text, _ in
+        appController.onTranslationResult = { [weak self] text, engine in
             self?.statusBarController.setLastTranslation(text)
+            self?.statusBarController.setLastTranslationEngine(engine)
         }
         appController.onError = { [weak self] message in
             guard let self = self else { return }
             self.statusBarController.showNotification(title: "WhisperUtil", message: message)
-
-            if self.appController.isInFallbackMode && !self.networkHealthMonitor.isMonitoring {
-                self.statusBarController.setApiMode(.local)
-                self.networkHealthMonitor.startMonitoring()
-            }
         }
 
         statusBarController.updateState(.idle)
     }
 
-    // MARK: - Language Change
+    // MARK: - Effective Priority (subjective × objective filter)
 
-    private func updateServicesLanguage(_ lang: String) {
-        cloudOpenAIService.language = lang
-        localWhisperService.language = lang
+    /// Transcription priority minus engines the user disabled minus engines the probe
+    /// reports objectively unavailable. This is what Managers see at call time.
+    private func effectiveTranscriptionPriority() -> [String] {
+        settingsStore.transcriptionPriority
+            .filter { settingsStore.transcriptionEnabled[$0] ?? true }
+            .filter { probe.availability(ofTranscriptionEngine: $0) == .available }
+    }
+
+    /// Translation priority minus engines the user disabled minus engines the probe
+    /// reports objectively unavailable. This is what Managers see at call time.
+    private func effectiveTranslationPriority() -> [String] {
+        settingsStore.translationEnginePriority
+            .filter { settingsStore.translationEngineEnabled[$0] ?? true }
+            .filter { probe.availability(ofTranslationEngine: $0) == .available }
     }
 
     // MARK: - API Key Change
@@ -285,21 +303,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if newKey.isEmpty {
             Log.w(lm.logLocalized("API Key cleared, network features unavailable"))
-            if appController.currentApiMode != .local {
-                appController.userDidChangeApiMode(.local)
-                statusBarController.setApiMode(.local)
-                statusBarController.showNotification(
-                    title: "WhisperUtil",
-                    message: String(localized: "API Key cleared, switched to local mode")
-                )
-            }
+            // Effective-priority sinks re-fire automatically via $apiKeyVersion.
+            statusBarController.showNotification(
+                title: "WhisperUtil",
+                message: String(localized: "API Key cleared, switched to local mode")
+            )
             return
         }
 
         cloudOpenAIService = CloudOpenAIService(
             apiKey: newKey,
-            model: EngineeringOptions.whisperModel,
-            language: settingsStore.whisperLanguage
+            model: EngineeringOptions.whisperModel
         )
         networkHealthMonitor = NetworkHealthMonitor(apiKey: newKey)
 
@@ -307,12 +321,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             cloudOpenAIService: cloudOpenAIService
         )
 
-        let topPriority = settingsStore.transcriptionPriority.first ?? "cloud"
-        let preferredMode: StatusBarController.ApiMode = (topPriority == "local") ? .local : .cloud
-        appController.userDidChangeApiMode(preferredMode)
-        statusBarController.setApiMode(preferredMode)
-
-        Log.i(lm.logLocalized("API Key updated, services rebuilt, mode restored to") + " \(topPriority)")
+        Log.i(lm.logLocalized("API Key updated, services rebuilt, top priority") + " \(settingsStore.transcriptionPriority.first ?? "cloud")")
         statusBarController.showNotification(
             title: "WhisperUtil",
             message: String(localized: "API Key updated")

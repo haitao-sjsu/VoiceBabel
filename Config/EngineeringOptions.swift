@@ -109,10 +109,6 @@ enum EngineeringOptions {
     /// - 长音频的最长等待时间（Cloud API、本地 WhisperKit、文本优化共用）
     static let apiProcessingTimeoutMax: TimeInterval = 90
 
-    /// 是否启用模式间自动回退（转录和翻译）
-    /// 关闭后失败时直接报错，不尝试优先级队列中的下一个模式
-    static let enableModeFallback = true
-
     /// Cloud API 回退后的健康探测间隔（秒）
     /// - 回退到本地后，每隔此时间探测一次 Cloud API 是否恢复
     /// - 值越小恢复越快，但会增加网络请求频率
