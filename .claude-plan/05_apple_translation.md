@@ -874,7 +874,7 @@ SettingsStore.translationTargetLanguage
 - `/Users/longhaitao/Documents/3_WhisperUtil/Config/SettingsStore.swift` — translationTargetLanguage
 - `/Users/longhaitao/Documents/3_WhisperUtil/UI/SettingsView.swift` — Translation Section（第 133-143 行）
 - `/Users/longhaitao/Documents/3_WhisperUtil/Config/Config.swift` — 运行时配置
-- `/Users/longhaitao/Documents/3_WhisperUtil/.claude-tech-research/25_local_translation.md` — 前期调研
+- `/Users/longhaitao/Documents/3_WhisperUtil/.claude-tech-research/24_local_translation.md` — 前期调研
 - `/Users/longhaitao/Documents/3_WhisperUtil/.claude-code-review/04_translation_review.md` — 翻译代码审查
 - `/Users/longhaitao/Documents/3_WhisperUtil/.claude-plan/plan_priority_fallback.md` — 优先级 fallback 计划
 

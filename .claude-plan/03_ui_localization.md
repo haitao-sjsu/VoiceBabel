@@ -4,7 +4,7 @@
 
 WhisperUtil 当前 UI 全部硬编码中文，不支持其他语言。作为面向国际用户的工具，需要支持多语言。采用 Xcode String Catalogs (.xcstrings) 方案，实现即时语言切换（无需重启）。
 
-参考文档：`.claude-tech-research/14_ui_localization.md`
+参考文档：`.claude-tech-research/12_ui_localization.md`
 
 ## UI 支持语言（20 种）
 
