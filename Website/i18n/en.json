@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "title": "VoiceBabel — speak any language, get text anywhere",
+    "description": "{{ TODO: meta description ~150 chars }}"
+  },
+  "nav": {
+    "brand": "VoiceBabel",
+    "features": "Features",
+    "faq": "FAQ",
+    "donate": "Donate",
+    "download": "Download"
+  },
+  "hero": {
+    "title": "{{ TODO: hero headline }}",
+    "subtitle": "{{ TODO: one-sentence value prop }}",
+    "cta_primary": "Download for macOS",
+    "cta_secondary": "View on GitHub",
+    "requirements": "Requires macOS 13 or later.",
+    "icon_placeholder": "{{ TODO: app icon }}"
+  },
+  "features": {
+    "heading": "Features",
+    "transcribe": {
+      "title": "Mixed-language transcription",
+      "body": "{{ TODO: explain code-switching / polyglot support }}"
+    },
+    "translate": {
+      "title": "Speak to translate",
+      "body": "{{ TODO: speak any language, get English text }}"
+    },
+    "privacy": {
+      "title": "Private by default",
+      "body": "{{ TODO: on-device local mode, no audio leaves your Mac }}"
+    }
+  },
+  "howItWorks": {
+    "heading": "How it works",
+    "step1": {
+      "title": "Hold Option",
+      "body": "{{ TODO: describe the hold-Option gesture }}"
+    },
+    "step2": {
+      "title": "Speak",
+      "body": "{{ TODO: speak naturally in any supported language }}"
+    },
+    "step3": {
+      "title": "Text appears",
+      "body": "{{ TODO: release and the text lands in the active app }}"
+    }
+  },
+  "demo": {
+    "heading": "See it in action",
+    "placeholder": "{{ TODO: demo screenshot / GIF 16:9 }}"
+  },
+  "testimonials": {
+    "heading": "What users say"
+  },
+  "faq": {
+    "heading": "Frequently asked questions",
+    "q1": "{{ TODO: question 1 }}",
+    "a1": "{{ TODO: answer 1 }}",
+    "q2": "{{ TODO: question 2 }}",
+    "a2": "{{ TODO: answer 2 }}",
+    "q3": "{{ TODO: question 3 }}",
+    "a3": "{{ TODO: answer 3 }}",
+    "q4": "{{ TODO: question 4 }}",
+    "a4": "{{ TODO: answer 4 }}",
+    "q5": "{{ TODO: question 5 }}",
+    "a5": "{{ TODO: answer 5 }}"
+  },
+  "donate": {
+    "heading": "Support VoiceBabel",
+    "body": "{{ TODO: donate copy — one-person indie, every contribution helps }}",
+    "cta": "Support the project",
+    "note": "One-person indie project. Every bit helps."
+  },
+  "download": {
+    "heading": "Download",
+    "coming_soon": "{{ TODO: download channel TBD — Coming soon }}",
+    "body": "Public release is coming soon."
+  },
+  "footer": {
+    "contact": "Contact",
+    "email": "{{ TODO: public contact email }}",
+    "copyright": "\u00A9 2026 VoiceBabel. All rights reserved."
+  }
+}

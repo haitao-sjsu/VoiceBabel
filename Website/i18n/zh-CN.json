@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "title": "VoiceBabel — 说任何语言，随处转为文字",
+    "description": "{{ TODO: meta description ~150 字符 中文版 }}"
+  },
+  "nav": {
+    "brand": "VoiceBabel",
+    "features": "功能",
+    "faq": "常见问题",
+    "donate": "捐赠",
+    "download": "下载"
+  },
+  "hero": {
+    "title": "{{ TODO: 主标题 中文版 }}",
+    "subtitle": "{{ TODO: 一句话价值主张 中文版 }}",
+    "cta_primary": "下载 macOS 版",
+    "cta_secondary": "在 GitHub 查看",
+    "requirements": "需要 macOS 13 或更高版本。",
+    "icon_placeholder": "{{ TODO: 应用图标 中文版 }}"
+  },
+  "features": {
+    "heading": "功能",
+    "transcribe": {
+      "title": "多语言混合转写",
+      "body": "{{ TODO: 解释跨语言切换 / 多语者支持 中文版 }}"
+    },
+    "translate": {
+      "title": "开口即翻译",
+      "body": "{{ TODO: 说任何语言，输出英文文本 中文版 }}"
+    },
+    "privacy": {
+      "title": "默认保护隐私",
+      "body": "{{ TODO: 本地模式，音频不离开你的 Mac 中文版 }}"
+    }
+  },
+  "howItWorks": {
+    "heading": "工作原理",
+    "step1": {
+      "title": "按住 Option",
+      "body": "{{ TODO: 描述按住 Option 的手势 中文版 }}"
+    },
+    "step2": {
+      "title": "说话",
+      "body": "{{ TODO: 用任何支持的语言自然说话 中文版 }}"
+    },
+    "step3": {
+      "title": "文本出现",
+      "body": "{{ TODO: 松手后文字自动填入当前应用 中文版 }}"
+    }
+  },
+  "demo": {
+    "heading": "实际效果",
+    "placeholder": "{{ TODO: 演示截图 / GIF 16:9 中文版 }}"
+  },
+  "testimonials": {
+    "heading": "用户评价"
+  },
+  "faq": {
+    "heading": "常见问题",
+    "q1": "{{ TODO: 问题 1 中文版 }}",
+    "a1": "{{ TODO: 答案 1 中文版 }}",
+    "q2": "{{ TODO: 问题 2 中文版 }}",
+    "a2": "{{ TODO: 答案 2 中文版 }}",
+    "q3": "{{ TODO: 问题 3 中文版 }}",
+    "a3": "{{ TODO: 答案 3 中文版 }}",
+    "q4": "{{ TODO: 问题 4 中文版 }}",
+    "a4": "{{ TODO: 答案 4 中文版 }}",
+    "q5": "{{ TODO: 问题 5 中文版 }}",
+    "a5": "{{ TODO: 答案 5 中文版 }}"
+  },
+  "donate": {
+    "heading": "支持 VoiceBabel",
+    "body": "{{ TODO: 捐赠文案 — 独立开发者，每一份支持都重要 中文版 }}",
+    "cta": "支持本项目",
+    "note": "个人独立项目，每一份支持都重要。"
+  },
+  "download": {
+    "heading": "下载",
+    "coming_soon": "{{ TODO: 下载渠道待定 — 即将推出 中文版 }}",
+    "body": "即将公开发布。"
+  },
+  "footer": {
+    "contact": "联系方式",
+    "email": "{{ TODO: 对外联系邮箱 中文版 }}",
+    "copyright": "\u00A9 2026 VoiceBabel. 版权所有。"
+  }
+}
