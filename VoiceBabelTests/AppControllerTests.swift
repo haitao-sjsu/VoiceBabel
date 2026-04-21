@@ -1,5 +1,5 @@
 // RecordingControllerTests.swift
-// WhisperUtilTests
+// VoiceBabelTests
 //
 // 【为什么 AppController 难以完整测试？】
 //
@@ -38,7 +38,7 @@
 // - 无 API Key 时的错误处理
 
 import XCTest
-@testable import WhisperUtil
+@testable import VoiceBabel
 
 // MARK: - AppController 初始化测试
 //

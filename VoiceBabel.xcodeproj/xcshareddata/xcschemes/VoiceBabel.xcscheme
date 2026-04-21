@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "D69A0EC22F21D5B700CD1DC0"
-               BuildableName = "WhisperUtil.app"
-               BlueprintName = "WhisperUtil"
-               ReferencedContainer = "container:WhisperUtil.xcodeproj">
+               BuildableName = "VoiceBabel.app"
+               BlueprintName = "VoiceBabel"
+               ReferencedContainer = "container:VoiceBabel.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -35,9 +35,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "D6TS00002FD400010000TS01"
-               BuildableName = "WhisperUtilTests.xctest"
-               BlueprintName = "WhisperUtilTests"
-               ReferencedContainer = "container:WhisperUtil.xcodeproj">
+               BuildableName = "VoiceBabelTests.xctest"
+               BlueprintName = "VoiceBabelTests"
+               ReferencedContainer = "container:VoiceBabel.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -57,9 +57,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "D69A0EC22F21D5B700CD1DC0"
-            BuildableName = "WhisperUtil.app"
-            BlueprintName = "WhisperUtil"
-            ReferencedContainer = "container:WhisperUtil.xcodeproj">
+            BuildableName = "VoiceBabel.app"
+            BlueprintName = "VoiceBabel"
+            ReferencedContainer = "container:VoiceBabel.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -74,9 +74,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "D69A0EC22F21D5B700CD1DC0"
-            BuildableName = "WhisperUtil.app"
-            BlueprintName = "WhisperUtil"
-            ReferencedContainer = "container:WhisperUtil.xcodeproj">
+            BuildableName = "VoiceBabel.app"
+            BlueprintName = "VoiceBabel"
+            ReferencedContainer = "container:VoiceBabel.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

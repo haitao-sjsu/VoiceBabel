@@ -1,8 +1,8 @@
-# CLAUDE.md - WhisperUtil Project Guidelines
+# CLAUDE.md - VoiceBabel Project Guidelines
 
 ## Project Overview
 
-WhisperUtil is a macOS menu bar speech-to-text tool built with Swift. It supports two API modes:
+VoiceBabel is a macOS menu bar speech-to-text tool built with Swift. It supports two API modes:
 
 - **Local** (WhisperKit) - offline on-device transcription
 - **Cloud** (gpt-4o-transcribe) - HTTP API transcription
@@ -48,8 +48,8 @@ Config/                     — Configuration (user prefs, engineering options, 
 UI/                         — Menu bar controller, SwiftUI settings panel, settings window
 Services/                   — Transcription & translation backends (Cloud / Local / Apple Translation)
 Utilities/                  — Helpers (text input, text post-processing, audio encoding, network probe, logging, i18n locale manager)
-WhisperUtil/                — Resources (Assets, Storyboard, String Catalogs)
-WhisperUtilTests/           — Unit tests
+VoiceBabel/                 — Resources (Assets, Storyboard, String Catalogs)
+VoiceBabelTests/            — Unit tests
 .dev-docs-private/          — Private dev docs (excluded from repo, separate local git).
                               Contains: .claude-tech-research/, .claude-commercial-research/,
                               .claude-plan/, .claude-code-review/, .human-learn/, .human-devlog/
@@ -62,8 +62,8 @@ WhisperUtilTests/           — Unit tests
 | **main.swift** | App entry point, creates NSApplication and AppDelegate |
 | **AppDelegate.swift** | Composition root — initializes all components, connects callbacks, subscribes to settings changes via Combine |
 | **Makefile** | Build/run automation (`make dev`, `make build`, `make run`, `make release`, `make clean`) |
-| **whisperutil.log** | Runtime log file (auto-generated, not checked into git) |
-| **WhisperUtil.xcodeproj/** | Xcode project bundle (directory displayed as a file in Finder). Contains `project.pbxproj` (build targets, file references, settings) |
+| **voicebabel.log** | Runtime log file (auto-generated, not checked into git) |
+| **VoiceBabel.xcodeproj/** | Xcode project bundle (directory displayed as a file in Finder). Contains `project.pbxproj` (build targets, file references, settings) |
 | **CLAUDE.md** | This file — project guidelines for Claude |
 
 ## Coding Principles
@@ -176,8 +176,8 @@ git push
 
 ## Internationalization (i18n)
 
-- UI strings are localized via String Catalogs (`WhisperUtil/Localizable.xcstrings`), supporting 20 languages
-- Log strings use a separate catalog (`WhisperUtil/LogStrings.xcstrings`), supporting en + zh only
+- UI strings are localized via String Catalogs (`VoiceBabel/Localizable.xcstrings`), supporting 20 languages
+- Log strings use a separate catalog (`VoiceBabel/LogStrings.xcstrings`), supporting en + zh only
 - `Utilities/LocaleManager.swift` manages runtime locale switching (instant, no restart)
 - AppKit code uses `LocaleManager.shared.localized("key")`, SwiftUI uses `Text("key")` with `.environment(\.locale)`
 - Log messages use `LocaleManager.shared.logLocalized("key")`

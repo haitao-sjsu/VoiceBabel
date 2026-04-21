@@ -1,5 +1,5 @@
 // EngineeringOptions.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // 工程级配置与技术常量 —— 控制音频处理管线各阶段的开关、参数和固定常量。
 //

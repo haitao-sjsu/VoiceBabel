@@ -1,5 +1,5 @@
 // LocalWhisperServiceTests.swift
-// WhisperUtilTests
+// VoiceBabelTests
 //
 // LocalWhisperService 依赖 WhisperKit + 626MB CoreML 模型。
 // 真正的转录测试需要加载模型（CI 环境不实际）。
@@ -12,7 +12,7 @@
 // （比如 app 刚启动模型还在加载时用户就双击了 Option）。
 
 import XCTest
-@testable import WhisperUtil
+@testable import VoiceBabel
 
 // MARK: - 初始状态
 

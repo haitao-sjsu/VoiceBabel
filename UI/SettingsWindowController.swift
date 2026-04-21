@@ -1,5 +1,5 @@
 // SettingsWindowController.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // NSWindow 包装器 —— 将 SwiftUI SettingsView 嵌入 NSHostingController 并作为独立窗口展示。
 //
@@ -27,7 +27,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             rootView: SettingsView(store: settingsStore, probe: probe)
         )
         let window = NSWindow(contentViewController: hostingController)
-        window.title = LocaleManager.shared.localized("WhisperUtil Settings")
+        window.title = LocaleManager.shared.localized("VoiceBabel Settings")
         window.styleMask = [.titled, .closable]
         window.setContentSize(NSSize(width: 500, height: 560))
         window.center()

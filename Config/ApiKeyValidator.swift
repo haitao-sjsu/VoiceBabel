@@ -1,5 +1,5 @@
 // ApiKeyValidator.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // API Key 验证器 —— 通过 OpenAI API 验证密钥有效性。
 //

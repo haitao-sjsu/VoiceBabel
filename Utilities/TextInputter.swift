@@ -1,5 +1,5 @@
 // TextInputter.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // 文本输入模块 —— 将文本输入到当前活跃的应用程序。
 //

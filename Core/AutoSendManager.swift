@@ -1,5 +1,5 @@
 // AutoSendManager.swift
-// WhisperUtil - macOS menu bar speech-to-text tool
+// VoiceBabel - macOS menu bar speech-to-text tool
 //
 // Auto-send logic — manages automatic Enter key press after transcription output.
 //

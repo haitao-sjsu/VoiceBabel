@@ -1,5 +1,5 @@
 // LocalAppleTranslationServiceTests.swift
-// WhisperUtilTests
+// VoiceBabelTests
 //
 // Apple Translation 的功能测试（真实翻译）无法在 XCTest 中运行：
 // .translationTask SwiftUI modifier 需要完整的 app UI 生命周期，
@@ -9,7 +9,7 @@
 // 错误类型、枚举值。
 
 import XCTest
-@testable import WhisperUtil
+@testable import VoiceBabel
 
 final class AppleTranslationErrorTests: XCTestCase {
 

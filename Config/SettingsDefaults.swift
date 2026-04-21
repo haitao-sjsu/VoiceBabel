@@ -1,5 +1,5 @@
 // SettingsDefaults.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // 用户偏好默认值注册表 —— 作为 SettingsStore（UserDefaults）的 fallback 默认值。
 //

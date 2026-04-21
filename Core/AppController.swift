@@ -1,5 +1,5 @@
 // AppController.swift
-// WhisperUtil - macOS menu bar speech-to-text tool
+// VoiceBabel - macOS menu bar speech-to-text tool
 //
 // Core state machine and flow orchestrator. Manages recording lifecycle,
 // dispatches to TranscriptionManager and TranslationManager, handles

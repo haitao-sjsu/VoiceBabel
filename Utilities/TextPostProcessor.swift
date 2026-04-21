@@ -1,5 +1,5 @@
 // TextPostProcessor.swift
-// WhisperUtil - macOS menu bar speech-to-text tool
+// VoiceBabel - macOS menu bar speech-to-text tool
 //
 // Text post-processing module — stateless transformations applied after transcription/translation.
 //

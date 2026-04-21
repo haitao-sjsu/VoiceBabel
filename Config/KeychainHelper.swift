@@ -1,11 +1,11 @@
 // KeychainHelper.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // Keychain 操作封装 —— 安全存储 API Key。
 //
 // 职责：
 //   封装 macOS Keychain Services API，提供 API Key 的保存、读取、删除、存在性检查。
-//   使用 kSecClassGenericPassword 存储，service = "com.whisperutil.api"，
+//   使用 kSecClassGenericPassword 存储，service = "app.voicebabel.api"，
 //   account = "openai-api-key"。
 //
 // 依赖：
@@ -21,7 +21,7 @@ import Security
 
 enum KeychainHelper {
 
-    private static let service = "com.whisperutil.api"
+    private static let service = "app.voicebabel.api"
     private static let defaultAccount = "openai-api-key"
 
     /// 保存 API Key 到 Keychain

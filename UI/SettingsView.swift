@@ -1,5 +1,5 @@
 // SettingsView.swift
-// WhisperUtil - macOS menu bar speech-to-text tool
+// VoiceBabel - macOS menu bar speech-to-text tool
 //
 // SwiftUI settings panel — binds all user-adjustable parameters via SettingsStore.
 //

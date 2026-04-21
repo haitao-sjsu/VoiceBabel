@@ -1,5 +1,5 @@
 // NetworkHealthMonitor.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // 网络健康探测器 —— 用于 Cloud API 回退到本地后自动检测网络恢复。
 //

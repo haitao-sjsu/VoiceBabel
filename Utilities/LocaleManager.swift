@@ -1,5 +1,5 @@
 // LocaleManager.swift
-// WhisperUtil - macOS menu bar speech-to-text tool
+// VoiceBabel - macOS menu bar speech-to-text tool
 //
 // Core locale manager for UI internationalization.
 //

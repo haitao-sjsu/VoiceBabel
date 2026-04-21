@@ -1,5 +1,5 @@
 // LocalAppleTranslationService.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // Apple Translation Framework 本地翻译服务 —— 离线翻译能力。
 //
@@ -7,7 +7,7 @@
 //   1. 利用 Apple Translation Framework 进行设备端本地翻译
 //   2. 通过隐藏 SwiftUI View 桥接获取 TranslationSession（macOS 14.4+ 限制）
 //   3. 源语言自动识别（NLTagger 逐词标注）+ 语言包可用性预检查
-//   4. 语言代码映射（WhisperUtil 代码 → Apple Locale.Language）
+//   4. 语言代码映射（VoiceBabel 代码 → Apple Locale.Language）
 //
 // 关键设计：
 //   macOS 14.4/15 下 TranslationSession 只能通过 SwiftUI .translationTask modifier 获取。
@@ -219,7 +219,7 @@ class LocalAppleTranslationService: LocalTranslator {
 
     // MARK: - 语言代码映射
 
-    /// 将 WhisperUtil 的语言代码映射到 Apple Locale.Language
+    /// 将 VoiceBabel 的语言代码映射到 Apple Locale.Language
     /// 返回 nil 表示无法映射
     private func mapToLocaleLanguage(_ code: String) -> Locale.Language? {
         guard !code.isEmpty else { return nil }

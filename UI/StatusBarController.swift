@@ -1,5 +1,5 @@
 // StatusBarController.swift
-// WhisperUtil - macOS menu bar speech-to-text tool
+// VoiceBabel - macOS menu bar speech-to-text tool
 //
 // Menu bar UI controller — manages NSStatusItem icon and dropdown menu.
 //
@@ -170,7 +170,7 @@ class StatusBarController {
         menu.addItem(settingsItem)
 
         aboutItem = NSMenuItem(
-            title: lm.localized("About WhisperUtil"),
+            title: lm.localized("About VoiceBabel"),
             action: #selector(showAbout),
             keyEquivalent: ""
         )
@@ -204,7 +204,7 @@ class StatusBarController {
 
         // Refresh static menu items
         settingsItem.title = lm.localized("Settings...")
-        aboutItem.title = lm.localized("About WhisperUtil")
+        aboutItem.title = lm.localized("About VoiceBabel")
         quitItem.title = lm.localized("Quit")
 
         // Headers (re-rendered with engine suffix if any)
@@ -424,7 +424,7 @@ class StatusBarController {
     @objc private func showAbout() {
         let lm = LocaleManager.shared
         let alert = NSAlert()
-        alert.messageText = lm.localized("About WhisperUtil")
+        alert.messageText = lm.localized("About VoiceBabel")
         alert.informativeText = """
             \(lm.localized("Version")) 1.0.0
 

@@ -1,6 +1,6 @@
 # VoiceBabel Marketing Website
 
-Static marketing site for VoiceBabel (the renamed WhisperUtil). Plain HTML + CSS + vanilla JS, no build step.
+Static marketing site for VoiceBabel. Plain HTML + CSS + vanilla JS, no build step.
 
 ## Local preview
 

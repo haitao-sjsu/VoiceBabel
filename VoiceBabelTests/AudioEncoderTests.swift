@@ -1,5 +1,5 @@
 // AudioEncoderTests.swift
-// WhisperUtilTests
+// VoiceBabelTests
 //
 // AudioEncoder 是纯函数模块（static 方法，无副作用），测试价值最高。
 // 重点测试 WAV 编码的二进制头正确性和 PCM16 转换精度——
@@ -17,7 +17,7 @@
 // 测试失败时，Xcode 会显示哪一行断言失败以及实际值 vs 期望值。
 
 import XCTest
-@testable import WhisperUtil
+@testable import VoiceBabel
 
 // MARK: - WAV 编码测试
 

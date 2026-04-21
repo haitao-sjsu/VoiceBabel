@@ -447,12 +447,12 @@
         "ru": { "stringUnit": { "state": "translated", "value": "Настройки..." } }
       }
     },
-    "About WhisperUtil": {
+    "About VoiceBabel": {
       "localizations": {
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "关于 WhisperUtil" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "關於 WhisperUtil" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "WhisperUtil について" } },
-        "ko": { "stringUnit": { "state": "translated", "value": "WhisperUtil 정보" } }
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "关于 VoiceBabel" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "關於 VoiceBabel" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "VoiceBabel について" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "VoiceBabel 정보" } }
       }
     },
     "Quit": {
@@ -548,17 +548,17 @@
         "ko": { "stringUnit": { "state": "translated", "value": "음성 번역 — 음성을 인식하여 번역" } }
       }
     },
-    "WhisperUtil Settings": {
+    "VoiceBabel Settings": {
       "localizations": {
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "WhisperUtil 设置" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "WhisperUtil 設定" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "WhisperUtil 設定" } },
-        "ko": { "stringUnit": { "state": "translated", "value": "WhisperUtil 설정" } },
-        "es": { "stringUnit": { "state": "translated", "value": "Ajustes de WhisperUtil" } },
-        "fr": { "stringUnit": { "state": "translated", "value": "Paramètres WhisperUtil" } },
-        "de": { "stringUnit": { "state": "translated", "value": "WhisperUtil Einstellungen" } },
-        "pt": { "stringUnit": { "state": "translated", "value": "Configurações do WhisperUtil" } },
-        "ru": { "stringUnit": { "state": "translated", "value": "Настройки WhisperUtil" } }
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "VoiceBabel 设置" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "VoiceBabel 設定" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "VoiceBabel 設定" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "VoiceBabel 설정" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Ajustes de VoiceBabel" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Paramètres VoiceBabel" } },
+        "de": { "stringUnit": { "state": "translated", "value": "VoiceBabel Einstellungen" } },
+        "pt": { "stringUnit": { "state": "translated", "value": "Configurações do VoiceBabel" } },
+        "ru": { "stringUnit": { "state": "translated", "value": "Настройки VoiceBabel" } }
       }
     },
     "Loading speech recognition model, first use requires download...": {

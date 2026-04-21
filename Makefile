@@ -1,18 +1,18 @@
 # =============================================================================
-# WhisperUtil - Makefile
+# VoiceBabel - Makefile
 # macOS menu bar speech-to-text tool
 # =============================================================================
 
-SCHEME          := WhisperUtil
-PROJECT         := WhisperUtil.xcodeproj
+SCHEME          := VoiceBabel
+PROJECT         := VoiceBabel.xcodeproj
 DEVELOPER_DIR   := /Applications/Xcode.app/Contents/Developer
 DERIVED_DATA    := $(HOME)/Library/Developer/Xcode/DerivedData
-APP_NAME        := WhisperUtil.app
+APP_NAME        := VoiceBabel.app
 LOCAL_BUILD_DIR := $(CURDIR)/.local-build
 
 # Resolve the actual app path from DerivedData (glob handles the hash suffix)
-DEBUG_APP       = $(shell ls -d $(DERIVED_DATA)/WhisperUtil-*/Build/Products/Debug/$(APP_NAME) 2>/dev/null | head -1)
-RELEASE_APP     = $(shell ls -d $(DERIVED_DATA)/WhisperUtil-*/Build/Products/Release/$(APP_NAME) 2>/dev/null | head -1)
+DEBUG_APP       = $(shell ls -d $(DERIVED_DATA)/VoiceBabel-*/Build/Products/Debug/$(APP_NAME) 2>/dev/null | head -1)
+RELEASE_APP     = $(shell ls -d $(DERIVED_DATA)/VoiceBabel-*/Build/Products/Release/$(APP_NAME) 2>/dev/null | head -1)
 
 # xcodebuild with DEVELOPER_DIR preset
 XCODEBUILD      = DEVELOPER_DIR=$(DEVELOPER_DIR) xcodebuild -project $(PROJECT) -scheme $(SCHEME)
@@ -50,7 +50,7 @@ release:
 # Build for local use — no Apple ID login required in Xcode
 # ---------------------------------------------------------------------------
 local: check
-	@echo "Building WhisperUtil (ad-hoc signing, no Apple ID required)..."
+	@echo "Building VoiceBabel (ad-hoc signing, no Apple ID required)..."
 	@rm -rf "$(LOCAL_BUILD_DIR)"
 	$(XCODEBUILD) -configuration Debug \
 		-derivedDataPath "$(LOCAL_BUILD_DIR)" \
@@ -74,7 +74,7 @@ local: check
 # Run: quit old process, launch new build
 # ---------------------------------------------------------------------------
 run:
-	@osascript -e 'tell application "WhisperUtil" to quit' 2>/dev/null; sleep 1
+	@osascript -e 'tell application "VoiceBabel" to quit' 2>/dev/null; sleep 1
 	@if [ -d "$(DEBUG_APP)" ]; then \
 		open "$(DEBUG_APP)"; \
 	elif [ -d "$(RELEASE_APP)" ]; then \
@@ -91,8 +91,8 @@ test:
 	@# Note: xcodebuild may return non-zero due to WhisperKit framework cleanup crash (malloc error).
 	@# All tests still pass. We check the actual test result line to determine success.
 	@$(XCODEBUILD) -configuration Debug test -destination 'platform=macOS' \
-		-parallel-testing-enabled NO 2>&1 | tee /tmp/whisperutil-test.log; \
-	if grep -q "with 0 failures" /tmp/whisperutil-test.log; then \
+		-parallel-testing-enabled NO 2>&1 | tee /tmp/voicebabel-test.log; \
+	if grep -q "with 0 failures" /tmp/voicebabel-test.log; then \
 		echo ""; echo "=== All tests passed ==="; \
 	else \
 		echo ""; echo "=== TESTS FAILED ==="; exit 1; \
@@ -108,7 +108,7 @@ clean:
 # Help
 # ---------------------------------------------------------------------------
 help:
-	@echo "WhisperUtil Makefile"
+	@echo "VoiceBabel Makefile"
 	@echo ""
 	@echo "Usage:  make [target]"
 	@echo ""

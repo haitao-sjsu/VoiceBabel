@@ -1,5 +1,5 @@
 // CloudOpenAIServiceTests.swift
-// WhisperUtilTests
+// VoiceBabelTests
 //
 // 测试 CloudOpenAIService 的纯逻辑部分：超时计算、语言映射、错误类型。
 // 不测试网络请求。
@@ -11,7 +11,7 @@
 // - sendRequest 涉及网络 I/O → 不测（需要 URLProtocol mock，投入产出比低）
 
 import XCTest
-@testable import WhisperUtil
+@testable import VoiceBabel
 
 // MARK: - 超时计算测试
 

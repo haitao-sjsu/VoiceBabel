@@ -1,5 +1,5 @@
 // Log.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // 统一日志工具 —— 同时输出到控制台（Xcode Console）和日志文件。
 //
@@ -14,7 +14,7 @@
 //   - Log.d()：DEBUG，调试信息（仅 #if DEBUG 模式输出，Release 自动移除）
 //
 // 日志文件：
-//   路径：~/Library/Containers/Personal.WhisperUtil/Data/Library/Logs/whisperutil.log
+//   路径：~/Library/Containers/app.voicebabel.VoiceBabel/Data/Library/Logs/voicebabel.log
 //   条数限制：累积到 1000 条时截断保留最新 500 条
 //   格式：[MM-dd HH:mm:ss] [LEVEL] [FileName:Line] Message
 //
@@ -38,7 +38,7 @@ enum Log {
         // NSHomeDirectory() 在沙盒应用中返回容器路径
         let logDir = NSHomeDirectory() + "/Library/Logs"
         try? FileManager.default.createDirectory(atPath: logDir, withIntermediateDirectories: true)
-        return logDir + "/whisperutil.log"
+        return logDir + "/voicebabel.log"
     }()
 
     /// 触发截断的行数上限
@@ -66,7 +66,7 @@ enum Log {
         handle?.seekToEndOfFile()
 
         // 写入启动分隔线
-        let separator = "\n========== WhisperUtil Launch (\(DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .medium))) ==========\n"
+        let separator = "\n========== VoiceBabel Launch (\(DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .medium))) ==========\n"
         if let data = separator.data(using: .utf8) {
             handle?.write(data)
         }

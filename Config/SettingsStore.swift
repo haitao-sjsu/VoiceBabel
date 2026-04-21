@@ -1,5 +1,5 @@
 // SettingsStore.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // 用户设置持久化层 —— UserDefaults 存储 + ObservableObject 发布者。
 //

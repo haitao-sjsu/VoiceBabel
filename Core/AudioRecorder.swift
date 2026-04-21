@@ -1,5 +1,5 @@
 // AudioRecorder.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // 音频录制模块 —— 使用 AVAudioEngine 采集麦克风音频并进行采样率转换。
 //

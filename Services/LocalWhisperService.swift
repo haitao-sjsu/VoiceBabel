@@ -1,5 +1,5 @@
 // LocalWhisperService.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // WhisperKit 本地转写服务 —— 基于 CoreML 的离线语音识别。
 //
@@ -119,7 +119,7 @@ final class LocalWhisperService: ObservableObject {
     ///
     /// - Parameters:
     ///   - samples: Float32 PCM 采样数据（16kHz 单声道）
-    ///   - language: WhisperUtil 语言码（"zh" / "en" / ""）；空串触发自动检测
+    ///   - language: VoiceBabel 语言码（"zh" / "en" / ""）；空串触发自动检测
     ///   - audioDuration: 音频时长（秒），用于推算超时
     /// - Returns: 原始转录文本（未过滤标签、未做繁简转换、未 trim）
     func transcribe(samples: [Float], language: String, audioDuration: TimeInterval) async throws -> String {

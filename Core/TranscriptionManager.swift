@@ -1,5 +1,5 @@
 // TranscriptionManager.swift
-// WhisperUtil - macOS menu bar speech-to-text tool
+// VoiceBabel - macOS menu bar speech-to-text tool
 //
 // Transcription manager — stateless priority-iterating dispatcher that turns
 // audio samples into text via one of the configured engines (cloud / local).

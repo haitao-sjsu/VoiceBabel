@@ -1,5 +1,5 @@
 // AppDelegate.swift
-// WhisperUtil - macOS menu bar speech-to-text tool
+// VoiceBabel - macOS menu bar speech-to-text tool
 //
 // Composition Root — initializes all components and connects them via callbacks.
 //
@@ -51,7 +51,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let lm = LocaleManager.shared
-        Log.i(lm.logLocalized("WhisperUtil starting..."))
+        Log.i(lm.logLocalized("VoiceBabel starting..."))
         Log.i(lm.logLocalized("Log file path:") + " \(Log.logFilePath)")
 
         settingsStore = SettingsStore.shared
@@ -66,7 +66,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case "local": apiModeDescription = "Local (WhisperKit)"
         default:      apiModeDescription = "Cloud API (gpt-4o-transcribe)"
         }
-        Log.i(lm.logLocalized("WhisperUtil started") + " — API mode: \(apiModeDescription), send mode: \(StatusBarController.AutoSendMode.from(settingsStore.autoSendMode).displayName)")
+        Log.i(lm.logLocalized("VoiceBabel started") + " — API mode: \(apiModeDescription), send mode: \(StatusBarController.AutoSendMode.from(settingsStore.autoSendMode).displayName)")
 
         // Async preload WhisperKit model
         statusBarController.showNotification(title: "WhisperKit", message: String(localized: "Loading speech recognition model, first use requires download..."))
@@ -99,7 +99,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        Log.i(LocaleManager.shared.logLocalized("WhisperUtil quitting..."))
+        Log.i(LocaleManager.shared.logLocalized("VoiceBabel quitting..."))
         hotkeyManager?.stopMonitoring()
     }
 
@@ -271,7 +271,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         appController.onError = { [weak self] message in
             guard let self = self else { return }
-            self.statusBarController.showNotification(title: "WhisperUtil", message: message)
+            self.statusBarController.showNotification(title: "VoiceBabel", message: message)
         }
 
         statusBarController.updateState(.idle)
@@ -305,7 +305,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Log.w(lm.logLocalized("API Key cleared, network features unavailable"))
             // Effective-priority sinks re-fire automatically via $apiKeyVersion.
             statusBarController.showNotification(
-                title: "WhisperUtil",
+                title: "VoiceBabel",
                 message: String(localized: "API Key cleared, switched to local mode")
             )
             return
@@ -323,7 +323,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         Log.i(lm.logLocalized("API Key updated, services rebuilt, top priority") + " \(settingsStore.transcriptionPriority.first ?? "cloud")")
         statusBarController.showNotification(
-            title: "WhisperUtil",
+            title: "VoiceBabel",
             message: String(localized: "API Key updated")
         )
     }

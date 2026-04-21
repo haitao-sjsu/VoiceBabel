@@ -1,5 +1,5 @@
 // EngineAvailability.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // 引擎客观可用性探测 —— 基于实时系统状态判断转录/翻译引擎是否可用。
 //

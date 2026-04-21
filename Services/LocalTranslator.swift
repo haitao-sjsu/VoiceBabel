@@ -1,5 +1,5 @@
 // LocalTranslator.swift
-// WhisperUtil - macOS menu bar speech-to-text tool
+// VoiceBabel - macOS menu bar speech-to-text tool
 //
 // Protocol abstraction for on-device translation backends, plus a factory that
 // encapsulates the OS-version gate so callers don't have to.

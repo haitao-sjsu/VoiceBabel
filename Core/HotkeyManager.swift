@@ -1,5 +1,5 @@
 // HotkeyManager.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // 全局快捷键管理器 —— 基于 Option 键手势的输入检测。
 //

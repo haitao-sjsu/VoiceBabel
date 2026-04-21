@@ -1,5 +1,5 @@
 // AudioEncoder.swift
-// WhisperUtil - macOS 菜单栏语音转文字工具
+// VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // 音频编码模块 —— 将内存中的 Float32 PCM 采样数据编码为可上传的音频文件格式。
 //

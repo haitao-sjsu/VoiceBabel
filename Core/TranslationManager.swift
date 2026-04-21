@@ -1,5 +1,5 @@
 // TranslationManager.swift
-// WhisperUtil - macOS menu bar speech-to-text tool
+// VoiceBabel - macOS menu bar speech-to-text tool
 //
 // Translation engine manager — text-to-text translation via list-iteration
 // over the configured engine priority. Stateless across calls: no fallback
