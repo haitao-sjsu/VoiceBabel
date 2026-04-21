@@ -6,7 +6,7 @@ on:
   push:
     branches: ["main"]
     paths:
-      - 'website/**'  # 核心：只有 website 文件夹及其子文件夹变动时才触发
+      - 'Website/**'  # 核心：只有 website 文件夹及其子文件夹变动时才触发
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -38,7 +38,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './website' # 只抓取这个文件夹里的内容去发布
+          path: './Website' # 只抓取这个文件夹里的内容去发布
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
