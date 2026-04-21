@@ -50,12 +50,9 @@ Services/                   — Transcription & translation backends (Cloud / Lo
 Utilities/                  — Helpers (text input, text post-processing, audio encoding, network probe, logging, i18n locale manager)
 WhisperUtil/                — Resources (Assets, Storyboard, String Catalogs)
 WhisperUtilTests/           — Unit tests
-.claude-tech-research/      — Technical research documents
-.claude-commercial-research/— Commercial research documents
-.claude-plan/               — Implementation plans
-.claude-code-review/        — Code review documents
-.human-learn/               — Learning notes (hand-written code reproductions)
-.human-devlog/              — Development log (daily work journal)
+.dev-docs-private/          — Private dev docs (excluded from repo, separate local git).
+                              Contains: .claude-tech-research/, .claude-commercial-research/,
+                              .claude-plan/, .claude-code-review/, .human-learn/, .human-devlog/
 ```
 
 ### Root Files
@@ -172,9 +169,9 @@ git push
 - Follow existing commit style in `git log`
 
 ### File naming conventions (for docs commits)
-- `.claude-tech-research/`: `01_topic_name.md` (sequential numbering)
-- `.claude-code-review/`: `01_review_name.md` (sequential numbering)
-- `.claude-plan/`: `01_plan_name.md` (sequential numbering)
+- `.dev-docs-private/.claude-tech-research/`: `01_topic_name.md` (sequential numbering)
+- `.dev-docs-private/.claude-code-review/`: `01_review_name.md` (sequential numbering)
+- `.dev-docs-private/.claude-plan/`: `01_plan_name.md` (sequential numbering)
 - When renumbering files (e.g., after deletion), keep all numbers sequential with no gaps
 
 ## Internationalization (i18n)

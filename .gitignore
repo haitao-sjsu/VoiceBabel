@@ -46,3 +46,9 @@ Package.resolved
 # Claude Code local settings (machine-specific, not project content)
 # ============================================================
 .claude/
+
+# ============================================================
+# Private dev docs (research, plans, devlogs, code reviews)
+# Managed as a separate local git repo inside the folder.
+# ============================================================
+.dev-docs-private/
