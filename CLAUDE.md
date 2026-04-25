@@ -182,3 +182,19 @@ git push
 - AppKit code uses `LocaleManager.shared.localized("key")`, SwiftUI uses `Text("key")` with `.environment(\.locale)`
 - Log messages use `LocaleManager.shared.logLocalized("key")`
 - Log language is controlled by `EngineeringOptions.logLanguage` ("en" or "zh")
+
+## Writing Style for User-Facing Markdown Documents
+
+Applies to any markdown written *for the user to read* — docs under `.dev-docs-private/` (research, plans, reviews, devlogs, learning notes). Does not apply to source-code comments or CLAUDE.md files.
+
+**Target reader**: between a layperson and a professional programmer. Knows basic programming concepts but not macOS internals, framework-specific jargon, or the acronyms in the Apple doc you just read. Default assumption: the reader does not know what you know.
+
+Rules:
+1. Keep jargon density low — introduce at most one new term per paragraph. Split the paragraph if more stack up.
+2. On first use, expand every abbreviation and give a one-line plain-language gloss. Use the abbreviation freely after that.
+3. Define each core concept plainly ("what it is") before discussing behavior, cost, or edge cases. Don't assume an API name is self-explanatory.
+4. Favor analogies and contrasts when explaining non-obvious design (e.g. "narrow declarative door vs. wide passive listener").
+5. Avoid stacking 3+ parenthetical asides, terms, or clauses in one sentence. Two short sentences beat one dense one.
+6. After stating a fact, add the *why* or the *cost* when it helps understanding.
+7. Keep citations rigorous (file:line, URLs, accurate terminology) — only the prose softens, not the precision.
+8. End with a concrete action list when applicable; don't trail off where the reader still feels lost.
