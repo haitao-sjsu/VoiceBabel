@@ -19,10 +19,9 @@ import XCTest
 final class LocalWhisperInitTests: XCTestCase {
 
     func testNotReady_beforeModelLoaded() {
-        let service = LocalWhisperService(language: "zh")
-        XCTAssertFalse(service.isReady())
-        XCTAssertFalse(service.isModelLoaded)
-        XCTAssertFalse(service.isModelLoading)
+        let service = LocalWhisperService()
+        XCTAssertFalse(service.isReady)
+        XCTAssertEqual(service.state, .notDownloaded)
     }
 
     func testLanguage_preserved() {

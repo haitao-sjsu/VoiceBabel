@@ -768,6 +768,76 @@
         "ja": { "stringUnit": { "state": "translated", "value": "文字起こし用の音声データがありません" } },
         "ko": { "stringUnit": { "state": "translated", "value": "전사에 사용할 오디오 데이터 없음" } }
       }
+    },
+    "localwhisper.state.notDownloaded": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Model not downloaded" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "模型未下载" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "模型未下載" } }
+      }
+    },
+    "localwhisper.state.downloading": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Downloading model..." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在下载模型..." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在下載模型..." } }
+      }
+    },
+    "localwhisper.state.loading": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Loading model..." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在加载模型..." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "正在載入模型..." } }
+      }
+    },
+    "localwhisper.state.loaded": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Model loaded, warming up..." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "模型已加载，准备预热..." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "模型已載入，準備預熱..." } }
+      }
+    },
+    "localwhisper.state.warming": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Warming up (first run may take a minute)..." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "预热中（首次运行可能需要 1 分钟）..." } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預熱中（首次運行可能需要 1 分鐘）..." } }
+      }
+    },
+    "localwhisper.state.ready": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ready" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "就绪" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "就緒" } }
+      }
+    },
+    "localwhisper.state.failed.download": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Download failed: %@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "下载失败: %@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "下載失敗: %@" } }
+      }
+    },
+    "localwhisper.state.failed.load": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Load failed: %@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "加载失败: %@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "載入失敗: %@" } }
+      }
+    },
+    "localwhisper.state.failed.warmup": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Warm-up failed: %@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "预热失败: %@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "預熱失敗: %@" } }
+      }
+    },
+    "localwhisper.state.failed.runtime": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Runtime error: %@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "运行时错误: %@" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "執行時錯誤: %@" } }
+      }
     }
   }
 }

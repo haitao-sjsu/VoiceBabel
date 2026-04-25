@@ -19,12 +19,14 @@ import Cocoa
 import SwiftUI
 
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
-    init(settingsStore: SettingsStore, probe: EngineAvailabilityProbe) {
+    init(settingsStore: SettingsStore, localWhisperService: LocalWhisperService, probe: EngineAvailabilityProbe) {
         // Probe is forwarded to SettingsView so the priority rows can render
         // live objective-availability state (greyed rows, reason subtitles,
-        // empty-list footer warning).
+        // empty-list footer warning). LocalWhisperService is forwarded so the
+        // view re-renders when its `state` advances (the probe reads it but
+        // can't drive SwiftUI invalidation by itself).
         let hostingController = NSHostingController(
-            rootView: SettingsView(store: settingsStore, probe: probe)
+            rootView: SettingsView(store: settingsStore, localWhisperService: localWhisperService, probe: probe)
         )
         let window = NSWindow(contentViewController: hostingController)
         window.title = LocaleManager.shared.localized("VoiceBabel Settings")

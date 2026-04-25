@@ -135,6 +135,7 @@ class TranscriptionManager {
         var attempts: [EngineAttempt] = []
 
         for engine in priority {
+            try Task.checkCancellation()
             Log.i("TranscriptionManager: trying \(engine)")
             do {
                 let raw = try await tryEngine(

@@ -70,6 +70,7 @@ class AppController {
     let autoSendManager: AutoSendManager
     var playSound: Bool = true
     private var lastRecordingDuration: TimeInterval = 0
+    private var currentPipelineTask: Task<Void, Never>?
 
     // MARK: - Init
 
@@ -195,6 +196,9 @@ class AppController {
 
         case .processing:
             Log.i(lm.logLocalized("User cancelled processing"))
+            currentPipelineTask?.cancel()
+            currentPipelineTask = nil
+            playStopSound()
             currentState = .idle
 
         case .waitingToSend:
@@ -272,9 +276,14 @@ class AppController {
     /// Flat async/await flow: Manager call -> output. No callback nesting.
     /// Text is already post-processed by TranscriptionManager before return.
     private func startTranscription(samples: [Float], audioDuration: TimeInterval) {
-        Task { @MainActor in
+        currentPipelineTask = Task { @MainActor in
+            defer { currentPipelineTask = nil }
             do {
                 let result = try await transcriptionManager.transcribe(samples: samples, audioDuration: audioDuration)
+                guard !Task.isCancelled else {
+                    Log.i("Pipeline cancelled, dropping transcription result")
+                    return
+                }
                 guard !result.text.isEmpty else {
                     Log.i("Transcription result empty, skipping output")
                     currentState = .idle
@@ -285,6 +294,9 @@ class AppController {
                 textInputter.inputText(result.text)
                 currentState = .idle
                 autoSendManager.handleAutoSend()
+            } catch is CancellationError {
+                Log.i("Transcription pipeline cancelled")
+                // state already set to .idle by cancelRecording()
             } catch {
                 handleError(describeTranscriptionError(error))
             }
@@ -307,9 +319,14 @@ class AppController {
     /// transcription is preserved in the menu bar (it was already emitted via
     /// `onTranscriptionResult`) before surfacing the translation error.
     private func startTranslation(samples: [Float], audioDuration: TimeInterval) {
-        Task { @MainActor in
+        currentPipelineTask = Task { @MainActor in
+            defer { currentPipelineTask = nil }
             do {
                 let transcription = try await transcriptionManager.transcribe(samples: samples, audioDuration: audioDuration)
+                guard !Task.isCancelled else {
+                    Log.i("Translation pipeline cancelled after transcription step")
+                    return
+                }
                 guard !transcription.text.isEmpty else {
                     Log.i("Transcription empty; skipping translation step")
                     currentState = .idle
@@ -319,11 +336,17 @@ class AppController {
                 onTranscriptionResult?(transcription.text, transcription.engine)
 
                 let translation = try await translationManager.translate(text: transcription.text)
+                guard !Task.isCancelled else {
+                    Log.i("Translation pipeline cancelled after translation step")
+                    return
+                }
                 Log.i("Two-step translation step 2 complete via \(translation.engine): \(translation.text)")
                 onTranslationResult?(translation.text, translation.engine)
                 textInputter.inputText(translation.text)
                 currentState = .idle
                 autoSendManager.handleAutoSend()
+            } catch is CancellationError {
+                Log.i("Translation pipeline cancelled")
             } catch let error as TranscriptionError {
                 handleError(error.errorDescription ?? String(localized: "Transcription failed"))
             } catch let error as TranslationError {

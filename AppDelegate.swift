@@ -183,7 +183,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         statusBarController = StatusBarController()
 
-        settingsWindowController = SettingsWindowController(settingsStore: settingsStore, probe: probe)
+        settingsWindowController = SettingsWindowController(settingsStore: settingsStore, localWhisperService: localWhisperService, probe: probe)
         statusBarController.onOpenSettings = { [weak self] in
             self?.settingsWindowController.showSettings()
         }
@@ -205,7 +205,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             settingsStore.$transcriptionPriority,
             settingsStore.$transcriptionEnabled,
             settingsStore.$apiKeyVersion,
-            localWhisperService.$isReadyState
+            localWhisperService.$state
         )
         .receive(on: DispatchQueue.main)
         .sink { [weak self] _, _, _, _ in

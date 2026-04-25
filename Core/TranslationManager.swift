@@ -117,6 +117,7 @@ class TranslationManager {
         var attempts: [EngineAttempt] = []
 
         for engine in translationEnginePriority {
+            try Task.checkCancellation()
             Log.i("TranslationManager: trying engine '\(engine)'")
             do {
                 let raw = try await runEngine(

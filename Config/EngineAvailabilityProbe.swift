@@ -1,4 +1,4 @@
-// EngineAvailability.swift
+// EngineAvailabilityProbe.swift
 // VoiceBabel - macOS 菜单栏语音转文字工具
 //
 // 引擎客观可用性探测 —— 基于实时系统状态判断转录/翻译引擎是否可用。
@@ -19,7 +19,8 @@
 //
 // 依赖：
 //   - SettingsStore：读取 hasApiKey（Cloud 引擎）。
-//   - LocalWhisperService：读取 isReady()（local 转录）。
+//   - LocalWhisperService：读取 state（local 转录，仅 .ready 视为可用，其它状态把
+//     statusDescription 透传给 UI 作为 unavailability 副标题）。
 //   - LocalTranslator 闭包：非 nil = macOS 15+ 且工厂已成功构造（apple 翻译）。
 //
 // 架构角色：
@@ -40,14 +41,16 @@ enum UnavailabilityReason: Equatable {
     case missingApiKey
     /// 系统版本过低（如 Apple Translation 需要 macOS 15.0+）。
     case osTooOld(requiredVersion: String)
-    /// 本地模型未加载完成（WhisperKit 仍在下载 / 预热）。
-    case localModelNotLoaded
+    /// 本地模型未就绪（下载中 / 加载中 / 预热中 / 失败 等任意非 .ready 状态）。
+    /// `detail` 为 `LocalWhisperService.statusDescription` 透传过来的本地化字符串，
+    /// UI 直接展示无需二次映射。
+    case localModelNotReady(detail: String)
 }
 
 /// 汇总各引擎客观可用性的探针。
 ///
 /// 按调用求值（不缓存）—— 每次 availability(of…:) 都读当前状态。AppDelegate 负责
-/// 订阅触发变化的 Combine 发布者（apiKeyVersion / isReadyState / 优先级数组变更）
+/// 订阅触发变化的 Combine 发布者（apiKeyVersion / state / 优先级数组变更）
 /// 来决定何时重新调用。
 ///
 /// 必须在主线程调用，因为它读取的 `LocalTranslator?` 构造也是 `@MainActor`。
@@ -56,7 +59,8 @@ struct EngineAvailabilityProbe {
     /// 用于读取 `hasApiKey`，判断 Cloud 系列引擎是否可用。
     let settingsStore: SettingsStore
 
-    /// 用于读取 `isReady()`，判断 local 转录引擎是否可用。
+    /// 用于读取 `state` / `statusDescription`，判断 local 转录引擎是否可用并把当前阶段
+    /// 透传给 UI 副标题。
     let localWhisperService: LocalWhisperService
 
     /// 闭包形式的 LocalTranslator 获取器 —— 每次探测都重新调用以取最新实例。
@@ -71,13 +75,14 @@ struct EngineAvailabilityProbe {
                 ? .available
                 : .unavailable(.missingApiKey)
         case "local":
-            return localWhisperService.isReady()
-                ? .available
-                : .unavailable(.localModelNotLoaded)
+            if localWhisperService.state == .ready {
+                return .available
+            }
+            return .unavailable(.localModelNotReady(detail: localWhisperService.statusDescription))
         default:
             // 未知转录引擎 id —— 保守视为不可用，避免误进入有效列表。
             Log.w("EngineAvailabilityProbe: unknown transcription engine id: \(id)")
-            return .unavailable(.localModelNotLoaded)
+            return .unavailable(.localModelNotReady(detail: "Unknown engine: \(id)"))
         }
     }
 

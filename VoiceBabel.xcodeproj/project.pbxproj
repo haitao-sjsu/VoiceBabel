@@ -29,7 +29,7 @@
 		D6L0C0012FB400010000L001 /* LocaleManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6L0C0002FB400010000L001 /* LocaleManager.swift */; };
 		D6AT00012FC000010000A001 /* LocalAppleTranslationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6AT00002FC000010000A001 /* LocalAppleTranslationService.swift */; };
 		D6LT00012FC100010000L001 /* LocalTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6LT00002FC100010000L001 /* LocalTranslator.swift */; };
-		D6EA00012FE100010000EA01 /* EngineAvailability.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6EA00002FE100010000EA01 /* EngineAvailability.swift */; };
+		D6EA00012FE100010000EA01 /* EngineAvailabilityProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6EA00002FE100010000EA01 /* EngineAvailabilityProbe.swift */; };
 		D6TF00012FD400010000TF02 /* AudioEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00002FD400010000TF01 /* AudioEncoderTests.swift */; };
 		D6TF00032FD400010000TF04 /* CloudOpenAIServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00022FD400010000TF03 /* CloudOpenAIServiceTests.swift */; };
 		D6TF00052FD400010000TF06 /* AppControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6TF00042FD400010000TF05 /* AppControllerTests.swift */; };
@@ -65,7 +65,7 @@
 		D6L0C0002FB400010000L001 /* LocaleManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocaleManager.swift; sourceTree = "<group>"; };
 		D6AT00002FC000010000A001 /* LocalAppleTranslationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAppleTranslationService.swift; sourceTree = "<group>"; };
 		D6LT00002FC100010000L001 /* LocalTranslator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalTranslator.swift; sourceTree = "<group>"; };
-		D6EA00002FE100010000EA01 /* EngineAvailability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineAvailability.swift; sourceTree = "<group>"; };
+		D6EA00002FE100010000EA01 /* EngineAvailabilityProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineAvailabilityProbe.swift; sourceTree = "<group>"; };
 		D6TS00012FD400010000TS02 /* VoiceBabelTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceBabelTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D6TF00002FD400010000TF01 /* AudioEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEncoderTests.swift; sourceTree = "<group>"; };
 		D6TF00022FD400010000TF03 /* CloudOpenAIServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudOpenAIServiceTests.swift; sourceTree = "<group>"; };
@@ -185,7 +185,7 @@
 				D6D1A0002F8A000100000001 /* SettingsStore.swift */,
 				D6F1A0002FA300010000F001 /* KeychainHelper.swift */,
 				D6F1A0022FA300010000F003 /* ApiKeyValidator.swift */,
-				D6EA00002FE100010000EA01 /* EngineAvailability.swift */,
+				D6EA00002FE100010000EA01 /* EngineAvailabilityProbe.swift */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -345,7 +345,7 @@
 				D6L0C0012FB400010000L001 /* LocaleManager.swift in Sources */,
 				D6AT00012FC000010000A001 /* LocalAppleTranslationService.swift in Sources */,
 				D6LT00012FC100010000L001 /* LocalTranslator.swift in Sources */,
-				D6EA00012FE100010000EA01 /* EngineAvailability.swift in Sources */,
+				D6EA00012FE100010000EA01 /* EngineAvailabilityProbe.swift in Sources */,
 				AA00000000000000000000B1 /* TextPostProcessor.swift in Sources */,
 				AA00000000000000000000B2 /* AutoSendManager.swift in Sources */,
 				AA00000000000000000000B3 /* TranslationManager.swift in Sources */,

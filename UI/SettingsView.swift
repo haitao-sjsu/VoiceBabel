@@ -18,6 +18,11 @@
 // Dependencies:
 //   - SettingsStore: ObservableObject singleton, persists user preferences
 //   - LocaleManager: Manages UI locale for instant language switching
+//   - LocalWhisperService: Observed solely to re-render rows when `state`
+//     advances (.downloading → .loading → .warming → .ready). Without this
+//     subscription the panel snapshots availability at open time and never
+//     updates, so the local row stays stuck on "Unavailable" until any other
+//     state change (e.g. drag) forces a redraw.
 //   - EngineAvailabilityProbe: Live objective-availability probe (injected by
 //     SettingsWindowController) used by the priority rows to render
 //     disabled/unavailable state and the empty-list footer warning.
@@ -31,6 +36,11 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var store: SettingsStore
     @ObservedObject var localeManager = LocaleManager.shared
+    // Observed for its `objectWillChange` only — the body never reads it
+    // directly. The probe still does the actual `state` lookup; observing the
+    // service here is what forces SwiftUI to re-evaluate the probe when the
+    // model finishes loading.
+    @ObservedObject var localWhisperService: LocalWhisperService
     let probe: EngineAvailabilityProbe
 
     var body: some View {
@@ -266,16 +276,19 @@ struct SettingsView: View {
     }
 
     /// Maps an `UnavailabilityReason` to the per-row subtitle text shown when an
-    /// engine is objectively unavailable. Strings are not yet in the xcstrings
-    /// catalog (Phase 4 adds them); for now they display verbatim in English.
+    /// engine is objectively unavailable. The `.localModelNotReady(detail)` case
+    /// receives the already-localized string from `LocalWhisperService.statusDescription`,
+    /// which describes the precise stage (downloading / loading / warming / failed: ...).
     private func unavailabilityReasonText(_ reason: UnavailabilityReason) -> LocalizedStringKey {
         switch reason {
         case .missingApiKey:
             return "API Key required"
         case .osTooOld(let v):
             return LocalizedStringKey("Requires \(v) or later")
-        case .localModelNotLoaded:
-            return "Local model not ready"
+        case .localModelNotReady(let detail):
+            // `detail` is already localized via LocaleManager — wrap as LocalizedStringKey
+            // verbatim (no further translation lookup).
+            return LocalizedStringKey(detail)
         }
     }
 }

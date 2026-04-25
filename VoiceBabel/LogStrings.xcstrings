@@ -116,6 +116,9 @@
     "Settings: Transcription priority changed to": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "设置: 转录优先级切换为" } } } },
     "Settings: Translation engine priority changed to": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "设置: 翻译引擎优先级切换为" } } } },
     "Settings: Recognition language changed to": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "设置: 识别语言切换为" } } } },
-    "Apple Translation service initialized": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "Apple 翻译服务已初始化" } } } }
+    "Apple Translation service initialized": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "Apple 翻译服务已初始化" } } } },
+    "LocalWhisper: warmup started": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "LocalWhisper: 预热开始" } } } },
+    "LocalWhisper: warmup complete": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "LocalWhisper: 预热完成" } } } },
+    "LocalWhisper: warmup failed:": { "localizations": { "zh-Hans": { "stringUnit": { "state": "translated", "value": "LocalWhisper: 预热失败:" } } } }
   }
 }
