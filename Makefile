@@ -10,9 +10,13 @@ DERIVED_DATA    := $(HOME)/Library/Developer/Xcode/DerivedData
 APP_NAME        := VoiceBabel.app
 LOCAL_BUILD_DIR := $(CURDIR)/.local-build
 
-# Resolve the actual app path from DerivedData (glob handles the hash suffix)
-DEBUG_APP       = $(shell ls -d $(DERIVED_DATA)/VoiceBabel-*/Build/Products/Debug/$(APP_NAME) 2>/dev/null | head -1)
-RELEASE_APP     = $(shell ls -d $(DERIVED_DATA)/VoiceBabel-*/Build/Products/Release/$(APP_NAME) 2>/dev/null | head -1)
+# Resolve the actual app path from DerivedData (glob handles the hash suffix).
+# `-t` sorts by mtime so we always pick the most recently built bundle. Xcode
+# creates a new DerivedData hash whenever the project's absolute path changes
+# (e.g. directory rename), and old hash dirs linger; the old alphabetic-first
+# `head -1` could silently pick a stale bundle.
+DEBUG_APP       = $(shell ls -dt $(DERIVED_DATA)/VoiceBabel-*/Build/Products/Debug/$(APP_NAME) 2>/dev/null | head -1)
+RELEASE_APP     = $(shell ls -dt $(DERIVED_DATA)/VoiceBabel-*/Build/Products/Release/$(APP_NAME) 2>/dev/null | head -1)
 
 # xcodebuild with DEVELOPER_DIR preset
 XCODEBUILD      = DEVELOPER_DIR=$(DEVELOPER_DIR) xcodebuild -project $(PROJECT) -scheme $(SCHEME)
